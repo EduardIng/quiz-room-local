@@ -1,0 +1,357 @@
+/* HostView.css — Стилі для інтерфейсу ведучого (kiosk host screen) */
+
+/* ────────────────────────────────────────────
+   Основна розмітка
+   ──────────────────────────────────────────── */
+
+.host-page {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+}
+
+.host-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: var(--color-bg-card);
+  border-bottom: 2px solid rgba(255,255,255,0.1);
+}
+
+.host-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-primary);
+}
+
+.host-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.host-link-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--color-text);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.host-link-btn:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+.lang-toggle-host {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--color-text-muted);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.lang-toggle-host:hover {
+  color: var(--color-text);
+}
+
+/* ────────────────────────────────────────────
+   Два-колонкова сітка: бібліотека + панель запуску
+   ──────────────────────────────────────────── */
+
+.host-body {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 768px) {
+  .host-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ────────────────────────────────────────────
+   Бібліотека квізів
+   ──────────────────────────────────────────── */
+
+.host-library {
+  padding: 24px;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.host-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 16px;
+}
+
+.host-loading,
+.host-empty,
+.host-error {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  padding: 12px 0;
+}
+
+.host-error {
+  color: #ef4444;
+}
+
+.host-quiz-item {
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.1);
+  background: var(--color-bg-card);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  user-select: none;
+}
+
+.host-quiz-item:hover {
+  border-color: var(--color-primary);
+}
+
+.host-quiz-item.selected {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-card));
+}
+
+.host-quiz-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.host-quiz-meta {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.host-badge-category {
+  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  color: var(--color-primary);
+  padding: 1px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* ────────────────────────────────────────────
+   Панель налаштувань та запуску
+   ──────────────────────────────────────────── */
+
+.host-launch-panel {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--color-bg-card);
+}
+
+.host-selected-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+}
+
+.host-selected-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.host-selected-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.host-no-selection {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  padding: 12px 0;
+}
+
+.host-setting-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.host-setting-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.host-setting-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.host-launch-btn {
+  margin-top: 8px;
+  padding: 14px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.host-launch-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.host-launch-btn:not(:disabled):hover {
+  opacity: 0.9;
+}
+
+.host-launch-hint {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ────────────────────────────────────────────
+   Після запуску — статус + host controls
+   ──────────────────────────────────────────── */
+
+.host-status-card {
+  margin: 24px;
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--color-bg-card);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.host-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.host-status-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.host-status-value {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.host-room-code {
+  font-size: 1.5rem;
+  letter-spacing: 0.1em;
+  color: var(--color-primary);
+  font-family: monospace;
+}
+
+.host-phase-label {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* Кнопки керування грою */
+.host-controls-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 24px;
+}
+
+.host-ctrl-btn {
+  flex: 1;
+  min-width: 120px;
+  padding: 16px 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.host-ctrl-btn:hover {
+  opacity: 0.85;
+}
+
+.host-ctrl-start  { background: #22c55e; color: #fff; }
+.host-ctrl-resume { background: #22c55e; color: #fff; }
+.host-ctrl-pause  { background: #f59e0b; color: #fff; }
+.host-ctrl-skip   { background: #6366f1; color: #fff; }
+
+/* Посилання Projector View */
+.host-projector-link {
+  display: block;
+  margin: 20px 24px 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--color-bg-card);
+  color: var(--color-text);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+.host-projector-link:hover {
+  background: rgba(255,255,255,0.1);
+}
+.host-projector-hint {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+/* Кнопка нової гри */
+.host-new-game-btn {
+  margin: 16px 24px;
+  padding: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.host-new-game-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}

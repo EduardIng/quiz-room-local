@@ -2,16 +2,17 @@
  * main.jsx - Точка входу React додатку з hash-роутингом
  *
  * Маршрути:
- * - #/        → PlayerView (інтерфейс гравця, за замовчуванням)
- * - #/admin   → AdminPanel (моніторинг активних ігор)
- * - #/create  → QuizCreator (редактор квізів)
+ * - #/        → PlayerView  (інтерфейс гравця, за замовчуванням — планшети)
+ * - #/host    → HostView    (інтерфейс ведучого: вибір квізу → старт)
+ * - #/create  → QuizCreator (редактор квізів для створення JSON)
+ * - #/stats   → StatsPanel  (статистика сесій)
  * - #/screen  → ProjectorView (великий екран для залу)
  */
 
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import PlayerView from './components/PlayerView.jsx';
-import AdminPanel from './components/AdminPanel.jsx';
+import HostView from './components/HostView.jsx';
 import QuizCreator from './components/QuizCreator.jsx';
 import StatsPanel from './components/StatsPanel.jsx';
 import ProjectorView from './components/ProjectorView.jsx';
@@ -19,7 +20,7 @@ import './styles/theme.css';
 
 /**
  * Зчитує поточний hash-маршрут з URL
- * Наприклад: "#/admin" → "/admin"
+ * Наприклад: "#/host" → "/host"
  *
  * @returns {string} Маршрут починаючи з "/"
  */
@@ -44,10 +45,10 @@ function App() {
   }, []);
 
   // Рендеримо відповідний компонент за маршрутом
-  if (route === '/admin') return <AdminPanel />;
-  if (route === '/create') return <QuizCreator />;
-  if (route === '/stats') return <StatsPanel />;
-  if (route.startsWith('/screen')) return <ProjectorView />;
+  if (route === '/host')             return <HostView />;
+  if (route === '/create')           return <QuizCreator />;
+  if (route === '/stats')            return <StatsPanel />;
+  if (route.startsWith('/screen'))   return <ProjectorView />;
   return <PlayerView />;
 }
 
