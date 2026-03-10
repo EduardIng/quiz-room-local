@@ -4,7 +4,7 @@
 **Developer:** EduardIng
 **Target:** Local kiosk quiz system — tablet podiums, LAN-only, auto-reconnect
 **Forked from:** quiz-room-auto v1.3.0
-**Version:** 0.1.0
+**Version:** 0.2.0
 **Date:** March 10, 2026
 
 ---
@@ -140,12 +140,14 @@ quiz-room-local/
 │       └── server.test.js
 ├── frontend/
 │   ├── src/
-│   │   ├── main.jsx                   <- Routing (#/, #/host, #/stats, #/screen)
+│   │   ├── main.jsx                   <- Routing (#/, #/host, #/create, #/stats, #/screen)
 │   │   ├── components/
 │   │   │   ├── PlayerView.jsx         <- Kiosk player UI (nickname only, auto-reconnect)
-│   │   │   ├── HostView.jsx           <- Host: select quiz + start
-│   │   │   ├── ProjectorView.jsx      <- Big screen (#/screen)
-│   │   │   └── StatsPanel.jsx         <- Session statistics
+│   │   │   ├── HostView.jsx           <- Host: select quiz + start + controls
+│   │   │   ├── QuizCreator.jsx        <- Visual quiz editor (accessible at #/create)
+│   │   │   ├── ProjectorView.jsx      <- Big screen (#/screen) — still asks for room code
+│   │   │   ├── StatsPanel.jsx         <- Session statistics
+│   │   │   └── AdminPanel.jsx         <- DEAD — route removed in Phase 3, file not deleted
 │   │   ├── styles/theme.css
 │   │   └── utils/
 │   │       ├── i18n.js
@@ -238,6 +240,22 @@ timeBonus = max(0, questionTime - answerTime) * 2
 playerScore += basePoints + timeBonus   // 0 for wrong
 Tiebreaker: avgAnswerTime ascending
 ```
+
+---
+
+## KNOWN REMAINING WORK
+
+All planned phases (0-6) are complete. The following items were identified post-v0.2.0 but not yet implemented. A new session should read this list before starting any new work.
+
+| # | Item | Priority | Notes |
+|---|------|----------|-------|
+| 1 | Delete `AdminPanel.jsx` | Low | Route removed in Phase 3, file still on disk — dead code |
+| 2 | `ProjectorView` auto-discovers room | High | Currently still asks for room code — should poll `/api/current-room` like PlayerView |
+| 3 | `color-mix()` CSS fallback in HostView.css | Medium | Not supported in older Chrome — replace with hardcoded RGBA |
+| 4 | Player list in HostView | Medium | Host sees only a count; should show joined player names |
+| 5 | Quiz library refresh after game ends | Low | HostView doesn't re-fetch the quiz list after a game completes |
+| 6 | "Go to Host Panel" button in QuizCreator | Low | After saving a quiz, add link to `#/host` for smooth flow |
+| 7 | `package.json` version is still `0.1.0` | Low | Needs bump to `0.2.0` |
 
 ---
 
