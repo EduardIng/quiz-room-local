@@ -1,0 +1,212 @@
+.stats-panel {
+  min-height: 100vh;
+  background: var(--color-bg, #0f0f23);
+  color: var(--color-text, #fff);
+  font-family: var(--font-main, sans-serif);
+}
+
+/* Header */
+.stats-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.stats-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.stats-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stats-nav-link {
+  color: var(--color-text-muted, #aaa);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.15);
+  transition: background 0.2s;
+}
+
+.stats-nav-link:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.lang-toggle {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--color-text-muted, #aaa);
+  border-radius: 20px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+
+.lang-toggle:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+/* Summary cards */
+.stats-summary {
+  display: flex;
+  gap: 16px;
+  padding: 24px 28px 0;
+  flex-wrap: wrap;
+}
+
+.stats-summary .stat-card {
+  flex: 1;
+  min-width: 140px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.stat-card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-primary-light, #a78bfa);
+}
+
+.stat-card-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #999);
+  margin-top: 4px;
+}
+
+/* Content area */
+.stats-content {
+  padding: 24px 28px;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 16px;
+  color: var(--color-text-muted, #bbb);
+}
+
+.stats-empty {
+  color: var(--color-text-muted, #888);
+  padding: 32px;
+  text-align: center;
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+}
+
+.stats-loading {
+  text-align: center;
+  color: var(--color-text-muted, #888);
+  padding: 32px;
+}
+
+/* Table */
+.sessions-table-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.sessions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.sessions-table thead th {
+  background: rgba(255,255,255,0.06);
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-muted, #aaa);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  white-space: nowrap;
+}
+
+.sessions-table tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background 0.15s;
+}
+
+.sessions-table tbody tr:hover,
+.sessions-table tbody tr.row-expanded {
+  background: rgba(255,255,255,0.04);
+}
+
+.sessions-table tbody td {
+  padding: 12px 16px;
+  color: var(--color-text, #ddd);
+}
+
+.col-date { white-space: nowrap; color: var(--color-text-muted, #aaa); }
+.col-title { font-weight: 500; }
+.col-players, .col-top { white-space: nowrap; }
+.col-action { text-align: right; }
+
+/* Expand button */
+.expand-btn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: var(--color-primary-light, #a78bfa);
+  border-radius: 16px;
+  padding: 4px 14px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.expand-btn:hover {
+  background: rgba(167,139,250,0.12);
+}
+
+/* Inline leaderboard */
+.leaderboard-row td {
+  padding: 0 !important;
+  background: rgba(0,0,0,0.2);
+}
+
+.inline-leaderboard {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 20px;
+}
+
+.lb-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 0.85rem;
+}
+
+.lb-pos { font-size: 1rem; }
+
+.lb-nick {
+  color: var(--color-text, #ddd);
+  font-weight: 500;
+}
+
+.lb-score {
+  color: var(--color-primary-light, #a78bfa);
+  font-weight: 600;
+}
+
+.lb-loading {
+  color: var(--color-text-muted, #888);
+  padding: 8px;
+}

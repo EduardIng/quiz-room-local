@@ -1,0 +1,814 @@
+/* PlayerView.css - Стилі для інтерфейсу гравця
+ *
+ * Оптимізовано для:
+ * - Сенсорних екранів (кнопки 100px+)
+ * - Планшетів та телефонів
+ * - Швидкого зчитування під час гри
+ *
+ * Структура:
+ * 1. Контейнер та загальні елементи
+ * 2. JOIN екран
+ * 3. WAITING екран
+ * 4. QUESTION екран
+ * 5. ANSWER_SENT екран
+ * 6. REVEAL екран
+ * 7. LEADERBOARD екран
+ * 8. ENDED екран
+ * 9. Анімації
+ */
+
+/* ─────────────────────────────────────────
+   1. КОНТЕЙНЕР ТА ЗАГАЛЬНІ ЕЛЕМЕНТИ
+───────────────────────────────────────── */
+
+.player-view {
+  min-height: 100vh;
+  min-height: 100dvh; /* динамічна висота для мобільних */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+/* Загальна картка (wrapper для контенту екрану) */
+.screen-card {
+  width: 100%;
+  max-width: 500px;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  padding: 28px 24px;
+  box-shadow: var(--shadow);
+  animation: slideIn 0.3s ease;
+}
+
+/* Заголовок екрану */
+.screen-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 8px;
+  color: var(--color-text);
+}
+
+/* Підзаголовок */
+.screen-subtitle {
+  font-size: 0.95rem;
+  text-align: center;
+  color: var(--color-text-muted);
+  margin-bottom: 24px;
+}
+
+/* Кнопка-лого вгорі */
+.logo {
+  font-size: 2.5rem;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+/* Первинна кнопка дії */
+.btn-primary {
+  display: block;
+  width: 100%;
+  padding: 18px;
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  box-shadow: var(--shadow-btn);
+  margin-top: 16px;
+  min-height: 60px;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-dark);
+}
+
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+.btn-primary:disabled {
+  background: var(--color-neutral);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Текстове поле вводу */
+.input-field {
+  width: 100%;
+  padding: 16px;
+  background: var(--color-bg-input);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-size: 1.1rem;
+  outline: none;
+  transition: border-color var(--transition);
+  margin-bottom: 12px;
+  min-height: 56px;
+}
+
+.input-field::placeholder {
+  color: var(--color-text-muted);
+}
+
+.input-field:focus {
+  border-color: var(--color-primary-light);
+}
+
+/* Повідомлення про помилку */
+.error-msg {
+  background: rgba(231, 76, 60, 0.15);
+  border: 1px solid rgba(231, 76, 60, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  color: #ff6b6b;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 12px;
+  animation: shake 0.4s ease;
+}
+
+/* ─────────────────────────────────────────
+   2. JOIN ЕКРАН
+───────────────────────────────────────── */
+
+.join-screen .input-field.room-code {
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  font-size: 1.4rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.join-screen .label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+  padding-left: 4px;
+}
+
+/* ─────────────────────────────────────────
+   3. WAITING ЕКРАН
+───────────────────────────────────────── */
+
+.waiting-screen {
+  text-align: center;
+}
+
+/* Пульсуючий індикатор очікування */
+.pulse-dots {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 24px 0;
+}
+
+.pulse-dots span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  animation: pulseDot 1.4s ease-in-out infinite;
+}
+
+.pulse-dots span:nth-child(2) { animation-delay: 0.2s; }
+.pulse-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+/* Список гравців в очікуванні */
+.player-list {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.player-list-title {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.player-chip {
+  display: inline-block;
+  background: rgba(108, 63, 197, 0.2);
+  border: 1px solid rgba(108, 63, 197, 0.4);
+  border-radius: 20px;
+  padding: 6px 14px;
+  margin: 4px;
+  font-size: 0.9rem;
+}
+
+/* Відлік перед стартом */
+.countdown-display {
+  font-size: 5rem;
+  font-weight: 900;
+  color: var(--color-primary-light);
+  animation: countdownPop 0.5s ease;
+  text-align: center;
+  margin: 16px 0;
+  line-height: 1;
+}
+
+/* ─────────────────────────────────────────
+   4. QUESTION ЕКРАН
+───────────────────────────────────────── */
+
+.question-screen {
+  padding: 0;
+}
+
+/* Хедер питання: номер + таймер */
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.question-number {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+/* Таймер */
+.timer-display {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-text);
+  min-width: 40px;
+  text-align: center;
+  transition: color var(--transition);
+}
+
+.timer-display.warning {
+  color: #f39c12;
+  animation: timerPulse 0.5s ease infinite alternate;
+}
+
+.timer-display.danger {
+  color: var(--color-wrong);
+  animation: timerPulse 0.3s ease infinite alternate;
+}
+
+/* Прогрес-бар таймера */
+.timer-bar-wrapper {
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 0;
+  overflow: hidden;
+}
+
+.timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  border-radius: 0;
+  transition: width 1s linear, background-color 1s linear;
+}
+
+.timer-bar.warning {
+  background: linear-gradient(90deg, #f39c12, #f1c40f);
+}
+
+.timer-bar.danger {
+  background: linear-gradient(90deg, var(--color-wrong), #ff6b6b);
+}
+
+/* Текст питання */
+.question-text {
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 20px 20px 16px;
+  text-align: center;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Сітка кнопок відповідей (2x2) */
+.answers-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 0 16px 16px;
+}
+
+/* Кнопка відповіді */
+.answer-button {
+  min-height: 110px;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 16px 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  text-align: center;
+  line-height: 1.3;
+  transition: transform var(--transition), opacity var(--transition), box-shadow var(--transition);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* Літера відповіді (A, B, C, D) */
+.answer-letter {
+  font-size: 1.2rem;
+  font-weight: 800;
+  opacity: 0.9;
+  line-height: 1;
+}
+
+/* Кольори кнопок за позицією */
+.answer-button:nth-child(1) { background: var(--color-answer-a); }
+.answer-button:nth-child(2) { background: var(--color-answer-b); }
+.answer-button:nth-child(3) { background: var(--color-answer-c); }
+.answer-button:nth-child(4) { background: var(--color-answer-d); }
+
+.answer-button:active {
+  transform: scale(0.95);
+}
+
+.answer-button:hover {
+  opacity: 0.9;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+/* Лічильник відповідей гравців */
+.answer-count-bar {
+  padding: 0 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.answer-count-text {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.answer-count-progress {
+  flex: 1;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.answer-count-fill {
+  height: 100%;
+  background: var(--color-primary-light);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+/* ─────────────────────────────────────────
+   5. ANSWER_SENT ЕКРАН
+───────────────────────────────────────── */
+
+.answer-sent-screen {
+  text-align: center;
+}
+
+.answer-sent-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+}
+
+.waiting-dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.waiting-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  animation: pulseDot 1.2s ease-in-out infinite;
+}
+
+.waiting-dots span:nth-child(2) { animation-delay: 0.15s; }
+.waiting-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+/* ─────────────────────────────────────────
+   6. REVEAL ЕКРАН
+───────────────────────────────────────── */
+
+.reveal-screen {
+  text-align: center;
+}
+
+/* Великий результат: ✅ або ❌ */
+.result-icon {
+  font-size: 5rem;
+  margin-bottom: 12px;
+  animation: resultBounce 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+.result-text {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.result-text.correct {
+  color: var(--color-correct);
+}
+
+.result-text.wrong {
+  color: var(--color-wrong);
+}
+
+.result-text.no-answer {
+  color: var(--color-neutral);
+}
+
+/* Бали зароблені */
+.points-earned {
+  font-size: 1.1rem;
+  color: var(--color-text-muted);
+  margin-bottom: 20px;
+}
+
+.points-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--color-primary-light);
+  animation: countUp 0.5s ease 0.3s both;
+}
+
+/* Правильна відповідь */
+.correct-answer-box {
+  background: rgba(39, 174, 96, 0.15);
+  border: 1px solid rgba(39, 174, 96, 0.4);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-top: 16px;
+}
+
+.correct-answer-label {
+  font-size: 0.8rem;
+  color: var(--color-correct);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.correct-answer-text {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* Загальний рахунок */
+.total-score {
+  margin-top: 20px;
+  padding: 14px;
+  background: rgba(108, 63, 197, 0.15);
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.total-score-label {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.total-score-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-primary-light);
+}
+
+/* ─────────────────────────────────────────
+   7. LEADERBOARD ЕКРАН
+───────────────────────────────────────── */
+
+.leaderboard-screen {
+  text-align: center;
+}
+
+.leaderboard-list {
+  margin-top: 16px;
+}
+
+.leaderboard-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: var(--radius-md);
+  transition: background var(--transition);
+  animation: slideInRight 0.3s ease;
+}
+
+/* Підсвічуємо поточного гравця */
+.leaderboard-item.is-me {
+  background: rgba(108, 63, 197, 0.25);
+  border: 1px solid rgba(108, 63, 197, 0.5);
+}
+
+/* Медалі для топ-3 */
+.leaderboard-position {
+  font-size: 1.4rem;
+  min-width: 36px;
+  text-align: center;
+  font-weight: 800;
+}
+
+.leaderboard-position.pos-1 { color: #f1c40f; }
+.leaderboard-position.pos-2 { color: #bdc3c7; }
+.leaderboard-position.pos-3 { color: #cd7f32; }
+.leaderboard-position.pos-other { color: var(--color-text-muted); font-size: 1rem; }
+
+.leaderboard-name {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-name .me-badge {
+  font-size: 0.75rem;
+  color: var(--color-primary-light);
+  margin-left: 6px;
+}
+
+.leaderboard-score {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--color-primary-light);
+}
+
+/* ─────────────────────────────────────────
+   8. ENDED ЕКРАН
+───────────────────────────────────────── */
+
+.ended-screen {
+  text-align: center;
+}
+
+.trophy-icon {
+  font-size: 5rem;
+  margin-bottom: 12px;
+  animation: trophyBounce 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+.final-position {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.final-position-number {
+  font-size: 3rem;
+  font-weight: 900;
+  color: var(--color-primary-light);
+  line-height: 1;
+  margin-bottom: 16px;
+}
+
+.final-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.stat-box {
+  background: rgba(255,255,255,0.06);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+/* ─────────────────────────────────────────
+   9. АНІМАЦІЇ
+───────────────────────────────────────── */
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50%      { transform: scale(1.4); opacity: 1; }
+}
+
+@keyframes countdownPop {
+  0%   { transform: scale(2); opacity: 0; }
+  60%  { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes timerPulse {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+
+@keyframes resultBounce {
+  0%   { transform: scale(0.3) rotate(-15deg); opacity: 0; }
+  50%  { transform: scale(1.2) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes trophyBounce {
+  0%   { transform: scale(0.5) translateY(20px); opacity: 0; }
+  60%  { transform: scale(1.15) translateY(-5px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); }
+}
+
+@keyframes countUp {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-8px); }
+  75%      { transform: translateX(8px); }
+}
+
+/* ── Question image ── */
+.question-image-wrap {
+  width: 100%;
+  max-height: 220px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  border-radius: var(--radius-md);
+  background: rgba(0,0,0,0.3);
+}
+
+.question-image {
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+}
+
+/* ── Audio bar ── */
+.question-audio-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(167,139,250,0.12);
+  border: 1px solid rgba(167,139,250,0.3);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  margin-bottom: 12px;
+}
+
+.audio-icon {
+  font-size: 1.2rem;
+  animation: audioPulse 1.5s ease-in-out infinite;
+}
+
+.audio-label {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.audio-replay-btn {
+  background: rgba(167,139,250,0.2);
+  border: 1px solid rgba(167,139,250,0.4);
+  color: var(--color-primary-light, #a78bfa);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.audio-replay-btn:hover {
+  background: rgba(167,139,250,0.35);
+}
+
+@keyframes audioPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ─────────────────────────────────────────
+   CATEGORY SELECT / CHOSEN SCREENS
+───────────────────────────────────────── */
+
+.category-select-screen {
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Thin timer bar at top */
+.category-timer-bar-wrapper {
+  height: 6px;
+  background: rgba(255,255,255,0.1);
+  overflow: hidden;
+}
+
+.category-timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  transition: width 1s linear;
+}
+
+.category-timer-text {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  margin-bottom: 12px;
+}
+
+/* Two large category buttons */
+.category-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.category-btn {
+  width: 100%;
+  padding: 28px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  transition: transform var(--transition), opacity var(--transition);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.category-btn:nth-child(1) { background: var(--color-primary); }
+.category-btn:nth-child(2) { background: #e67e22; }
+
+.category-btn:active { transform: scale(0.96); }
+.category-btn:hover  { opacity: 0.9; }
+
+/* Waiting view */
+.category-wait-icon {
+  font-size: 3.5rem;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.category-wait-text {
+  font-size: 1.05rem;
+  text-align: center;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+/* Chosen category name */
+.category-chosen-name {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--color-primary-light);
+  margin: 8px 0;
+  animation: countdownPop 0.5s ease;
+}

@@ -1,0 +1,74 @@
+{
+  "title": "Тестовий квіз #2 - Технології",
+  "description": "Питання про технології та комп'ютери для перевірки таймінгу системи",
+  "questions": [
+    {
+      "question": "Що означає абревіатура HTML?",
+      "answers": [
+        "High Text Markup Language",
+        "HyperText Markup Language",
+        "HyperText Machine Language",
+        "Home Tool Markup Language"
+      ],
+      "correctAnswer": 1,
+      "timeLimit": 20
+    },
+    {
+      "question": "Яка компанія розробила JavaScript?",
+      "answers": ["Microsoft", "Google", "Apple", "Netscape"],
+      "correctAnswer": 3,
+      "timeLimit": 25
+    },
+    {
+      "question": "Що таке Node.js?",
+      "answers": [
+        "База даних",
+        "Середовище виконання JavaScript на сервері",
+        "CSS фреймворк",
+        "Операційна система"
+      ],
+      "correctAnswer": 1,
+      "timeLimit": 20
+    },
+    {
+      "question": "На якому порту зазвичай працює HTTP?",
+      "answers": ["21", "22", "80", "443"],
+      "correctAnswer": 2,
+      "timeLimit": 15
+    },
+    {
+      "question": "Що означає API?",
+      "answers": [
+        "Application Programming Interface",
+        "Advanced Program Integration",
+        "Automated Process Interface",
+        "Application Protocol Interface"
+      ],
+      "correctAnswer": 0,
+      "timeLimit": 20
+    },
+    {
+      "question": "Яка бібліотека використовується для WebSocket в нашому проєкті?",
+      "answers": ["ws", "websocket", "Socket.IO", "SockJS"],
+      "correctAnswer": 2,
+      "timeLimit": 15
+    },
+    {
+      "question": "Що таке JSON?",
+      "answers": [
+        "Мова програмування",
+        "Формат обміну даними",
+        "База даних",
+        "Операційна система"
+      ],
+      "correctAnswer": 1,
+      "timeLimit": 15
+    },
+    {
+      "question": "Скільки байт у 1 кілобайті?",
+      "answers": ["100", "512", "1000", "1024"],
+      "correctAnswer": 3,
+      "timeLimit": 20
+    }
+  ]
+}

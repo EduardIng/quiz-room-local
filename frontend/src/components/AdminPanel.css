@@ -1,0 +1,305 @@
+/* AdminPanel.css - Стилі адмін-панелі */
+
+.admin-panel {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ── Хедер ── */
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px;
+  background: var(--color-bg-card);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.admin-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.admin-subtitle {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.admin-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Індикатор стану */
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.06);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-indicator.ok .status-dot    { background: #27ae60; box-shadow: 0 0 6px #27ae60; }
+.status-indicator.error .status-dot { background: #e74c3c; }
+.status-indicator.connecting .status-dot {
+  background: #f39c12;
+  animation: pulse 1s ease infinite alternate;
+}
+
+/* Навігація */
+.admin-nav-link {
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--color-text-muted);
+  background: rgba(255,255,255,0.06);
+  transition: background var(--transition), color var(--transition);
+}
+
+.admin-nav-link:hover { background: rgba(255,255,255,0.1); color: var(--color-text); }
+
+.admin-nav-primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.admin-nav-primary:hover {
+  background: var(--color-primary-dark);
+  color: white;
+}
+
+/* ── Статистика ── */
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  padding: 24px 28px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.stat-card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  text-align: center;
+}
+
+.stat-card-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-primary-light);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.stat-card-label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* ── Контент ── */
+.admin-content {
+  padding: 24px 28px;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.8rem;
+}
+
+/* Помилка */
+.admin-error {
+  background: rgba(231, 76, 60, 0.12);
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  color: #ff6b6b;
+  margin-bottom: 16px;
+}
+
+/* Порожній стан */
+.admin-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--color-text-muted);
+}
+
+.admin-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+/* ── Сітка кімнат ── */
+.sessions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.session-card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: border-color var(--transition);
+}
+
+.session-card:hover {
+  border-color: rgba(108, 63, 197, 0.4);
+}
+
+/* Рядок з кодом */
+.session-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.session-code {
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: var(--color-primary-light);
+  font-family: 'Courier New', monospace;
+}
+
+/* Кнопка копіювання */
+.copy-btn {
+  padding: 6px 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.copy-btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: var(--color-text);
+}
+
+.copy-btn.copied {
+  background: rgba(39, 174, 96, 0.15);
+  border-color: rgba(39, 174, 96, 0.4);
+  color: #2ecc71;
+}
+
+.session-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: var(--color-text);
+}
+
+/* Метадані сесії */
+.session-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.session-state {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid;
+}
+
+.session-players {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* Projector View link on session card */
+.session-projector-link {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 6px 14px;
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 20px;
+  color: #a78bfa;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.session-projector-link:hover {
+  background: rgba(167, 139, 250, 0.2);
+}
+
+/* Маленька кнопка */
+.btn-primary-small {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 10px 20px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background var(--transition);
+}
+
+.btn-primary-small:hover {
+  background: var(--color-primary-dark);
+}
+
+@keyframes pulse {
+  from { opacity: 0.5; }
+  to   { opacity: 1; }
+}
+
+/* QR code in session cards */
+.session-qr {
+  display: block;
+  border-radius: 6px;
+  margin: 8px 0;
+  border: 2px solid rgba(255,255,255,0.1);
+}
+
+/* Language toggle button */
+.lang-toggle-admin {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--color-text-muted, #aaa);
+  border-radius: 20px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+
+.lang-toggle-admin:hover {
+  background: rgba(255,255,255,0.08);
+}

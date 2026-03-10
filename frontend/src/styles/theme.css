@@ -1,0 +1,74 @@
+/* theme.css - Глобальні CSS змінні та базові стилі
+ *
+ * Визначає кольорову схему та шрифти для всього додатку.
+ * Оптимізовано для сенсорних екранів (планшети, телефони).
+ */
+
+:root {
+  /* Основна кольорова палітра */
+  --color-primary: #6c3fc5;        /* Фіолетовий - основний */
+  --color-primary-dark: #4e2d9c;   /* Темно-фіолетовий */
+  --color-primary-light: #9b6dff;  /* Світло-фіолетовий */
+
+  /* Кольори відповідей */
+  --color-answer-a: #e74c3c;   /* Червоний - A */
+  --color-answer-b: #3498db;   /* Синій - B */
+  --color-answer-c: #f39c12;   /* Жовтий - C */
+  --color-answer-d: #27ae60;   /* Зелений - D */
+
+  /* Статуси */
+  --color-correct: #27ae60;    /* Зелений - правильно */
+  --color-wrong: #e74c3c;      /* Червоний - неправильно */
+  --color-selected: #8e44ad;   /* Фіолетовий - обрано */
+  --color-neutral: #95a5a6;    /* Сірий - нейтральний */
+
+  /* Фони */
+  --color-bg: #1a1a2e;         /* Темно-синій фон */
+  --color-bg-card: #16213e;    /* Картка */
+  --color-bg-input: #0f3460;   /* Поле вводу */
+
+  /* Текст */
+  --color-text: #ffffff;
+  --color-text-muted: #b0b8c8;
+  --color-text-dark: #1a1a2e;
+
+  /* Заокруглення */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+
+  /* Тіні */
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-btn: 0 4px 15px rgba(108, 63, 197, 0.4);
+
+  /* Анімації */
+  --transition: 0.25s ease;
+}
+
+/* Базові стилі */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  /* Вимикаємо виділення тексту на планшетах (не потрібно для квізу) */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Покращуємо рендеринг шрифтів */
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Відключаємо tap highlight на мобільних */
+* {
+  -webkit-tap-highlight-color: transparent;
+}

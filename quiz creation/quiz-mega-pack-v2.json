@@ -1,0 +1,826 @@
+{
+  "title": "Mega Quiz Pack — 6 категорій",
+  "categoryMode": true,
+  "rounds": [
+    {
+      "options": [
+        {
+          "category": "Загальні знання",
+          "question": "Яка група крові вважається універсальним донором?",
+          "answers": [
+            "I (O)",
+            "II (A)",
+            "III (B)",
+            "IV (AB)"
+          ],
+          "correctAnswer": 0
+        },
+        {
+          "category": "Географія",
+          "question": "Столицею якої країни є Канберра?",
+          "answers": [
+            "Нова Зеландія",
+            "Канада",
+            "Австралія",
+            "Австрія"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Логотипи і бренди",
+          "question": "Якій компанії належить цей логотип?",
+          "image": "logo_spotify.jpg",
+          "imageDescription": "Зелене коло з трьома вигнутими лініями (хвилями звуку)",
+          "answers": [
+            "Spotify",
+            "SoundCloud",
+            "Deezer",
+            "Tidal"
+          ],
+          "correctAnswer": 0
+        },
+        {
+          "category": "Історія",
+          "question": "Хто був першою людиною, що ступила на Місяць?",
+          "answers": [
+            "Базз Олдрін",
+            "Юрій Гагарін",
+            "Ніл Армстронг",
+            "Майкл Коллінз"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Інтернет-культура і меми",
+          "question": "Як називається цей мем?",
+          "image": "drake_hotline_bling.jpg",
+          "imageDescription": "Дрейк у двох панелях: зверху відвертається з відразою, знизу схвально показує пальцем",
+          "answers": [
+            "Expanding Brain",
+            "Drake Hotline Bling",
+            "Two Buttons",
+            "Is This a Pigeon?"
+          ],
+          "correctAnswer": 1
+        },
+        {
+          "category": "Наука і природа",
+          "question": "Який газ становить приблизно 78% атмосфери Землі?",
+          "answers": [
+            "Кисень",
+            "Вуглекислий газ",
+            "Азот",
+            "Аргон"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Історія",
+          "question": "Як називався корабель, на якому Чарльз Дарвін здійснив свою знамениту подорож?",
+          "answers": [
+            "Індевор",
+            "Санта-Марія",
+            "Бігль",
+            "Вікторія"
+          ],
+          "correctAnswer": 2
+        },
+        {
+          "category": "Загальні знання",
+          "question": "Хто написав роман «1984»?",
+          "answers": [
+            "Олдос Гакслі",
+            "Рей Бредбері",
+            "Джордж Орвелл",
+            "Артур Кларк"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Географія",
+          "question": "В якій країні знаходиться найвища точка Африки — гора Кіліманджаро?",
+          "answers": [
+            "Кенія",
+            "Ефіопія",
+            "Танзанія",
+            "Уганда"
+          ],
+          "correctAnswer": 2
+        },
+        {
+          "category": "Наука і природа",
+          "question": "Яка тварина має найбільше серце серед наземних істот?",
+          "answers": [
+            "Африканський слон",
+            "Жирафа",
+            "Білий носоріг",
+            "Бегемот"
+          ],
+          "correctAnswer": 0
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Логотипи і бренди",
+          "question": "Якій компанії належить цей логотип?",
+          "image": "logo_starbucks.jpg",
+          "imageDescription": "Зелене коло з зображенням русалки-сирени",
+          "answers": [
+            "Costa Coffee",
+            "Dunkin'",
+            "Starbucks",
+            "Tim Hortons"
+          ],
+          "correctAnswer": 2
+        },
+        {
+          "category": "Інтернет-культура і меми",
+          "question": "Як називається цей мем?",
+          "image": "distracted_boyfriend.jpg",
+          "imageDescription": "Хлопець обертається подивитися на іншу дівчину, поки його дівчина дивиться з обуренням",
+          "answers": [
+            "Distracted Boyfriend",
+            "Overly Attached Girlfriend",
+            "Bad Luck Brian",
+            "Side Eyeing Chloe"
+          ],
+          "correctAnswer": 0
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Наука і природа",
+          "question": "Який елемент таблиці Менделєєва має найменший атомний номер?",
+          "answers": [
+            "Гелій",
+            "Водень",
+            "Літій",
+            "Бор"
+          ],
+          "correctAnswer": 1
+        },
+        {
+          "category": "Загальні знання",
+          "question": "Який хімічний елемент позначається символом Au?",
+          "answers": [
+            "Срібло",
+            "Алюміній",
+            "Аргон",
+            "Золото"
+          ],
+          "correctAnswer": 3
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Історія",
+          "question": "В якому році впала Берлінська стіна?",
+          "answers": [
+            "1987",
+            "1989",
+            "1991",
+            "1993"
+          ],
+          "correctAnswer": 1
+        },
+        {
+          "category": "Інтернет-культура і меми",
+          "question": "Як називається цей мем?",
+          "image": "this_is_fine.jpg",
+          "imageDescription": "Пес-мультяшка сидить у кімнаті, що палає, і п'є каву",
+          "answers": [
+            "Doge",
+            "Grumpy Cat",
+            "This Is Fine",
+            "Surprised Pikachu"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Географія",
+          "question": "На якому континенті розташована пустеля Атакама?",
+          "answers": [
+            "Африка",
+            "Азія",
+            "Південна Америка",
+            "Австралія"
+          ],
+          "correctAnswer": 2
+        },
+        {
+          "category": "Логотипи і бренди",
+          "question": "Якій компанії належить цей логотип?",
+          "image": "logo_nasa.jpg",
+          "imageDescription": "Синій круг із зірками, червоною V-подібною лінією і орбітальним кільцем",
+          "answers": [
+            "SpaceX",
+            "ESA",
+            "NASA",
+            "Roscosmos"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Інтернет-культура і меми",
+          "question": "Як називається цей мем?",
+          "image": "roll_safe.jpg",
+          "imageDescription": "Темношкірий чоловік з хитрою усмішкою прикладає палець до скроні",
+          "answers": [
+            "Roll Safe (Think About It)",
+            "Success Kid",
+            "Philosoraptor",
+            "Conspiracy Keanu"
+          ],
+          "correctAnswer": 0
+        },
+        {
+          "category": "Загальні знання",
+          "question": "Яка валюта використовується в Японії?",
+          "answers": [
+            "Вон",
+            "Юань",
+            "Єна",
+            "Бат"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Наука і природа",
+          "question": "Скільки камер має серце восьминога?",
+          "answers": [
+            "Одну",
+            "Дві",
+            "Три",
+            "Чотири"
+          ],
+          "correctAnswer": 2
+        },
+        {
+          "category": "Логотипи і бренди",
+          "question": "Якій компанії належить цей логотип?",
+          "image": "logo_firefox.jpg",
+          "imageDescription": "Вогняна лисиця обгортає земну кулю",
+          "answers": [
+            "Google Chrome",
+            "Opera",
+            "Mozilla Firefox",
+            "Brave"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Географія",
+          "question": "Яке озеро є найглибшим у світі?",
+          "answers": [
+            "Каспійське море",
+            "Танганьїка",
+            "Байкал",
+            "Вікторія"
+          ],
+          "correctAnswer": 2
+        },
+        {
+          "category": "Історія",
+          "question": "Яка стародавня цивілізація побудувала Мачу-Пікчу?",
+          "answers": [
+            "Ацтеки",
+            "Майя",
+            "Інки",
+            "Ольмеки"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Логотипи і бренди",
+          "question": "Якій компанії належить цей логотип?",
+          "image": "logo_apple.jpg",
+          "imageDescription": "Надкушене яблуко — логотип Apple",
+          "answers": [
+            "Samsung",
+            "Apple",
+            "Huawei",
+            "Microsoft"
+          ],
+          "correctAnswer": 1
+        },
+        {
+          "category": "Загальні знання",
+          "question": "Скільки кісток у тілі дорослої людини?",
+          "answers": [
+            "186",
+            "206",
+            "226",
+            "Залежить від настрою"
+          ],
+          "correctAnswer": 1
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Інтернет-культура і меми",
+          "question": "Як називається цей мем?",
+          "image": "woman_yelling_at_cat.jpg",
+          "imageDescription": "Зліва — жінка кричить і показує пальцем, справа — розгублений білий кіт за столом",
+          "answers": [
+            "Grumpy Cat",
+            "Woman Yelling at a Cat",
+            "Keyboard Cat",
+            "Nyan Cat"
+          ],
+          "correctAnswer": 1
+        },
+        {
+          "category": "Географія",
+          "question": "Яка найдовша річка в світі?",
+          "answers": [
+            "Амазонка",
+            "Ніл",
+            "Янцзи",
+            "Міссісіпі"
+          ],
+          "correctAnswer": 1
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Історія",
+          "question": "Яка подія стала приводом для початку Першої світової війни?",
+          "answers": [
+            "Потоплення Лузітанії",
+            "Вбивство ерцгерцога Франца Фердинанда",
+            "Вторгнення в Польщу",
+            "Революція в Росії"
+          ],
+          "correctAnswer": 1
+        },
+        {
+          "category": "Наука і природа",
+          "question": "Скільки приблизно часу потрібно сонячному світлу, щоб дістатися до Землі?",
+          "answers": [
+            "Близько 8 хвилин",
+            "Близько 3 хвилини",
+            "Близько 1 секунди",
+            "Близько 30 хвилин"
+          ],
+          "correctAnswer": 0
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Загальні знання",
+          "question": "В якому році був запущений перший iPhone?",
+          "answers": [
+            "2005",
+            "2006",
+            "2007",
+            "2008"
+          ],
+          "correctAnswer": 2
+        },
+        {
+          "category": "Географія",
+          "question": "Який протока розділяє Європу та Азію в районі Стамбула?",
+          "answers": [
+            "Гібралтарська",
+            "Магелланова",
+            "Босфор",
+            "Дарданелли"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Історія",
+          "question": "В якому столітті Христофор Колумб досяг берегів Америки?",
+          "answers": [
+            "XIV",
+            "XV",
+            "XVI",
+            "Він ще й досі думає, що це Індія"
+          ],
+          "correctAnswer": 1
+        },
+        {
+          "category": "Логотипи і бренди",
+          "question": "Якій компанії належить цей логотип?",
+          "image": "logo_airbnb.jpg",
+          "imageDescription": "Символ у вигляді стилізованої літери А або серця — Bélo",
+          "answers": [
+            "Trivago",
+            "Booking.com",
+            "Airbnb",
+            "Kayak"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Інтернет-культура і меми",
+          "question": "Як називається цей мем?",
+          "image": "is_this_a_pigeon.jpg",
+          "imageDescription": "Аніме-хлопець дивиться на метелика і питає 'Is this a pigeon?'",
+          "answers": [
+            "Expanding Brain",
+            "Change My Mind",
+            "Is This a Pigeon?",
+            "One Does Not Simply"
+          ],
+          "correctAnswer": 2
+        },
+        {
+          "category": "Наука і природа",
+          "question": "Яка єдина планета Сонячної системи, що обертається за годинниковою стрілкою?",
+          "answers": [
+            "Меркурій",
+            "Венера",
+            "Уран",
+            "Плутон"
+          ],
+          "correctAnswer": 1
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Історія",
+          "question": "В якому році було проголошено незалежність України?",
+          "answers": [
+            "1989",
+            "1990",
+            "1991",
+            "1993"
+          ],
+          "correctAnswer": 2
+        },
+        {
+          "category": "Загальні знання",
+          "question": "Скільки чорних клавіш на стандартному піаніно з 88 клавішами?",
+          "answers": [
+            "32",
+            "36",
+            "40",
+            "52"
+          ],
+          "correctAnswer": 1
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Наука і природа",
+          "question": "Що важче: кілограм заліза чи кілограм пір'я?",
+          "answers": [
+            "Залізо",
+            "Пір'я",
+            "Однаково",
+            "Залежить від планети"
+          ],
+          "correctAnswer": 2
+        },
+        {
+          "category": "Географія",
+          "question": "Через скільки країн протікає річка Дунай?",
+          "answers": [
+            "6",
+            "8",
+            "10",
+            "Більше ніж хтось може порахувати за квіз"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Логотипи і бренди",
+          "question": "Якій компанії належить цей логотип?",
+          "image": "logo_tesla.jpg",
+          "imageDescription": "Стилізована літера Т, що нагадує поперечний переріз електромотора",
+          "answers": [
+            "Toyota",
+            "Tesla",
+            "Triumph",
+            "Trabant — не дотягнув"
+          ],
+          "correctAnswer": 1
+        },
+        {
+          "category": "Інтернет-культура і меми",
+          "question": "Як називається цей мем?",
+          "image": "surprised_pikachu.jpg",
+          "imageDescription": "Пікачу з широко відкритим ротом і здивованим виразом обличчя",
+          "answers": [
+            "Surprised Pikachu",
+            "Sad Pikachu",
+            "Detective Pikachu",
+            "Pikachu Running"
+          ],
+          "correctAnswer": 0
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Наука і природа",
+          "question": "Яка речовина є найтвердішою з відомих природних матеріалів?",
+          "answers": [
+            "Графен",
+            "Алмаз",
+            "Вольфрам",
+            "Осмій"
+          ],
+          "correctAnswer": 1
+        },
+        {
+          "category": "Загальні знання",
+          "question": "Скільки гравців в одній команді на полі у водному поло?",
+          "answers": [
+            "5",
+            "6",
+            "7",
+            "11, але деякі плавають"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Інтернет-культура і меми",
+          "question": "Як називається цей мем?",
+          "image": "hide_the_pain_harold.jpg",
+          "imageDescription": "Літній чоловік з натягнутою усмішкою і болем в очах",
+          "answers": [
+            "Bad Luck Brian",
+            "Success Kid",
+            "Hide the Pain Harold",
+            "Scumbag Steve"
+          ],
+          "correctAnswer": 2
+        },
+        {
+          "category": "Історія",
+          "question": "Хто була першою жінкою, що отримала Нобелівську премію?",
+          "answers": [
+            "Розалінд Франклін",
+            "Марія Кюрі",
+            "Доротея Ходжкін",
+            "Берта фон Зутнер"
+          ],
+          "correctAnswer": 1
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Географія",
+          "question": "Яка країна має найбільше часових поясів?",
+          "answers": [
+            "Росія",
+            "США",
+            "Франція",
+            "Китай"
+          ],
+          "correctAnswer": 2
+        },
+        {
+          "category": "Логотипи і бренди",
+          "question": "Якій компанії належить цей логотип?",
+          "image": "logo_tiktok.jpg",
+          "imageDescription": "Стилізована музична нота з ефектом глітчу в рожево-блакитних тонах",
+          "answers": [
+            "Instagram",
+            "Snapchat",
+            "TikTok",
+            "Triller"
+          ],
+          "correctAnswer": 2
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Загальні знання",
+          "question": "Який найтвердіший мінерал за шкалою Мооса?",
+          "answers": [
+            "Корунд",
+            "Топаз",
+            "Кварц",
+            "Алмаз"
+          ],
+          "correctAnswer": 3
+        },
+        {
+          "category": "Інтернет-культура і меми",
+          "question": "Як називається цей мем?",
+          "image": "change_my_mind.jpg",
+          "imageDescription": "Чоловік сидить за столом з табличкою 'Change My Mind' на вулиці",
+          "answers": [
+            "Change My Mind",
+            "Prove Me Wrong",
+            "Unpopular Opinion",
+            "Facts Don't Care"
+          ],
+          "correctAnswer": 0
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Логотипи і бренди",
+          "question": "Якій компанії належить цей логотип?",
+          "image": "logo_lacoste.jpg",
+          "imageDescription": "Зелений крокодил (алігатор), повернутий праворуч",
+          "answers": [
+            "Ralph Lauren",
+            "Lacoste",
+            "Kappa",
+            "Fred Perry"
+          ],
+          "correctAnswer": 1
+        },
+        {
+          "category": "Наука і природа",
+          "question": "Як називається найбільша відома структура у Всесвіті?",
+          "answers": [
+            "Чумацький Шлях",
+            "Велика стіна Геркулеса — Північної Корони",
+            "Скупчення Діви",
+            "Андромеда"
+          ],
+          "correctAnswer": 1
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Географія",
+          "question": "Яка столиця Ісландії?",
+          "answers": [
+            "Рейк'явік",
+            "Осло",
+            "Гельсінкі",
+            "Копенгаген"
+          ],
+          "correctAnswer": 0
+        },
+        {
+          "category": "Історія",
+          "question": "Скільки приблизно тривала Столітня війна між Англією і Францією?",
+          "answers": [
+            "100 років рівно",
+            "116 років",
+            "89 років",
+            "76 років"
+          ],
+          "correctAnswer": 1
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Логотипи і бренди",
+          "question": "Якій компанії належить цей логотип?",
+          "image": "logo_mastercard.jpg",
+          "imageDescription": "Два кола що перетинаються — червоне і жовте",
+          "answers": [
+            "Visa",
+            "Mastercard",
+            "American Express",
+            "PayPal"
+          ],
+          "correctAnswer": 1
+        },
+        {
+          "category": "Загальні знання",
+          "question": "Яка планета Сонячної системи обертається «лежачи на боці»?",
+          "answers": [
+            "Нептун",
+            "Уран",
+            "Венера",
+            "Сатурн"
+          ],
+          "correctAnswer": 1
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Географія",
+          "question": "Яка найменша країна у світі за площею?",
+          "answers": [
+            "Монако",
+            "Ватикан",
+            "Сан-Марино",
+            "Ліхтенштейн"
+          ],
+          "correctAnswer": 1
+        },
+        {
+          "category": "Інтернет-культура і меми",
+          "question": "Як називається цей мем?",
+          "image": "expanding_brain.jpg",
+          "imageDescription": "Чотири панелі з мозком що стає все більшим і світлішим",
+          "answers": [
+            "Galaxy Brain",
+            "Expanding Brain",
+            "Big Brain Time",
+            "Mind Blown"
+          ],
+          "correctAnswer": 1
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Наука і природа",
+          "question": "Яка тварина може впадати в стан анабіозу та пережити навіть космічний вакуум?",
+          "answers": [
+            "Тихохідка (ведмежатко)",
+            "Скорпіон",
+            "Медуза Turritopsis",
+            "Таргани, очевидно"
+          ],
+          "correctAnswer": 0
+        },
+        {
+          "category": "Історія",
+          "question": "Яка імперія контролювала більшу частину Середземномор'я у I столітті нашої ери?",
+          "answers": [
+            "Перська",
+            "Османська",
+            "Візантійська",
+            "Римська"
+          ],
+          "correctAnswer": 3
+        }
+      ]
+    }
+  ]
+}

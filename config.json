@@ -1,0 +1,29 @@
+{
+  "server": {
+    "port": 8080,
+    "host": "0.0.0.0"
+  },
+  "quiz": {
+    "questionTime": 30,
+    "answerRevealTime": 5,
+    "leaderboardTime": 5,
+    "autoStart": false,
+    "waitForAllPlayers": true,
+    "minPlayers": 1,
+    "maxPlayers": 8,
+    "shuffle": false
+  },
+  "kiosk": {
+    "reconnectBaseDelay": 2000,
+    "reconnectMaxDelay": 30000,
+    "roomPollInterval": 3000
+  },
+  "display": {
+    "fullscreen": true,
+    "fontSize": "large"
+  },
+  "sounds": {
+    "enabled": true,
+    "volume": 0.7
+  }
+}
