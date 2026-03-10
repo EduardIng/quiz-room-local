@@ -118,6 +118,13 @@ export const TRANSLATIONS = {
     categoryName: 'Назва категорії',
     categoryNamePlaceholder: 'Наприклад: Географія',
 
+    // Kiosk mode — waiting for host
+    waitingForHost: 'Очікуємо ведучого...',
+    waitingForHostSubtitle: 'Гра розпочнеться автоматично',
+    reconnecting: '🔄 Підключення...',
+    enterNicknameOnly: 'Введи своє ім\'я',
+    gameFound: 'Гра знайдена! Введи нікнейм',
+
     // Host Controls
     hostControls: 'Керування грою',
     hostPause: 'Пауза',
@@ -253,6 +260,13 @@ export const TRANSLATIONS = {
     option: 'Option',
     categoryName: 'Category name',
     categoryNamePlaceholder: 'E.g.: Geography',
+
+    // Kiosk mode — waiting for host
+    waitingForHost: 'Waiting for host...',
+    waitingForHostSubtitle: 'Game will start automatically',
+    reconnecting: '🔄 Connecting...',
+    enterNicknameOnly: 'Enter your name',
+    gameFound: 'Game found! Enter your nickname',
 
     // Host Controls
     hostControls: 'Game Controls',

@@ -1,14 +1,19 @@
 /**
- * PlayerView.jsx - Інтерфейс гравця для Quiz Room Auto
+ * PlayerView.jsx - Kiosk інтерфейс гравця для Quiz Room Local
  *
- * Реалізує 7 екранів гри:
- * JOIN → WAITING → QUESTION → ANSWER_SENT → REVEAL → LEADERBOARD → ENDED
+ * Kiosk режим:
+ * - Планшет завжди показує цей компонент (немає навігації)
+ * - При завантаженні: опитує /api/current-room кожні 3с поки хост не запустить гру
+ * - При знаходженні гри: показує тільки поле нікнейму (без коду кімнати)
+ * - Після гри: повертається на екран очікування ведучого
+ * - Auto-reconnect: підключається автоматично при втраті зв'язку
+ * - Navigation lock: блокує F5, Backspace, Alt+F4
+ * - Fullscreen: запитує повноекранний режим при першому дотику
  *
- * Використовує Socket.IO для real-time комунікації з сервером.
- *
- * Socket події що слухаємо:
- * - quiz-update: { type: QUIZ_STARTING | NEW_QUESTION | ANSWER_COUNT |
- *                        REVEAL_ANSWER | SHOW_LEADERBOARD | QUIZ_ENDED }
+ * Екрани:
+ * waiting_for_host → join → waiting → starting → question →
+ * answer_sent → reveal → leaderboard → ended
+ * (+ category_select, category_chosen для category mode)
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -26,21 +31,27 @@ const SERVER_URL = import.meta.env.DEV ? 'http://localhost:8080' : window.locati
 // Літери відповідей для відображення (A, B, C, D)
 const ANSWER_LETTERS = ['A', 'B', 'C', 'D'];
 
+// Kiosk налаштування (відповідають config.json → kiosk)
+const RECONNECT_BASE_DELAY = 2000;   // мс між першою спробою перепідключення
+const RECONNECT_MAX_DELAY  = 30000;  // максимальна затримка між спробами
+const ROOM_POLL_INTERVAL   = 3000;   // мс між опитуваннями /api/current-room
+
 // ─────────────────────────────────────────────
 // ГОЛОВНИЙ КОМПОНЕНТ
 // ─────────────────────────────────────────────
 
 export default function PlayerView() {
   // ── Стан підключення ──
-  // Поточний екран: 'join' | 'waiting' | 'starting' | 'question' | 'answer_sent' | 'reveal' | 'leaderboard' | 'ended'
-  const [screen, setScreen] = useState('join');
+  // Поточний екран: 'waiting_for_host' | 'join' | 'waiting' | 'starting' |
+  //                 'question' | 'answer_sent' | 'reveal' | 'leaderboard' |
+  //                 'ended' | 'category_select' | 'category_chosen'
+  const [screen, setScreen] = useState('waiting_for_host');
+
+  // ── Стан kiosk ──
+  const [isReconnecting, setIsReconnecting] = useState(false); // втрата зв'язку
 
   // ── Стан форми JOIN ──
   const [nickname, setNickname] = useState('');
-  const [roomCode, setRoomCode] = useState(() => {
-    // Pre-fill room code from URL query param ?room=XXXXXX
-    return new URLSearchParams(window.location.search).get('room') || '';
-  });
   const [joinError, setJoinError] = useState('');
   const [isJoining, setIsJoining] = useState(false);
 
@@ -50,8 +61,8 @@ export default function PlayerView() {
   const [myPosition, setMyPosition] = useState(null);
 
   // ── Стан поточного питання ──
-  const [question, setQuestion] = useState(null);        // { text, answers: [{id, text}] }
-  const [questionIndex, setQuestionIndex] = useState(0); // 1-based
+  const [question, setQuestion] = useState(null);
+  const [questionIndex, setQuestionIndex] = useState(0);
   const [totalQuestions, setTotalQuestions] = useState(0);
   const [timeLimit, setTimeLimit] = useState(30);
   const [timeLeft, setTimeLeft] = useState(30);
@@ -65,7 +76,7 @@ export default function PlayerView() {
   const [countdown, setCountdown] = useState(3);
 
   // ── Стан результату (REVEAL екран) ──
-  const [revealData, setRevealData] = useState(null); // { correctAnswer, isCorrect, pointsEarned }
+  const [revealData, setRevealData] = useState(null);
 
   // ── Leaderboard ──
   const [leaderboard, setLeaderboard] = useState([]);
@@ -82,38 +93,114 @@ export default function PlayerView() {
   const [categoryChosen, setCategoryChosen] = useState(null);
   const categoryTimerRef = useRef(null);
 
-  // ── Ref для Socket.IO (не викликає ре-рендер) ──
+  // ── Ref для Socket.IO ──
   const socketRef = useRef(null);
 
-  // ── Ref для таймера зворотного відліку ──
+  // ── Ref для таймерів ──
   const timerRef = useRef(null);
   const countdownRef = useRef(null);
 
   // ── Ref для аудіо ──
   const audioRef = useRef(null);
 
-  // ── Ref для handleServerUpdate — щоб socket listener завжди викликав актуальну версію ──
+  // ── Ref для handleServerUpdate (захист від stale closure) ──
   const handleServerUpdateRef = useRef(null);
 
-  // ── Ref для question — щоб handleRevealAnswer завжди мав актуальне питання ──
+  // ── Ref для question (захист від stale closure у handleRevealAnswer) ──
   const questionRef = useRef(null);
+
+  // ── Ref для поточного екрану (для використання у socket reconnect) ──
+  const screenRef = useRef('waiting_for_host');
+
+  // ── Ref для коду кімнати (внутрішній, гравець не бачить) ──
+  // Встановлюється автоматично з /api/current-room при виявленні гри
+  const kioskRoomCodeRef = useRef(null);
+
+  // ─────────────────────────────────────────────
+  // СИНХРОНІЗАЦІЯ screenRef
+  // ─────────────────────────────────────────────
+
+  // Тримаємо ref синхронізованим зі стейтом (для socket reconnect handler)
+  useEffect(() => {
+    screenRef.current = screen;
+  }, [screen]);
+
+  // ─────────────────────────────────────────────
+  // KIOSK: NAVIGATION LOCK
+  // Блокуємо стандартну навігацію браузера
+  // ─────────────────────────────────────────────
+
+  useEffect(() => {
+    // Попередження при спробі закрити вкладку / перезавантажити
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+      return '';
+    };
+
+    // Блокуємо кнопки F5 (reload), Alt+F4, Backspace (back navigation)
+    const handleKeyDown = (e) => {
+      if (
+        e.key === 'F5' ||
+        (e.key === 'F4' && e.altKey) ||
+        (e.key === 'Backspace' && e.target === document.body)
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  // ─────────────────────────────────────────────
+  // KIOSK: FULLSCREEN
+  // Запитуємо повноекранний режим при першому дотику/кліку
+  // ─────────────────────────────────────────────
+
+  useEffect(() => {
+    const requestFullscreen = () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {
+          // Деякі браузери блокують fullscreen без user gesture — ігноруємо помилку
+        });
+      }
+      // Видаляємо listener після першого спрацювання
+      document.removeEventListener('click', requestFullscreen);
+      document.removeEventListener('touchstart', requestFullscreen);
+    };
+
+    document.addEventListener('click', requestFullscreen);
+    document.addEventListener('touchstart', requestFullscreen);
+
+    return () => {
+      document.removeEventListener('click', requestFullscreen);
+      document.removeEventListener('touchstart', requestFullscreen);
+    };
+  }, []);
 
   // ─────────────────────────────────────────────
   // ІНІЦІАЛІЗАЦІЯ SOCKET.IO
   // ─────────────────────────────────────────────
 
   useEffect(() => {
-    // Створюємо Socket.IO з'єднання при монтуванні компонента
+    // Kiosk: нескінченне перепідключення з exponential backoff
     const socket = io(SERVER_URL, {
-      // Не підключаємося автоматично - чекаємо на join
       autoConnect: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: RECONNECT_BASE_DELAY,
+      reconnectionDelayMax: RECONNECT_MAX_DELAY
     });
 
     socketRef.current = socket;
 
-    // Слухаємо головну подію від сервера через ref — завжди актуальний обробник
+    // Слухаємо головну подію через ref — завжди актуальний обробник
     socket.on('quiz-update', (data) => handleServerUpdateRef.current?.(data));
 
     // Оновлення списку гравців під час очікування
@@ -124,6 +211,30 @@ export default function PlayerView() {
       }
     });
 
+    // Відключення: показуємо індикатор перепідключення
+    socket.on('disconnect', () => {
+      setIsReconnecting(true);
+    });
+
+    // Відновлення підключення: намагаємось відновити стан гри
+    socket.on('connect', () => {
+      setIsReconnecting(false);
+
+      const currentScreen = screenRef.current;
+      const roomCode = kioskRoomCodeRef.current;
+
+      // Якщо були в грі до відключення — спробуємо відновити стан
+      if (currentScreen !== 'waiting_for_host' && currentScreen !== 'join' && roomCode) {
+        socket.emit('get-game-state', { roomCode }, (resp) => {
+          if (!resp.success) {
+            // Гра більше не існує — повертаємось на очікування ведучого
+            resetToWaiting();
+          }
+          // Якщо успішно — сервер надішле quiz-update для синхронізації
+        });
+      }
+    });
+
     // Розриваємо з'єднання при розмонтуванні компонента
     return () => {
       clearInterval(timerRef.current);
@@ -131,7 +242,36 @@ export default function PlayerView() {
       clearInterval(categoryTimerRef.current);
       socket.disconnect();
     };
-  }, []); // [] - виконується один раз при монтуванні
+  }, []); // eslint-disable-line
+
+  // ─────────────────────────────────────────────
+  // KIOSK: ОПИТУВАННЯ /api/current-room
+  // Коли на екрані очікування ведучого — перевіряємо кожні 3с
+  // чи хост вже запустив гру
+  // ─────────────────────────────────────────────
+
+  useEffect(() => {
+    // Опитуємо тільки коли очікуємо ведучого
+    if (screen !== 'waiting_for_host') return;
+
+    const poll = async () => {
+      try {
+        const res = await fetch(`${SERVER_URL}/api/current-room`);
+        const data = await res.json();
+        if (data.roomCode) {
+          // Хост запустив гру! Зберігаємо код та переходимо до вводу нікнейму
+          kioskRoomCodeRef.current = data.roomCode;
+          setScreen('join');
+        }
+      } catch (_) {
+        // Сервер недоступний — продовжуємо опитування (спрацює при reconnect)
+      }
+    };
+
+    poll(); // Перевіряємо одразу
+    const interval = setInterval(poll, ROOM_POLL_INTERVAL);
+    return () => clearInterval(interval);
+  }, [screen]);
 
   // ─────────────────────────────────────────────
   // ОБРОБНИК ПОДІЙ ВІД СЕРВЕРА
@@ -154,13 +294,11 @@ export default function PlayerView() {
 
       // ── Нове питання ──
       case 'NEW_QUESTION':
-        // Очищаємо попередній стан
         clearInterval(timerRef.current);
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
         setSelectedAnswer(null);
         setAnsweredCount(0);
 
-        // Встановлюємо дані питання
         setQuestion(data.question);
         questionRef.current = data.question;
         setQuestionIndex(data.questionIndex);
@@ -168,13 +306,9 @@ export default function PlayerView() {
         setTimeLimit(data.timeLimit);
         setTimeLeft(data.timeLimit);
 
-        // Переходимо на екран питання
         setScreen('question');
-
-        // Запускаємо таймер зворотного відліку
         startQuestionTimer(data.timeLimit);
 
-        // Авто-програємо аудіо якщо є
         if (data.question.audio && audioRef.current) {
           audioRef.current.src = data.question.audio;
           audioRef.current.play().catch(() => {});
@@ -217,7 +351,6 @@ export default function PlayerView() {
         setCategoryTimeLeft(data.timeLimit || 15);
         setCategoryChosen(null);
         setScreen('category_select');
-        // Client-side countdown
         {
           let remaining = data.timeLimit || 15;
           categoryTimerRef.current = setInterval(() => {
@@ -241,7 +374,6 @@ export default function PlayerView() {
   }, [myNickname, selectedAnswer]); // eslint-disable-line
 
   // Тримаємо ref синхронізованим із найсвіжішою версією handleServerUpdate
-  // (щоб socket listener завжди викликав актуальний обробник)
   useEffect(() => {
     handleServerUpdateRef.current = handleServerUpdate;
   });
@@ -252,26 +384,21 @@ export default function PlayerView() {
 
   /**
    * Запускає таймер зворотного відліку для питання
-   * Оновлює timeLeft кожну секунду
    *
    * @param {number} seconds - Кількість секунд
    */
   const startQuestionTimer = useCallback((seconds) => {
-    // Очищаємо попередній таймер
     clearInterval(timerRef.current);
-
     let remaining = seconds;
 
     timerRef.current = setInterval(() => {
       remaining -= 1;
       setTimeLeft(remaining);
 
-      // Тікаємо звуком коли залишилось ≤ 5 секунд
       if (remaining > 0 && remaining <= 5) {
         playTick();
       }
 
-      // Таймер закінчився - сервер сам завершить питання
       if (remaining <= 0) {
         clearInterval(timerRef.current);
       }
@@ -286,17 +413,44 @@ export default function PlayerView() {
   const startCountdown = useCallback((from) => {
     clearInterval(countdownRef.current);
     setCountdown(from);
-    playCountdown(); // перший бiп одразу
+    playCountdown();
 
     let count = from;
     countdownRef.current = setInterval(() => {
       count -= 1;
       setCountdown(count);
       if (count > 0) playCountdown();
-      if (count <= 0) {
-        clearInterval(countdownRef.current);
-      }
+      if (count <= 0) clearInterval(countdownRef.current);
     }, 1000);
+  }, []);
+
+  // ─────────────────────────────────────────────
+  // RESET — повернення до очікування ведучого
+  // Викликається після закінчення гри або при втраті з'єднання з грою
+  // ─────────────────────────────────────────────
+
+  const resetToWaiting = useCallback(() => {
+    clearInterval(timerRef.current);
+    clearInterval(countdownRef.current);
+    clearInterval(categoryTimerRef.current);
+
+    setMyScore(0);
+    setMyNickname('');
+    setMyPosition(null);
+    setQuestion(null);
+    questionRef.current = null;
+    setSelectedAnswer(null);
+    setRevealData(null);
+    setLeaderboard([]);
+    setWaitingPlayers([]);
+    setCategoryOptions(null);
+    setCategoryChooser('');
+    setCategoryChosen(null);
+    setNickname('');
+    setJoinError('');
+    kioskRoomCodeRef.current = null;
+
+    setScreen('waiting_for_host');
   }, []);
 
   // ─────────────────────────────────────────────
@@ -304,64 +458,56 @@ export default function PlayerView() {
   // ─────────────────────────────────────────────
 
   /**
-   * Обробляє приєднання гравця до кімнати
-   * Надсилає подію 'join-quiz' на сервер
+   * Обробляє приєднання гравця до кімнати (kiosk mode)
+   * Надсилає тільки нікнейм — сервер знає поточну активну кімнату
    */
   const handleJoin = useCallback(() => {
-    // Валідація форми на клієнті
     const trimmedNick = nickname.trim();
-    const trimmedCode = roomCode.trim().toUpperCase();
 
     if (trimmedNick.length < 2 || trimmedNick.length > 20) {
       setJoinError('Нікнейм має бути від 2 до 20 символів');
       return;
     }
 
-    if (trimmedCode.length !== 6) {
-      setJoinError('Код кімнати має бути 6 символів');
-      return;
-    }
-
     setIsJoining(true);
     setJoinError('');
 
-    // Надсилаємо запит на приєднання
+    // Kiosk mode: надсилаємо нікнейм та (опційно) код кімнати
+    // Сервер використовує currentActiveRoom якщо roomCode не вказано
     socketRef.current.emit('join-quiz', {
-      roomCode: trimmedCode,
-      nickname: trimmedNick
+      nickname: trimmedNick,
+      ...(kioskRoomCodeRef.current && { roomCode: kioskRoomCodeRef.current })
     }, (response) => {
       setIsJoining(false);
 
       if (response.success) {
-        // Приєднання успішне
         setMyNickname(trimmedNick);
         setWaitingPlayers(response.gameState?.players || []);
         setTotalPlayers(response.gameState?.players?.length || 0);
         setScreen('waiting');
+      } else if (response.noActiveRoom || (response.error && response.error.includes('не знайден'))) {
+        // Кімната зникла поки гравець набирав нікнейм — повертаємось на очікування
+        kioskRoomCodeRef.current = null;
+        setScreen('waiting_for_host');
       } else {
-        // Помилка - показуємо повідомлення
         setJoinError(response.error || 'Не вдалось приєднатись');
       }
     });
-  }, [nickname, roomCode]);
+  }, [nickname]);
 
   /**
    * Обробляє натискання кнопки відповіді
-   * Надсилає подію 'submit-answer' на сервер
    *
    * @param {number} answerId - Індекс обраної відповіді (0-3)
    */
   const handleAnswerClick = useCallback((answerId) => {
-    // Запобігаємо подвійному натисканню
     if (selectedAnswer !== null) return;
 
     setSelectedAnswer(answerId);
     setScreen('answer_sent');
 
-    // Надсилаємо відповідь на сервер
     socketRef.current.emit('submit-answer', { answerId }, (response) => {
       if (!response.success) {
-        // Якщо помилка - повертаємось на питання (рідкісний випадок)
         setSelectedAnswer(null);
         setScreen('question');
       }
@@ -370,19 +516,16 @@ export default function PlayerView() {
 
   /**
    * Обробляє отримання результату відповіді
-   * Оновлює рахунок гравця та показує REVEAL екран
    *
    * @param {Object} data - Дані REVEAL_ANSWER від сервера
    */
   const handleRevealAnswer = useCallback((data) => {
-    // Знаходимо результат поточного гравця
     const myResult = data.playerResults?.find(r => r.nickname === myNickname);
 
     const isCorrect = myResult?.isCorrect || false;
     const didNotAnswer = myResult?.didNotAnswer || false;
     const pointsEarned = myResult?.pointsEarned || 0;
 
-    // Звуковий ефект результату
     if (didNotAnswer) {
       playTimeout();
     } else if (isCorrect) {
@@ -391,10 +534,8 @@ export default function PlayerView() {
       playWrong();
     }
 
-    // Оновлюємо рахунок (додаємо зароблені бали)
     setMyScore(prev => prev + pointsEarned);
 
-    // Зберігаємо дані для REVEAL екрану
     const currentQuestion = questionRef.current;
     setRevealData({
       correctAnswer: data.correctAnswer,
@@ -421,43 +562,19 @@ export default function PlayerView() {
   }, []);
 
   /**
-   * Обробляє натискання "Грати знову" на ENDED екрані
-   * Скидає стан і повертає на JOIN екран
+   * Kiosk: після завершення гри повертаємось на очікування ведучого
+   * Наступна гра буде виявлена автоматично через polling
    */
   const handlePlayAgain = useCallback(() => {
-    clearInterval(timerRef.current);
-    clearInterval(countdownRef.current);
-    clearInterval(categoryTimerRef.current);
-
-    // Скидаємо весь стан гри
-    setMyScore(0);
-    setMyPosition(null);
-    setQuestion(null);
-    questionRef.current = null;
-    setSelectedAnswer(null);
-    setRevealData(null);
-    setLeaderboard([]);
-    setWaitingPlayers([]);
-    setCategoryOptions(null);
-    setCategoryChooser('');
-    setCategoryChosen(null);
-    setRoomCode('');
-    setNickname('');
-    setJoinError('');
-    setScreen('join');
-  }, []);
+    resetToWaiting();
+  }, [resetToWaiting]);
 
   // ─────────────────────────────────────────────
   // ОБЧИСЛЕНІ ЗНАЧЕННЯ
   // ─────────────────────────────────────────────
 
-  // Відсоток таймера (для ширини progress bar)
   const timerPercent = Math.max(0, (timeLeft / timeLimit) * 100);
-
-  // Клас небезпеки таймера
   const timerClass = timeLeft <= 5 ? 'danger' : timeLeft <= 10 ? 'warning' : '';
-
-  // Позиція поточного гравця в leaderboard
   const myLeaderboardPosition = leaderboard.findIndex(p => p.nickname === myNickname) + 1;
 
   // ─────────────────────────────────────────────
@@ -469,28 +586,31 @@ export default function PlayerView() {
       {/* Hidden audio element for music questions */}
       <audio ref={audioRef} loop />
 
-      {/* ── 1. JOIN ЕКРАН ── */}
+      {/* ── 0. WAITING FOR HOST (kiosk) ── */}
+      {screen === 'waiting_for_host' && (
+        <div className="screen-card waiting-screen">
+          <div className="logo">🎮</div>
+          <h2 className="screen-title">
+            {isReconnecting ? '🔄 Підключення...' : 'Очікуємо ведучого...'}
+          </h2>
+          <p className="screen-subtitle">Гра розпочнеться автоматично</p>
+          <div className="pulse-dots">
+            <span /><span /><span />
+          </div>
+          {isReconnecting && (
+            <p className="reconnecting-indicator">Відновлюємо з'єднання...</p>
+          )}
+        </div>
+      )}
+
+      {/* ── 1. JOIN ЕКРАН (тільки нікнейм, без коду кімнати) ── */}
       {screen === 'join' && (
         <div className="screen-card join-screen">
           <div className="logo">🎮</div>
           <h1 className="screen-title">Quiz Room</h1>
-          <p className="screen-subtitle">Введи код кімнати та свій нікнейм</p>
+          <p className="screen-subtitle">Введи своє ім'я</p>
 
           {joinError && <div className="error-msg">{joinError}</div>}
-
-          <div className="label">Код кімнати</div>
-          <input
-            className="input-field room-code"
-            type="text"
-            placeholder="ABC123"
-            maxLength={6}
-            value={roomCode}
-            onChange={e => setRoomCode(e.target.value.toUpperCase())}
-            onKeyDown={e => e.key === 'Enter' && handleJoin()}
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-          />
 
           <div className="label">Твій нікнейм</div>
           <input
@@ -504,6 +624,7 @@ export default function PlayerView() {
             autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
+            autoFocus
           />
 
           <button
@@ -556,7 +677,6 @@ export default function PlayerView() {
       {/* ── 3b. CATEGORY_SELECT ЕКРАН ── */}
       {screen === 'category_select' && categoryOptions && (
         <div className="screen-card category-select-screen">
-          {/* Timer bar */}
           <div className="category-timer-bar-wrapper">
             <div
               className="category-timer-bar"
@@ -610,7 +730,6 @@ export default function PlayerView() {
       {/* ── 4. QUESTION ЕКРАН ── */}
       {screen === 'question' && question && (
         <div className="screen-card question-screen" style={{ padding: 0 }}>
-          {/* Хедер: номер питання + таймер */}
           <div className="question-header">
             <span className="question-number">
               Питання {questionIndex}/{totalQuestions}
@@ -620,7 +739,6 @@ export default function PlayerView() {
             </span>
           </div>
 
-          {/* Прогрес-бар таймера */}
           <div className="timer-bar-wrapper">
             <div
               className={`timer-bar ${timerClass}`}
@@ -628,7 +746,6 @@ export default function PlayerView() {
             />
           </div>
 
-          {/* Зображення питання (якщо є) */}
           {question.image && (
             <div className="question-image-wrap">
               <img
@@ -640,7 +757,6 @@ export default function PlayerView() {
             </div>
           )}
 
-          {/* Аудіо питання — кнопка повтору (якщо є) */}
           {question.audio && (
             <div className="question-audio-bar">
               <span className="audio-icon">🎵</span>
@@ -657,10 +773,8 @@ export default function PlayerView() {
             </div>
           )}
 
-          {/* Текст питання */}
           <div className="question-text">{question.text}</div>
 
-          {/* Лічильник відповідей */}
           {totalPlayers > 0 && (
             <div className="answer-count-bar">
               <span className="answer-count-text">
@@ -675,7 +789,6 @@ export default function PlayerView() {
             </div>
           )}
 
-          {/* Кнопки відповідей (2x2 grid) */}
           <div className="answers-grid">
             {question.answers.map((ans) => (
               <button
@@ -704,7 +817,6 @@ export default function PlayerView() {
             <span /><span /><span />
           </div>
 
-          {/* Лічильник хто вже відповів */}
           {totalPlayers > 0 && (
             <p style={{ marginTop: 16, color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
               {answeredCount} з {totalPlayers} відповіли
@@ -716,12 +828,10 @@ export default function PlayerView() {
       {/* ── 6. REVEAL ЕКРАН ── */}
       {screen === 'reveal' && revealData && (
         <div className="screen-card reveal-screen">
-          {/* Іконка результату */}
           <div className="result-icon">
             {revealData.didNotAnswer ? '⏱️' : revealData.isCorrect ? '✅' : '❌'}
           </div>
 
-          {/* Текст результату */}
           <div className={`result-text ${revealData.didNotAnswer ? 'no-answer' : revealData.isCorrect ? 'correct' : 'wrong'}`}>
             {revealData.didNotAnswer
               ? 'Час вийшов!'
@@ -730,7 +840,6 @@ export default function PlayerView() {
                 : 'Неправильно!'}
           </div>
 
-          {/* Зароблені бали */}
           {revealData.isCorrect && (
             <div className="points-earned">
               <div className="points-value">+{revealData.pointsEarned}</div>
@@ -738,7 +847,6 @@ export default function PlayerView() {
             </div>
           )}
 
-          {/* Правильна відповідь */}
           <div className="correct-answer-box">
             <div className="correct-answer-label">✓ Правильна відповідь</div>
             <div className="correct-answer-text">
@@ -746,7 +854,6 @@ export default function PlayerView() {
             </div>
           </div>
 
-          {/* Загальний рахунок */}
           <div className="total-score">
             <span className="total-score-label">Твій рахунок</span>
             <span className="total-score-value">{myScore}</span>
@@ -774,7 +881,6 @@ export default function PlayerView() {
                 className={`leaderboard-item ${player.nickname === myNickname ? 'is-me' : ''}`}
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
-                {/* Позиція / медаль */}
                 <span className={`leaderboard-position ${
                   player.position === 1 ? 'pos-1' :
                   player.position === 2 ? 'pos-2' :
@@ -786,13 +892,11 @@ export default function PlayerView() {
                    `#${player.position}`}
                 </span>
 
-                {/* Нікнейм */}
                 <span className="leaderboard-name">
                   {player.nickname}
                   {player.nickname === myNickname && <span className="me-badge">← ти</span>}
                 </span>
 
-                {/* Рахунок */}
                 <span className="leaderboard-score">{player.score}</span>
               </div>
             ))}
@@ -803,7 +907,6 @@ export default function PlayerView() {
       {/* ── 8. ENDED ЕКРАН ── */}
       {screen === 'ended' && (
         <div className="screen-card ended-screen">
-          {/* Трофей */}
           <div className="trophy-icon">
             {myLeaderboardPosition === 1 ? '🏆' :
              myLeaderboardPosition === 2 ? '🥈' :
@@ -812,13 +915,11 @@ export default function PlayerView() {
 
           <h2 className="screen-title">Квіз завершено!</h2>
 
-          {/* Фінальна позиція */}
           <div className="final-position">Твоє місце</div>
           <div className="final-position-number">
             #{myLeaderboardPosition || '—'}
           </div>
 
-          {/* Статистика */}
           <div className="final-stats">
             <div className="stat-box">
               <div className="stat-label">Рахунок</div>
@@ -830,7 +931,6 @@ export default function PlayerView() {
             </div>
           </div>
 
-          {/* Топ-3 фінального рейтингу */}
           {leaderboard.length > 0 && (
             <div className="leaderboard-list" style={{ marginBottom: 20 }}>
               {leaderboard.slice(0, 3).map((player, index) => (
@@ -838,7 +938,7 @@ export default function PlayerView() {
                   key={player.playerId || index}
                   className={`leaderboard-item ${player.nickname === myNickname ? 'is-me' : ''}`}
                 >
-                  <span className="leaderboard-position pos-1" style={{}}>
+                  <span className="leaderboard-position pos-1">
                     {player.position === 1 ? '🥇' : player.position === 2 ? '🥈' : '🥉'}
                   </span>
                   <span className="leaderboard-name">{player.nickname}</span>
@@ -848,9 +948,9 @@ export default function PlayerView() {
             </div>
           )}
 
-          {/* Кнопка "Грати знову" */}
+          {/* Kiosk: кнопка повертає на очікування ведучого (не на форму входу) */}
           <button className="btn-primary" onClick={handlePlayAgain}>
-            🔄 Грати знову
+            🔄 Очікувати наступну гру
           </button>
         </div>
       )}

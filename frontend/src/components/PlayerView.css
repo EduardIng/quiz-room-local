@@ -804,6 +804,19 @@
   line-height: 1.5;
 }
 
+/* ─────────────────────────────────────────
+   KIOSK MODE
+───────────────────────────────────────── */
+
+/* Підключення / очікування ведучого */
+.reconnecting-indicator {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-top: 12px;
+  animation: pulseDot 1.4s ease-in-out infinite;
+  text-align: center;
+}
+
 /* Chosen category name */
 .category-chosen-name {
   font-size: 2rem;
