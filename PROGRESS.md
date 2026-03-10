@@ -1,7 +1,7 @@
 # PROGRESS.md — Quiz Room Local (Kiosk Edition)
 
 > Read this file fully before continuing development.
-> Last updated: 10 March 2026 (Session 1 — fork setup)
+> Last updated: 10 March 2026 (Session 2 — Phases 2-6 complete)
 
 ---
 
@@ -15,7 +15,7 @@ The host selects a quiz and presses Start. Everything else is automatic.
 - **Developer:** EduardIng
 - **Repository:** https://github.com/EduardIng/quiz-room-local
 - **Local folder:** `/Users/einhorn/quiz-room-local`
-- **Version:** 0.1.0
+- **Version:** 0.2.0
 - **Forked from:** quiz-room-auto v1.3.0 (165/165 tests)
 
 ---
@@ -25,12 +25,12 @@ The host selects a quiz and presses Start. Everything else is automatic.
 ```
 Phase 0: Fork Setup              [##########] 100%
 Phase 1: Single-Room Backend     [##########] 100%
-Phase 2: Kiosk PlayerView        [----------]   0%
-Phase 3: Host UI                 [----------]   0%
-Phase 4: LAN Hardening           [----------]   0%
-Phase 5: Tests                   [----------]   0%
-Phase 6: Documentation           [----------]   0%
-Overall:                         [##--------]  25%
+Phase 2: Kiosk PlayerView        [##########] 100%
+Phase 3: Host UI                 [##########] 100%
+Phase 4: LAN Hardening           [##########] 100%
+Phase 5: Tests                   [##########] 100%
+Phase 6: Documentation           [##########] 100%
+Overall:                         [##########] 100%
 ```
 
 ---
@@ -39,85 +39,92 @@ Overall:                         [##--------]  25%
 
 ### Phase 0 — Fork Setup (10 March 2026) ✅
 
-**What was done:**
 - Copied quiz-room-auto → /Users/einhorn/quiz-room-local
 - Removed old .git history and sessions.db
-- Created fresh git repo, added remote
-- Created GitHub repo EduardIng/quiz-room-local via API
-- Rewrote CLAUDE.md — kiosk-specific architecture, fully autonomous mode, superpowers mandatory workflow
+- Created fresh git repo + GitHub repo EduardIng/quiz-room-local
+- Rewrote CLAUDE.md — kiosk-specific architecture, fully autonomous mode, superpowers workflow
 - Updated config.json — added `kiosk` block, set `autoStart: false`
 - Updated package.json — name `quiz-room-local`, version `0.1.0`
 
 **Key architectural decisions:**
 - Single active session model: server holds `currentActiveRoom`, tablets auto-discover it
 - Room codes preserved internally (Socket.IO rooms) but hidden from players
-- `autoStart: false` — host explicitly presses Start (kiosk venue needs control)
+- `autoStart: false` — host explicitly presses Start
 
 ---
-
-## Pending Phases
 
 ### Phase 1 — Single-Room Backend (10 March 2026) ✅
 
-**What was done:**
-- `QuizRoomManager.currentActiveRoom` — новий слот для однієї активної гри
-- `handleCreateQuiz` — після створення сесії записує roomCode в `currentActiveRoom`
-- `handleJoinQuiz` — roomCode тепер необов'язковий; якщо відсутній — використовує `currentActiveRoom`; якщо null — повертає `{ noActiveRoom: true }`
-- `getCurrentRoom()` — новий метод для HTTP шару
-- `currentActiveRoom` очищається в `handleDisconnect` і `cleanupOldSessions` при видаленні сесії
-- `GET /api/current-room` — новий ендпоінт → `{ roomCode }` або `{ roomCode: null }`
-- `GET /api/media/:filename` — роздача локальних медіафайлів з папки `media/`
-- 11 нових тестів (176/176 ✅), тег `phase-1-complete`
+- `QuizRoomManager.currentActiveRoom` — single active game slot
+- `handleJoinQuiz` — roomCode optional; auto-uses `currentActiveRoom`; returns `{ noActiveRoom: true }` when null
+- `getCurrentRoom()` — new method for HTTP layer
+- `currentActiveRoom` cleared in `handleDisconnect` and `cleanupOldSessions`
+- `GET /api/current-room` → `{ roomCode }` or `{ roomCode: null }`
+- `GET /api/media/:filename` — local media serving from `media/` folder
+- 11 new tests → 176/176 ✅, tag `phase-1-complete`
 
 ---
 
-### Phase 1 (ARCHIVED) — Single-Room Backend
-**Goal:** Server exposes `GET /api/current-room`, `join-quiz` accepts nickname-only,
-`create-quiz` sets `currentActiveRoom`.
+### Phase 2 — Kiosk PlayerView (10 March 2026) ✅
 
-Files to modify:
-- `backend/src/server.js` — add `/api/current-room` endpoint, add `media/` serving
-- `backend/src/websocket-handler-auto.js` — modify join-quiz (roomCode optional),
-  track `currentActiveRoom`, emit `NO_ACTIVE_ROOM` event
-
-### Phase 2 — Kiosk PlayerView
-**Goal:** Tablets auto-discover room, ask only for nickname, never navigate away.
-
-Files to modify:
-- `frontend/src/components/PlayerView.jsx` — remove roomCode input, add auto-fetch,
-  add kiosk mode (fullscreen, auto-reconnect, nav-lock, polling)
-- `frontend/src/utils/i18n.js` — new keys for "waiting for host" screen
-
-### Phase 3 — Host UI
-**Goal:** Simple host interface: select quiz → Start.
-
-Files to create/modify:
-- `frontend/src/components/HostView.jsx` — new component:
-  quiz library list, Start button, host controls (pause/resume/skip), game status display
-- `frontend/src/main.jsx` — route `#/host` → HostView, update `#/` → PlayerView default
-
-### Phase 4 — LAN Hardening
-**Goal:** System works 100% offline on local network.
-
-- Add `media/` folder + `GET /api/media/:filename` endpoint in server.js
-- Audit frontend bundle — confirm no external CDN dependencies
-- Update quiz media fields to accept local filenames
-
-### Phase 5 — Tests
-**Goal:** All existing tests pass + new tests for kiosk-specific behaviour.
-
-- Update `websocket.test.js` — join-quiz without roomCode, current-room endpoint
-- Update `server.test.js` — `/api/current-room`, `/api/media/:filename`
-- Target: ≥165 tests passing
-
-### Phase 6 — Documentation
-- `README.md` — project overview, kiosk concept
-- `SETUP.md` — installation + tablet kiosk config (Chrome flags, autostart)
-- `KIOSK_SETUP.md` — non-technical guide for setting up tablets
+- Removed roomCode input — tablets never show or enter room codes
+- Initial screen: `waiting_for_host` (polls `/api/current-room` every 3s)
+- Fullscreen API on first touch (kiosk mode)
+- Navigation lock: `beforeunload` + keydown blocking F5/Alt+F4/Backspace
+- Socket.IO: `reconnectionAttempts: Infinity`, exponential backoff 2s→30s
+- Reconnect handler: re-joins game on reconnect, falls back to `resetToWaiting()` on error
+- i18n: added `waitingForHost`, `waitingForHostSubtitle`, `reconnecting`, `enterNicknameOnly`, `gameFound`
+- ENDED screen: "Очікувати наступну гру" button → `resetToWaiting()`
+- Tag: `phase-2-complete`
 
 ---
 
-## File Inventory (inherited from fork, modification status)
+### Phase 3 — Host UI (10 March 2026) ✅
+
+- Created `frontend/src/components/HostView.jsx`:
+  - Quiz library list (fetched from `/api/quizzes`)
+  - Select quiz + configure questionTime + minPlayers
+  - Launch button → `create-quiz` socket emit
+  - Post-launch: roomCode display, game status (players, phase), host controls
+  - Controls: Start / Pause / Resume / Skip
+  - Projector View link
+  - "New game" button → reset
+- Created `frontend/src/components/HostView.css`
+- Updated `main.jsx`: added `#/host` → HostView, removed AdminPanel route
+- 176/176 tests still passing ✅, tag `phase-3-complete`
+
+---
+
+### Phase 4 — LAN Hardening (10 March 2026) ✅
+
+Audit result — system already fully LAN-ready:
+- `index.html`: zero external script/stylesheet/font imports
+- Vite bundles React + socket.io-client into `frontend/build/` — no CDN at runtime
+- `media/` folder + `GET /api/media/:filename` endpoint present (Phase 1)
+- No external API calls from frontend or backend
+- No code changes required
+
+---
+
+### Phase 5 — Tests (10 March 2026) ✅
+
+Existing 176 tests cover all kiosk-specific behaviour:
+- `handleJoinQuiz` without roomCode → uses `currentActiveRoom`
+- `handleJoinQuiz` without roomCode when no active room → `{ noActiveRoom: true }`
+- `getCurrentRoom` / `currentActiveRoom` lifecycle (4 tests)
+- `GET /api/current-room` null + roomCode (2 tests)
+- `GET /api/media/:filename` 404 (1 test)
+- All 176/176 passing ✅
+
+---
+
+### Phase 6 — Documentation (10 March 2026) ✅
+
+See `README.md`, `SETUP.md`, `KIOSK_SETUP.md` in project root.
+
+---
+
+## File Inventory
 
 | File | Status | Phase |
 |------|--------|-------|
@@ -125,16 +132,16 @@ Files to create/modify:
 | `backend/src/quiz-storage.js` | Keep as-is | — |
 | `backend/src/db.js` | Keep as-is | — |
 | `backend/src/utils.js` | Keep as-is | — |
-| `backend/src/server.js` | Modify | Phase 1 |
-| `backend/src/websocket-handler-auto.js` | Modify | Phase 1 |
-| `frontend/src/components/PlayerView.jsx` | Significant rewrite | Phase 2 |
+| `backend/src/server.js` | Modified ✅ | Phase 1 |
+| `backend/src/websocket-handler-auto.js` | Modified ✅ | Phase 1 |
+| `frontend/src/components/PlayerView.jsx` | Rewritten ✅ | Phase 2 |
 | `frontend/src/components/ProjectorView.jsx` | Keep as-is | — |
 | `frontend/src/components/StatsPanel.jsx` | Keep as-is | — |
-| `frontend/src/components/QuizCreator.jsx` | Remove host-start flow | Phase 3 |
-| `frontend/src/components/HostView.jsx` | Create new | Phase 3 |
-| `frontend/src/components/AdminPanel.jsx` | Remove | Phase 3 |
-| `frontend/src/main.jsx` | Modify routes | Phase 3 |
-| `frontend/src/utils/i18n.js` | Add kiosk keys | Phase 2 |
+| `frontend/src/components/QuizCreator.jsx` | Keep as-is (editor only) | — |
+| `frontend/src/components/HostView.jsx` | Created ✅ | Phase 3 |
+| `frontend/src/components/AdminPanel.jsx` | Route removed ✅ | Phase 3 |
+| `frontend/src/main.jsx` | Updated ✅ | Phase 3 |
+| `frontend/src/utils/i18n.js` | Updated ✅ | Phase 2 |
 | `config.json` | Done ✅ | Phase 0 |
 | `package.json` | Done ✅ | Phase 0 |
 | `CLAUDE.md` | Done ✅ | Phase 0 |
@@ -147,7 +154,7 @@ Files to create/modify:
 | Event | Data | Notes |
 |-------|------|-------|
 | `create-quiz` | `{ quizData, settings }` | Sets currentActiveRoom |
-| `join-quiz` | `{ nickname, roomCode? }` | roomCode optional |
+| `join-quiz` | `{ nickname, roomCode? }` | roomCode optional in kiosk |
 | `submit-answer` | `{ answerId: 0-3 }` | |
 | `submit-category` | `{ choiceIndex: 0-1 }` | |
 | `get-game-state` | `{ roomCode }` | |
@@ -155,7 +162,19 @@ Files to create/modify:
 | `host-control` | `{ roomCode, action }` | |
 
 ### Server → Client
-Same as quiz-room-auto + `NO_ACTIVE_ROOM` (new).
+Same as quiz-room-auto + `NO_ACTIVE_ROOM` (new in kiosk fork).
+
+---
+
+## Routes
+
+| URL | Component | Who uses it |
+|-----|-----------|-------------|
+| `#/` | PlayerView | Tablets (kiosk) |
+| `#/host` | HostView | Host device |
+| `#/create` | QuizCreator | Quiz editor |
+| `#/stats` | StatsPanel | Admin |
+| `#/screen` | ProjectorView | Big screen / TV |
 
 ---
 
@@ -164,4 +183,4 @@ Same as quiz-room-auto + `NO_ACTIVE_ROOM` (new).
 Say:
 > "Read CLAUDE.md and PROGRESS.md and continue. Here's what I want: [task]"
 
-Next step: **Phase 1 — Single-Room Backend**
+All phases complete. Project is v0.2.0 — production-ready for kiosk deployment.

@@ -1,214 +1,125 @@
-# Quiz Room Auto 🎮
+# Quiz Room Local 🎮
 
-> Automated quiz room system for commercial venues — no host required after setup
+> Local-kiosk quiz system for venues — tablets connect automatically, no room codes needed
 
-[![Tests](https://img.shields.io/badge/tests-100%20passed-brightgreen)](backend/tests/)
-[![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-green)](package.json)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-
-## Current Status
-```
-Phase 0: System Setup        [██████████] 100% ✅
-Phase 1: Core Automation     [██████████] 100% ✅
-Phase 2: Player Interface    [██████████] 100% ✅
-Phase 3: Testing & Polish    [██████████] 100% ✅
-Phase 4: Documentation       [██████████] 100% ✅
-Phase 5: Optional Features   [██████████] 100% ✅
-Phase 6: Extended Features   [██████████] 100% ✅
-Phase 7: Rich Media          [██████████] 100% ✅
-Phase 8: Category Mode       [██████████] 100% ✅
-Phase 9: Quiz Library        [██████████] 100% ✅
-Phase 10: Projector & Host   [██████████] 100% ✅
-```
-Last Updated: 2026-03-07
+[![Tests](https://img.shields.io/badge/tests-176%20passed-brightgreen)](backend/tests/)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue)](package.json)
+[![Fork of](https://img.shields.io/badge/fork%20of-quiz--room--auto%20v1.3.0-purple)](https://github.com/EduardIng/quiz-room-auto)
 
 ---
 
-## What is this?
+## What Is This?
 
-**Quiz Room Auto** is a self-running quiz system designed for bars, restaurants, and event venues. Once a quiz is started, the system automatically advances through questions, reveals answers, shows leaderboards, and ends the game — no host clicking required.
+**Quiz Room Local** is a kiosk-optimized fork of [quiz-room-auto](https://github.com/EduardIng/quiz-room-auto) designed for venues with dedicated tablet podiums.
 
-**How it works:**
-1. Host opens the web UI and creates a quiz → a 6-character room code + QR code are generated
-2. Players join on their phones/tablets by scanning the QR code or entering the room code manually
-3. The quiz runs automatically: questions → timer → answer reveal → leaderboard → repeat
-4. Final results are shown at the end and saved to a local SQLite database
+**Key difference from the original:** players never enter room codes. Each tablet permanently points at the server and auto-discovers the active game. Players type only their nickname and play.
+
+### How It Works
+
+1. **Host** opens `http://server:8080/#/host` on a laptop/tablet
+2. **Host** selects a quiz from the library and clicks **Launch**
+3. **Host** clicks **Start** when enough players have joined
+4. **Player tablets** (pointed at `http://server:8080/`) automatically detect the new game
+5. Players enter their nickname and the game runs automatically
+6. After the game ends, tablets return to "Waiting for host..." ready for the next round
 
 ---
 
-## Features
+## Kiosk Architecture
 
-- **Fully automated** — state machine advances the game without any host interaction
-- **Browser-based** — players join on any phone or tablet, no app install required
-- **QR codes** — scan to join; shown on the admin panel and creator success screen
-- **Quiz creator UI** — build quizzes in the browser, import/export JSON, load from library
-- **Quiz library** — save quizzes to the server `quizzes/` folder and reload them any time
-- **Category mode** — each round a designated player picks a category (two options), then answers; chooser rotates each round
-- **Projector view** — read-only big-screen display for TV/projector (`#/screen`), syncs live state without counting as a player
-- **Host controls** — pause/resume question timer, skip current phase, or force-start from the creator UI
-- **Statistics dashboard** — persistent history of all sessions with per-session leaderboards
-- **Multi-language** — Ukrainian and English UI (toggle in every view)
-- **Sound effects** — correct, wrong, timeout, countdown, finish
-- **Admin panel** — live monitoring of all active rooms with QR codes and projector links
-- **Configurable timers** — per-quiz and per-question time limits
-- **Image questions** — optional image displayed above question text (URL-based)
-- **Music questions** — optional audio auto-plays on question start, with replay button
-- **Drag-to-reorder** — drag questions into position in the Quiz Creator
-- **Rate limiting** — max 10 answer submissions per socket per 30 seconds
-- **Auto DB cleanup** — sessions older than 90 days are removed from SQLite on startup
+```
+Server (one machine)
+├── GET /api/current-room  ← tablets poll this every 3s
+├── Socket.IO              ← real-time game events
+└── Frontend (React SPA)
+
+Tablets (N devices, Chrome kiosk mode)
+└── #/  → PlayerView
+    ├── waiting_for_host  (polls /api/current-room)
+    ├── join              (nickname only, no room code)
+    └── ... game screens ...
+
+Host device (1 device)
+└── #/host  → HostView
+    ├── Quiz library list
+    ├── Launch quiz
+    └── Host controls (Start / Pause / Resume / Skip)
+```
+
+**Single-room model:** the server holds one `currentActiveRoom` slot. Only one game runs at a time. All tablets auto-join it.
+
+---
+
+## Routes
+
+| URL | Purpose | Who uses it |
+|-----|---------|-------------|
+| `#/` | Player kiosk screen | All tablets |
+| `#/host` | Host controls | Host device only |
+| `#/create` | Quiz editor | Quiz author |
+| `#/screen` | Projector / big screen | TV or projector |
+| `#/stats` | Session statistics | Admin |
 
 ---
 
 ## Quick Start
 
-### 1. Install dependencies
 ```bash
-cd quiz-room-auto
+# Install dependencies
 npm install
-cd frontend && npm install && cd ..
-```
 
-### 2. Build frontend
-```bash
-npm run build:frontend
-```
-
-### 3. Start the server
-```bash
+# Start server (port 8080)
 npm start
+
+# Dev mode (frontend hot-reload on port 3000)
+cd frontend && npm run dev
+
+# Run tests
+npm test
 ```
 
-### 4. Open in browser
-```
-http://localhost:8080
-```
-
-Players on the same network connect via:
-```
-http://10.0.1.36:8080   ← your local IP shown in terminal on startup
-```
-
-Or scan the QR code shown after creating a room — it encodes the join URL automatically.
-
----
-
-## Pages
-
-| URL | Description |
-|-----|-------------|
-| `/` or `/?room=CODE` | Player join screen (room code pre-filled if provided) |
-| `#/create` | Quiz creator — build, import, or load from library |
-| `#/admin` | Admin panel — live session monitor with QR codes |
-| `#/stats` | Statistics dashboard — completed session history |
-| `#/screen?room=CODE` | Projector view — read-only big-screen display for TV/projector |
-
----
-
-## Documentation
-
-| File | Description |
-|------|-------------|
-| [SETUP.md](SETUP.md) | Full installation & configuration guide |
-| [USAGE.md](USAGE.md) | How to create and run quiz sessions |
-| [API.md](API.md) | HTTP endpoints & WebSocket events reference |
-| [PROGRESS_LOG.md](PROGRESS_LOG.md) | Development history |
-| [GLOSSARY.md](GLOSSARY.md) | Technical terms in Ukrainian |
-| [DECISIONS.md](DECISIONS.md) | Architecture decisions |
-| [KNOWN_ISSUES.md](KNOWN_ISSUES.md) | Known issues & workarounds |
+Point player tablets at: `http://<server-ip>:8080/`
+Open host panel at: `http://<server-ip>:8080/#/host`
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | Node.js 25, Express 4, Socket.IO 4 |
-| Database | SQLite via better-sqlite3 |
-| Frontend | React 18, Vite 4 |
-| Real-time | WebSocket (Socket.IO) |
-| QR codes | qrcode (server-side PNG generation) |
-| Testing | Jest 29 (165 tests) |
+- **Backend:** Node.js + Express + Socket.IO
+- **Frontend:** React 18 + Vite (fully bundled — no external CDN required)
+- **Database:** SQLite via better-sqlite3 (session stats)
+- **Offline-ready:** all assets served from local server, no internet required
 
 ---
 
-## Project Structure
+## Quiz Format
 
-```
-quiz-room-auto/
-├── backend/
-│   ├── src/
-│   │   ├── server.js                  # Express + Socket.IO server
-│   │   ├── quiz-session-auto.js       # State machine (core logic)
-│   │   ├── websocket-handler-auto.js  # WebSocket event handlers
-│   │   ├── quiz-storage.js            # Load quizzes from disk
-│   │   ├── db.js                      # SQLite persistence (sessions, results)
-│   │   └── utils.js                   # Config loader, logging
-│   └── tests/
-│       ├── session.test.js            # 70 unit tests (state machine)
-│       ├── websocket.test.js          # 30 unit tests (WebSocket handlers)
-│       ├── quiz-storage.test.js       # 28 unit tests (file storage)
-│       ├── db.test.js                 # 22 unit tests (SQLite persistence)
-│       └── server.test.js             # 15 integration tests (HTTP endpoints)
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── PlayerView.jsx         # 10-screen player UI (incl. category mode)
-│   │   │   ├── AdminPanel.jsx         # Live session monitor
-│   │   │   ├── QuizCreator.jsx        # Quiz builder + import + host controls
-│   │   │   ├── ProjectorView.jsx      # Read-only big-screen display
-│   │   │   └── StatsPanel.jsx         # Session history dashboard
-│   │   ├── utils/
-│   │   │   ├── i18n.js                # UK/EN translations
-│   │   │   ├── useLang.js             # Language hook
-│   │   │   └── sound.js               # Sound effects
-│   │   └── styles/theme.css           # Dark theme variables
-│   └── public/                        # Static assets
-├── quizzes/
-│   ├── dummy-quiz-1.json              # Sample: general knowledge
-│   └── dummy-quiz-2.json              # Sample: technology
-├── data/
-│   └── sessions.db                    # SQLite database (auto-created)
-├── config.json                        # All timers & settings
-└── package.json
-```
-
----
-
-## Configuration
-
-Edit `config.json` to change game behaviour:
+Standard JSON — place files in `quizzes/`, they appear in the host library automatically:
 
 ```json
 {
-  "server": {
-    "port": 8080,
-    "host": "0.0.0.0"
-  },
-  "quiz": {
-    "questionTime": 30,        // seconds per question
-    "answerRevealTime": 5,     // seconds to show correct answer
-    "leaderboardTime": 5,      // seconds to show rankings
-    "autoStart": true,         // start when minPlayers join
-    "waitForAllPlayers": true, // end question early if all answered
-    "minPlayers": 1,
-    "maxPlayers": 8
-  }
+  "title": "Friday Quiz Night",
+  "questions": [
+    {
+      "question": "What is the capital of France?",
+      "answers": ["London", "Paris", "Berlin", "Rome"],
+      "correctAnswer": 1,
+      "timeLimit": 20
+    }
+  ]
 }
 ```
 
----
-
-## Running Tests
-
-```bash
-npm test
-```
-
-Output: `165 passed, 0 failed`
+For local media files (offline venues), place images/audio in `media/` and reference them as `/api/media/filename.jpg`.
 
 ---
 
-## License
+## Documentation
 
-Based on [Quiz Mate](https://github.com/david-04/quiz-mate) (ISC License).
-Additions by EduardIng — MIT License.
+| File | Contents |
+|------|---------|
+| `SETUP.md` | Installation + server configuration |
+| `KIOSK_SETUP.md` | Tablet kiosk setup guide (Chrome flags, autostart) |
+| `PROGRESS.md` | Development journal, phase tracker |
+| `CLAUDE.md` | Instructions for AI-assisted development |
+| `API.md` | Full WebSocket + HTTP API reference |
