@@ -112,6 +112,27 @@ class QuizServer {
       });
     });
 
+    // API: поточна активна кімната (kiosk mode)
+    // Планшети викликають цей ендпоінт при завантаженні щоб знайти активну гру
+    // Повертає { roomCode: "XXXXXX" } або { roomCode: null } якщо немає гри
+    this.app.get('/api/current-room', (req, res) => {
+      const roomCode = this.roomManager.getCurrentRoom();
+      res.json({ success: true, roomCode: roomCode || null });
+    });
+
+    // API: роздача локальних медіафайлів (зображення, аудіо для офлайн квізів)
+    // Захищено від path traversal через path.basename()
+    const mediaPath = path.join(__dirname, '..', '..', 'media');
+    this.app.get('/api/media/:filename', (req, res) => {
+      const filename = path.basename(req.params.filename);
+      const filePath = path.join(mediaPath, filename);
+      res.sendFile(filePath, (err) => {
+        if (err) {
+          res.status(404).json({ success: false, error: 'Файл не знайдено' });
+        }
+      });
+    });
+
     // API: список активних квіз-кімнат
     // Використовується адмін-панеллю для відображення активних ігор
     this.app.get('/api/active-quizzes', (req, res) => {
@@ -236,12 +257,12 @@ class QuizServer {
       // Виводимо красивий банер зі URL для підключення
       console.log('');
       console.log('╔════════════════════════════════════════╗');
-      console.log('║       Quiz Room Auto - Запущено!       ║');
+      console.log('║     Quiz Room Local - Запущено!        ║');
       console.log('╠════════════════════════════════════════╣');
       console.log(`║  Локально:  http://localhost:${port}     ║`);
       console.log(`║  Мережа:    http://${localIP}:${port}  ║`);
       console.log('║                                        ║');
-      console.log('║  Гравці підключаються через мережу IP  ║');
+      console.log('║  Планшети: підключаються автоматично   ║');
       console.log('╚════════════════════════════════════════╝');
       console.log('');
 
@@ -324,7 +345,7 @@ class QuizServer {
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
-  <title>Quiz Room Auto - Сервер</title>
+  <title>Quiz Room Local - Сервер</title>
   <style>
     body { font-family: sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
     .status { background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; }
@@ -333,7 +354,7 @@ class QuizServer {
   </style>
 </head>
 <body>
-  <h1>🎮 Quiz Room Auto</h1>
+  <h1>🎮 Quiz Room Local</h1>
   <div class="status">
     <strong>✅ Сервер працює!</strong><br>
     Активних сесій: ${sessions.length}

@@ -47,6 +47,11 @@ class QuizRoomManager {
     // Rate limiting для submit-answer: socketId → { count, resetAt }
     // Максимум 10 подій за 30 секунд (захист від flood-атак)
     this.answerRateLimit = new Map();
+
+    // Поточна активна кімната (kiosk mode) — один активний слот на весь сервер
+    // Планшети підключаються до неї без введення коду
+    // null = жодна гра не запущена (показуємо "Очікуємо ведучого")
+    this.currentActiveRoom = null;
   }
 
   /**
@@ -182,6 +187,10 @@ class QuizRoomManager {
       // Зберігаємо сеанс
       this.sessions.set(roomCode, session);
 
+      // Реєструємо як поточну активну кімнату (kiosk mode)
+      // Нова гра замінює попередню — на сервері одночасно одна активна гра
+      this.currentActiveRoom = roomCode;
+
       // Підключаємо хоста до Socket.IO кімнати
       socket.join(roomCode);
       this.socketToRoom.set(socket.id, roomCode);
@@ -221,15 +230,29 @@ class QuizRoomManager {
     const respond = typeof callback === 'function' ? callback : () => {};
 
     try {
-      // Валідація roomCode
-      if (!data || !data.roomCode) {
-        return respond({ success: false, error: 'Вкажіть код кімнати' });
+      if (!data) {
+        return respond({ success: false, error: 'Відсутні дані' });
       }
 
-      const roomCode = String(data.roomCode).toUpperCase().trim();
-
-      if (roomCode.length !== 6) {
-        return respond({ success: false, error: 'Код кімнати має бути 6 символів' });
+      // Визначаємо код кімнати:
+      //   1. Явно переданий roomCode (звичайний режим або адмін)
+      //   2. Поточна активна кімната (kiosk mode — планшет без вводу коду)
+      let roomCode;
+      if (data.roomCode) {
+        roomCode = String(data.roomCode).toUpperCase().trim();
+        if (roomCode.length !== 6) {
+          return respond({ success: false, error: 'Код кімнати має бути 6 символів' });
+        }
+      } else {
+        // Kiosk mode: сервер автоматично підключає до поточної активної кімнати
+        if (!this.currentActiveRoom) {
+          return respond({
+            success: false,
+            error: 'Немає активної гри. Очікуйте ведучого.',
+            noActiveRoom: true
+          });
+        }
+        roomCode = this.currentActiveRoom;
       }
 
       // Валідація nickname
@@ -575,6 +598,10 @@ class QuizRoomManager {
         if (session.gameState === 'ENDED' && session.players.size === 0) {
           this.sessions.delete(roomCode);
           this.roomHosts.delete(roomCode);
+          // Очищаємо активну кімнату (kiosk mode) якщо це вона завершилась
+          if (this.currentActiveRoom === roomCode) {
+            this.currentActiveRoom = null;
+          }
           log('WS', `Сесія ${roomCode} видалена (завершена, гравців немає)`);
         }
       }
@@ -643,6 +670,10 @@ class QuizRoomManager {
       // Видаляємо завершені сесії без гравців
       if (session.gameState === 'ENDED' && session.players.size === 0) {
         this.sessions.delete(roomCode);
+        // Очищаємо активний слот якщо це була поточна активна кімната
+        if (this.currentActiveRoom === roomCode) {
+          this.currentActiveRoom = null;
+        }
         removedCount++;
       }
     }
@@ -650,6 +681,18 @@ class QuizRoomManager {
     if (removedCount > 0) {
       log('WS', `Очищення: видалено ${removedCount} старих сесій. Активних: ${this.sessions.size}`);
     }
+  }
+
+  /**
+   * Повертає код поточної активної кімнати (kiosk mode)
+   *
+   * Використовується HTTP ендпоінтом GET /api/current-room.
+   * Планшети викликають цей метод щоб знайти активну гру без вводу коду.
+   *
+   * @returns {string|null} Код кімнати або null якщо немає активної гри
+   */
+  getCurrentRoom() {
+    return this.currentActiveRoom;
   }
 
   /**

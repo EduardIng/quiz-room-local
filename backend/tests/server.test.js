@@ -38,11 +38,12 @@ const CATEGORY_QUIZ = {
 
 let app;
 let db;
+let server; // зберігаємо посилання для маніпуляцій у тестах (currentActiveRoom тощо)
 
 beforeAll(() => {
   jest.resetModules();
   const QuizServer = require('../src/server');
-  const server = new QuizServer();
+  server = new QuizServer();
   server.setupMiddleware();
   server.setupRoutes();
   // Не викликаємо server.start() — supertest сам підключається до express app
@@ -247,6 +248,44 @@ describe('GET /api/stats/session/:id', () => {
     const res = await request(app).get('/api/stats/session/99999');
     expect(res.status).toBe(200);
     expect(res.body.results).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/current-room
+// ---------------------------------------------------------------------------
+
+describe('GET /api/current-room', () => {
+  afterEach(() => {
+    // Скидаємо activeRoom після кожного тесту
+    server.roomManager.currentActiveRoom = null;
+  });
+
+  test('повертає roomCode: null якщо немає активної кімнати', async () => {
+    const res = await request(app).get('/api/current-room');
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.roomCode).toBeNull();
+  });
+
+  test('повертає roomCode коли активна кімната існує', async () => {
+    server.roomManager.currentActiveRoom = 'TESTCD';
+    const res = await request(app).get('/api/current-room');
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.roomCode).toBe('TESTCD');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/media/:filename
+// ---------------------------------------------------------------------------
+
+describe('GET /api/media/:filename', () => {
+  test('повертає 404 для неіснуючого файлу', async () => {
+    const res = await request(app).get('/api/media/nonexistent-image.jpg');
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
   });
 });
 

@@ -216,6 +216,22 @@ describe('QuizRoomManager — handleCreateQuiz', () => {
 
     expect(response.success).toBe(false);
   });
+
+  test('встановлює currentActiveRoom після успішного створення', () => {
+    const { manager, roomCode } = setupRoomWithQuiz();
+    expect(manager.currentActiveRoom).toBe(roomCode);
+  });
+
+  test('нова create-quiz замінює попередню currentActiveRoom', () => {
+    const { manager, roomCode: firstRoom, createSocket } = setupRoomWithQuiz();
+
+    const secondHostSocket = createSocket('host-2');
+    let secondRoomCode;
+    manager.handleCreateQuiz(secondHostSocket, { quizData: QUIZ_DATA }, (r) => { secondRoomCode = r.roomCode; });
+
+    expect(manager.currentActiveRoom).toBe(secondRoomCode);
+    expect(manager.currentActiveRoom).not.toBe(firstRoom);
+  });
 });
 
 // ─────────────────────────────────────────────
@@ -304,6 +320,31 @@ describe('QuizRoomManager — handleJoinQuiz', () => {
     }, (r) => { response = r; });
 
     expect(response.success).toBe(true);
+  });
+
+  test('приєднується без roomCode якщо є поточна активна кімната (kiosk mode)', () => {
+    const { manager, roomCode, createSocket } = setupRoomWithQuiz();
+    const playerSocket = createSocket('kiosk-player');
+    let response;
+
+    // Kiosk mode: не передаємо roomCode — сервер використовує currentActiveRoom
+    manager.handleJoinQuiz(playerSocket, { nickname: 'Kiosk' }, (r) => { response = r; });
+
+    expect(response.success).toBe(true);
+    expect(response.roomCode).toBe(roomCode);
+    expect(response.nickname).toBe('Kiosk');
+  });
+
+  test('відхиляє join без roomCode якщо немає активної кімнати', () => {
+    const { mockIo } = createMocks();
+    const manager = new QuizRoomManager(mockIo, DEFAULT_CONFIG);
+    const playerSocket = { id: 'kiosk-1', join: jest.fn() };
+    let response;
+
+    manager.handleJoinQuiz(playerSocket, { nickname: 'Kiosk' }, (r) => { response = r; });
+
+    expect(response.success).toBe(false);
+    expect(response.noActiveRoom).toBe(true);
   });
 });
 
@@ -692,6 +733,47 @@ describe('QuizRoomManager — handleHostControl', () => {
 
     expect(response.success).toBe(false);
     expect(response.error).toMatch(/невідома дія/i);
+  });
+});
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: Phase 1 (local) — getCurrentRoom / currentActiveRoom
+// ─────────────────────────────────────────────
+
+describe('QuizRoomManager — getCurrentRoom / currentActiveRoom', () => {
+  test('getCurrentRoom повертає null якщо немає активної кімнати', () => {
+    const { mockIo } = createMocks();
+    const manager = new QuizRoomManager(mockIo, DEFAULT_CONFIG);
+    expect(manager.getCurrentRoom()).toBeNull();
+  });
+
+  test('getCurrentRoom повертає roomCode після create-quiz', () => {
+    const { manager, roomCode } = setupRoomWithQuiz();
+    expect(manager.getCurrentRoom()).toBe(roomCode);
+  });
+
+  test('currentActiveRoom очищається коли завершена сесія видаляється через disconnect', () => {
+    const { manager, roomCode, createSocket } = setupRoomWithQuiz();
+    const playerSocket = createSocket('player-1');
+    manager.handleJoinQuiz(playerSocket, { roomCode, nickname: 'Петро' }, () => {});
+
+    // Симулюємо завершену гру без гравців
+    manager.sessions.get(roomCode).gameState = 'ENDED';
+    manager.handleDisconnect(playerSocket);
+
+    // Сесія видалена — currentActiveRoom теж має очиститись
+    expect(manager.sessions.has(roomCode)).toBe(false);
+    expect(manager.getCurrentRoom()).toBeNull();
+  });
+
+  test('currentActiveRoom очищається через cleanupOldSessions', () => {
+    const { manager, roomCode } = setupRoomWithQuiz();
+
+    // Симулюємо завершену сесію без гравців
+    manager.sessions.get(roomCode).gameState = 'ENDED';
+    manager.cleanupOldSessions();
+
+    expect(manager.getCurrentRoom()).toBeNull();
   });
 });
 
