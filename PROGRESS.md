@@ -24,13 +24,13 @@ The host selects a quiz and presses Start. Everything else is automatic.
 
 ```
 Phase 0: Fork Setup              [##########] 100%
-Phase 1: Single-Room Backend     [----------]   0%
+Phase 1: Single-Room Backend     [##########] 100%
 Phase 2: Kiosk PlayerView        [----------]   0%
 Phase 3: Host UI                 [----------]   0%
 Phase 4: LAN Hardening           [----------]   0%
 Phase 5: Tests                   [----------]   0%
 Phase 6: Documentation           [----------]   0%
-Overall:                         [#---------]  10%
+Overall:                         [##--------]  25%
 ```
 
 ---
@@ -57,7 +57,21 @@ Overall:                         [#---------]  10%
 
 ## Pending Phases
 
-### Phase 1 — Single-Room Backend
+### Phase 1 — Single-Room Backend (10 March 2026) ✅
+
+**What was done:**
+- `QuizRoomManager.currentActiveRoom` — новий слот для однієї активної гри
+- `handleCreateQuiz` — після створення сесії записує roomCode в `currentActiveRoom`
+- `handleJoinQuiz` — roomCode тепер необов'язковий; якщо відсутній — використовує `currentActiveRoom`; якщо null — повертає `{ noActiveRoom: true }`
+- `getCurrentRoom()` — новий метод для HTTP шару
+- `currentActiveRoom` очищається в `handleDisconnect` і `cleanupOldSessions` при видаленні сесії
+- `GET /api/current-room` — новий ендпоінт → `{ roomCode }` або `{ roomCode: null }`
+- `GET /api/media/:filename` — роздача локальних медіафайлів з папки `media/`
+- 11 нових тестів (176/176 ✅), тег `phase-1-complete`
+
+---
+
+### Phase 1 (ARCHIVED) — Single-Room Backend
 **Goal:** Server exposes `GET /api/current-room`, `join-quiz` accepts nickname-only,
 `create-quiz` sets `currentActiveRoom`.
 
