@@ -910,3 +910,79 @@ describe('quiz-storage — saveQuiz / deleteQuiz', () => {
     expect(found.id).toBe(result.id);
   });
 });
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: Podium IP registry та GPIO button-press
+// ─────────────────────────────────────────────
+
+describe('QuizRoomManager — podiumRegistry і podium-button-press', () => {
+  /**
+   * Хелпер: створює мок-сокет з handshake.address (як справжній Socket.IO сокет)
+   */
+  function createSocketWithIP(id, ip = '192.168.1.10') {
+    const { mockIo } = createMocks();
+    const s = {
+      id,
+      join: jest.fn(),
+      emit: jest.fn(),
+      handshake: { address: ip }
+    };
+    return s;
+  }
+
+  test('IP гравця реєструється в podiumRegistry після join-quiz', () => {
+    const { manager, roomCode } = setupRoomWithQuiz();
+    const playerSocket = createSocketWithIP('player-gpio-1', '192.168.1.10');
+
+    manager.handleJoinQuiz(playerSocket, { roomCode, nickname: 'GpioPlayer' }, () => {});
+
+    expect(manager.podiumRegistry.get('192.168.1.10')).toBe('player-gpio-1');
+  });
+
+  test('IP гравця видаляється з podiumRegistry після disconnect', () => {
+    const { manager, roomCode } = setupRoomWithQuiz();
+    const playerSocket = createSocketWithIP('player-gpio-2', '192.168.1.20');
+
+    manager.handleJoinQuiz(playerSocket, { roomCode, nickname: 'GpioPlayer2' }, () => {});
+    expect(manager.podiumRegistry.has('192.168.1.20')).toBe(true);
+
+    manager.handleDisconnect(playerSocket);
+    expect(manager.podiumRegistry.has('192.168.1.20')).toBe(false);
+  });
+
+  test('podiumRegistry не містить незареєстрований IP', () => {
+    const { manager } = setupRoomWithQuiz();
+
+    // Жоден гравець не приєднався — podiumRegistry порожній
+    expect(manager.podiumRegistry.get('10.0.0.99')).toBeUndefined();
+  });
+
+  test('новий join з тим самим IP перезаписує попередній socketId', () => {
+    const { manager, roomCode } = setupRoomWithQuiz();
+    const socket1 = createSocketWithIP('socket-old', '192.168.1.50');
+    const socket2 = createSocketWithIP('socket-new', '192.168.1.50');
+
+    manager.handleJoinQuiz(socket1, { roomCode, nickname: 'First' }, () => {});
+    expect(manager.podiumRegistry.get('192.168.1.50')).toBe('socket-old');
+
+    // Реєструємо другого гравця з тим самим IP (наприклад, планшет перезавантажився)
+    manager.handleJoinQuiz(socket2, { roomCode, nickname: 'Second' }, () => {});
+    expect(manager.podiumRegistry.get('192.168.1.50')).toBe('socket-new');
+  });
+
+  // Інтеграційний тест потребує справжнього Socket.IO сервера (real HTTP + io-client).
+  // Цей файл використовує тільки мок-сокети, тому повноцінний e2e тест тут неможливий.
+  //
+  // РУЧНА ПЕРЕВІРКА:
+  // 1. Запустити сервер: npm start
+  // 2. Відкрити PlayerView у браузері — підключитись як гравець (nickname: 'GpioPlayer')
+  // 3. Хост створює квіз та запускає гру (квіз стартує автоматично при playerCount=1)
+  // 4. Коли з'являється питання — підключити другий Socket.IO клієнт з того ж хосту:
+  //      const io = require('socket.io-client')('http://localhost:8080')
+  //      io.emit('podium-button-press', { buttonIndex: 0 })
+  // 5. Переконатись що відповідь зарахована (ANSWER_COUNT answered: 1 в PlayerView)
+  it.skip('podium-button-press submits answer on behalf of player with matching IP (requires real server)', () => {
+    // Цей тест пропущено — потребує реального Socket.IO сервера та io-client.
+    // Архітектура тестового файлу базується на мок-сокетах без HTTP сервера.
+  });
+});

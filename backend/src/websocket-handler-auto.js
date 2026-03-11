@@ -48,6 +48,10 @@ class QuizRoomManager {
     // Максимум 10 подій за 30 секунд (захист від flood-атак)
     this.answerRateLimit = new Map();
 
+    // Реєстр кіоск-подіумів: IP → socketId гравця
+    // Використовується для маппінгу GPIO натискань кнопок до гравців
+    this.podiumRegistry = new Map();
+
     // Поточна активна кімната (kiosk mode) — один активний слот на весь сервер
     // Планшети підключаються до неї без введення коду
     // null = жодна гра не запущена (показуємо "Очікуємо ведучого")
@@ -78,6 +82,45 @@ class QuizRoomManager {
       socket.on('watch-room', (data, callback) => this.handleWatchRoom(socket, data, callback));
       socket.on('host-control', (data, callback) => this.handleHostControl(socket, data, callback));
       socket.on('disconnect', () => this.handleDisconnect(socket));
+
+      // Обробка натискання фізичної кнопки від GPIO-сервісу подіуму
+      // GPIO-сервіс підключається з тієї ж LAN IP що й браузер планшету
+      socket.on('podium-button-press', (data) => {
+        const { buttonIndex } = data || {};
+
+        if (typeof buttonIndex !== 'number' || buttonIndex < 0 || buttonIndex > 3) {
+          log('Podium', `Некоректний buttonIndex: ${buttonIndex}`);
+          return;
+        }
+
+        const senderIP = socket.handshake && socket.handshake.address
+          ? socket.handshake.address.replace('::ffff:', '')
+          : null;
+
+        if (!senderIP) {
+          log('Podium', 'GPIO натискання: не вдалося визначити IP відправника');
+          return;
+        }
+
+        const playerSocketId = this.podiumRegistry.get(senderIP);
+        if (!playerSocketId) {
+          log('Podium', `GPIO натискання від незареєстрованого IP: ${senderIP}`);
+          return;
+        }
+
+        const roomCode = this.currentActiveRoom;
+        if (!roomCode) return;
+
+        const session = this.sessions.get(roomCode);
+        if (!session) return;
+
+        const result = session.submitAnswer(playerSocketId, buttonIndex, Date.now());
+        if (!result.success) {
+          log('Podium', `GPIO відповідь відхилена: ${result.error}`);
+        } else {
+          log('Podium', `GPIO кнопка ${buttonIndex} від IP=${senderIP} → гравець ${playerSocketId}`);
+        }
+      });
     });
 
     // Запускаємо очищення старих сесій кожні 30 хвилин
@@ -271,6 +314,14 @@ class QuizRoomManager {
       // Підключаємо сокет до Socket.IO кімнати (для broadcast)
       socket.join(roomCode);
       this.socketToRoom.set(socket.id, roomCode);
+
+      // Реєструємо IP подіуму для GPIO-сервісу
+      // socket.handshake.address може мати IPv4-mapped IPv6 префікс ::ffff: — прибираємо
+      const playerIP = socket.handshake && socket.handshake.address
+        ? socket.handshake.address.replace('::ffff:', '')
+        : '127.0.0.1';
+      this.podiumRegistry.set(playerIP, socket.id);
+      log('Podium', `Зареєстровано подіум: IP=${playerIP} → socket=${socket.id}`);
 
       log('WS', `Гравець "${nickname}" (${socket.id}) приєднався до кімнати ${roomCode}`);
 
@@ -563,6 +614,15 @@ class QuizRoomManager {
 
     // Очищаємо rate limiting для цього сокету
     this.answerRateLimit.delete(socket.id);
+
+    // Видаляємо реєстрацію подіуму при відключенні
+    for (const [ip, sid] of this.podiumRegistry.entries()) {
+      if (sid === socket.id) {
+        this.podiumRegistry.delete(ip);
+        log('Podium', `Видалено реєстрацію подіуму: IP=${ip}`);
+        break;
+      }
+    }
 
     // Якщо це спостерігач (Projector) — просто видаляємо з мапи, гра не зачіпається
     if (this.observers.has(socket.id)) {
