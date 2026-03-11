@@ -379,3 +379,63 @@
   font-size: 0.85rem;
   font-weight: 600;
 }
+
+/* ────────────────────────────────────────────
+   Вибір кількості гравців (налаштування)
+   ──────────────────────────────────────────── */
+
+.setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setting-row label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.player-count-selector {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.count-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.count-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.count-btn.active {
+  background: #4caf50;
+  border-color: #4caf50;
+}
+
+/* ────────────────────────────────────────────
+   Прогрес підключення гравців (після запуску)
+   ──────────────────────────────────────────── */
+
+.join-progress {
+  margin: 8px 24px 0;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: rgba(76, 175, 80, 0.12);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  color: #4caf50;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+}

@@ -34,9 +34,10 @@ export default function HostView() {
   const [libError, setLibError]     = useState('');    // помилка завантаження
 
   // ── Вибраний квіз та налаштування ──
-  const [selectedId, setSelectedId]     = useState(null); // id вибраного квізу
-  const [questionTime, setQuestionTime] = useState(30);   // час на питання (сек)
-  const [minPlayers, setMinPlayers]     = useState(1);    // мінімум гравців
+  const [selectedId, setSelectedId]         = useState(null); // id вибраного квізу
+  const [questionTime, setQuestionTime]     = useState(30);   // час на питання (сек)
+  const [minPlayers, setMinPlayers]         = useState(1);    // мінімум гравців
+  const [targetPlayerCount, setTargetPlayerCount] = useState(4); // скільки гравців сьогодні
 
   // ── Стан гри після запуску ──
   const [roomCode, setRoomCode] = useState(null);     // код кімнати після create-quiz
@@ -99,7 +100,8 @@ export default function HostView() {
       questionTime,
       autoStart: false,   // kiosk: ведучий явно натискає Start
       minPlayers,
-      waitForAllPlayers: true
+      waitForAllPlayers: true,
+      targetPlayerCount  // скільки гравців запрошено на сесію
     };
 
     // Підключаємося до сервера
@@ -129,7 +131,7 @@ export default function HostView() {
       socket.disconnect();
       socketRef.current = null;
     });
-  }, [quizzes, selectedId, questionTime, minPlayers]);
+  }, [quizzes, selectedId, questionTime, minPlayers, targetPlayerCount]);
 
   // ─────────────────────────────────────────────
   // ОНОВЛЕННЯ СТАНУ ГРАВЦІВ (QUIZ-UPDATE)
@@ -290,6 +292,11 @@ export default function HostView() {
                 : phaseLabel(gamePhase)}
             </span>
           </div>
+        </div>
+
+        {/* Прогрес підключення гравців */}
+        <div className="join-progress">
+          {players.length}/{targetPlayerCount} {lang === 'uk' ? 'гравців приєдналось' : 'players joined'}
         </div>
 
         {/* Список гравців */}
@@ -476,6 +483,22 @@ export default function HostView() {
             value={minPlayers}
             onChange={e => setMinPlayers(Number(e.target.value))}
           />
+
+          {/* Кількість гравців сьогодні — для відображення прогресу підключення */}
+          <div className="setting-row">
+            <label>{lang === 'uk' ? 'Кількість гравців сьогодні:' : 'Players today:'}</label>
+            <div className="player-count-selector">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+                <button
+                  key={n}
+                  className={`count-btn ${targetPlayerCount === n ? 'active' : ''}`}
+                  onClick={() => setTargetPlayerCount(n)}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* Помилка запуску */}
           {launchError && (
