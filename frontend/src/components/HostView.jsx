@@ -291,8 +291,8 @@ export default function HostView() {
         {/* Список гравців */}
         {players.length > 0 && (
           <div className="host-player-list">
-            {players.map((p, i) => (
-              <span key={i} className="host-player-chip">{p.nickname}</span>
+            {players.map((p) => (
+              <span key={p.nickname} className="host-player-chip">{p.nickname}</span>
             ))}
           </div>
         )}
