@@ -110,54 +110,6 @@
   margin: 0;
 }
 
-.projector-error {
-  background: rgba(231, 76, 60, 0.2);
-  border: 1px solid #e74c3c;
-  color: #ff6b6b;
-  border-radius: 8px;
-  padding: 10px 24px;
-  font-size: 1rem;
-}
-
-.projector-code-input {
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(167, 139, 250, 0.4);
-  border-radius: 12px;
-  color: #fff;
-  font-size: 2.5rem;
-  font-weight: 700;
-  letter-spacing: 0.3em;
-  text-align: center;
-  padding: 14px 32px;
-  width: 320px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.projector-code-input:focus {
-  border-color: #a78bfa;
-}
-
-.projector-code-input::placeholder {
-  color: rgba(255, 255, 255, 0.25);
-}
-
-.projector-btn-primary {
-  background: linear-gradient(135deg, #7c3aed, #a78bfa);
-  border: none;
-  border-radius: 12px;
-  color: #fff;
-  font-size: 1.3rem;
-  font-weight: 700;
-  padding: 14px 48px;
-  cursor: pointer;
-  transition: opacity 0.2s, transform 0.1s;
-}
-
-.projector-btn-primary:hover {
-  opacity: 0.9;
-  transform: scale(1.03);
-}
 
 /* ═══════════════════════════════════════════
    CONNECTING SCREEN

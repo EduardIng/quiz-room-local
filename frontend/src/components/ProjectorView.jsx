@@ -26,6 +26,9 @@ import './ProjectorView.css';
 // URL бекенду
 const SERVER_URL = import.meta.env.DEV ? 'http://localhost:8080' : window.location.origin;
 
+// Інтервал опитування активної кімнати (мілісекунди)
+const ROOM_POLL_INTERVAL = 3000;
+
 // Літери відповідей A-D
 const ANSWER_LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -101,7 +104,12 @@ export default function ProjectorView() {
     setPhase('connecting');
     setRoomCode(cleanCode);
 
-    const socket = io(SERVER_URL, { reconnectionAttempts: 5 });
+    const socket = io(SERVER_URL, {
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 30000
+    });
     socketRef.current = socket;
 
     socket.on('connect', () => {
@@ -123,6 +131,23 @@ export default function ProjectorView() {
     socket.on('connect_error', () => {
       // Помилка підключення — повертаємось в очікування
       setPhase('waiting_for_room');
+    });
+
+    // При розриві з'єднання — повертаємось до очікування кімнати
+    socket.on('disconnect', () => {
+      setPhase('waiting_for_room');
+      setGameState('WAITING');
+      pollRef.current = setInterval(() => {
+        fetch(`${SERVER_URL}/api/current-room`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.roomCode) {
+              clearInterval(pollRef.current);
+              connectToRoom(data.roomCode);
+            }
+          })
+          .catch(() => {});
+      }, ROOM_POLL_INTERVAL);
     });
 
     // Слухаємо всі ігрові оновлення
@@ -153,7 +178,7 @@ export default function ProjectorView() {
           .catch(() => {}); // ігноруємо помилки мережі
       };
       tryConnect();
-      pollRef.current = setInterval(tryConnect, 3000);
+      pollRef.current = setInterval(tryConnect, ROOM_POLL_INTERVAL);
     }
 
     return () => {
@@ -293,6 +318,24 @@ export default function ProjectorView() {
       case 'QUIZ_ENDED':
         setGameState('ENDED');
         setLeaderboard(data.finalLeaderboard || []);
+        // Через 12 секунд автоматично повертаємось до очікування нової гри
+        setTimeout(() => {
+          socketRef.current?.disconnect();
+          setPhase('waiting_for_room');
+          setGameState('WAITING');
+          setLeaderboard([]);
+          pollRef.current = setInterval(() => {
+            fetch(`${SERVER_URL}/api/current-room`)
+              .then(r => r.json())
+              .then(d => {
+                if (d.roomCode) {
+                  clearInterval(pollRef.current);
+                  connectToRoom(d.roomCode);
+                }
+              })
+              .catch(() => {});
+          }, ROOM_POLL_INTERVAL);
+        }, 12000);
         break;
 
       default:
