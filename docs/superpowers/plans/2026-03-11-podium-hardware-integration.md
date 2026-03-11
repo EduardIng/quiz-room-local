@@ -611,7 +611,7 @@ cd /Users/einhorn/quiz-room-local && npm start &
 cd frontend && npm run dev
 ```
 
-Open `http://localhost:5173/#/host`. Verify player count selector appears with buttons 1–8. Select 4, launch a quiz, confirm `create-quiz` socket payload includes `playerCount: 4`.
+Open `http://localhost:3000/#/host`. Verify player count selector appears with buttons 1–8. Select 4, launch a quiz, confirm `create-quiz` socket payload includes `playerCount: 4`.
 
 - [ ] **Step 6.7: Commit**
 
@@ -1107,7 +1107,7 @@ cd /Users/einhorn/quiz-room-local && npm start &
 cd frontend && npm run dev
 ```
 
-Walk through all states in browser at `http://localhost:5173/#/`.
+Walk through all states in browser at `http://localhost:3000/#/`.
 
 - [ ] **Step 10.5: Commit**
 
@@ -1545,7 +1545,7 @@ socket.on('quiz-update', (msg) => {
 
 - [ ] **Step 12.9: Manual test — open ProjectorView and walk through a game**
 
-Open `http://localhost:5173/#/screen`. Run a test game from HostView. Verify all phases display correctly on the projector view.
+Open `http://localhost:3000/#/screen`. Run a test game from HostView. Verify all phases display correctly on the projector view.
 
 - [ ] **Step 12.10: Commit**
 
@@ -1732,8 +1732,8 @@ cd frontend && npm run dev
 ```
 
 Open two browser windows:
-- `http://localhost:5173/#/` — enter nickname "TestPlayer" and join
-- `http://localhost:5173/#/side` — within 2 seconds should show "TestPlayer" large
+- `http://localhost:3000/#/` — enter nickname "TestPlayer" and join
+- `http://localhost:3000/#/side` — within 2 seconds should show "TestPlayer" large
 
 Verify `GET http://localhost:8080/api/podium/status` from loopback returns `{ nickname: "TestPlayer", phase: "WAITING" }`.
 
