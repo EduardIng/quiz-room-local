@@ -1,7 +1,7 @@
 # PROGRESS.md — Quiz Room Local (Kiosk Edition)
 
 > Read this file fully before continuing development.
-> Last updated: 10 March 2026 (Session 2 — Phases 2-6 complete)
+> Last updated: 11 March 2026 (Session 3 — all pending items resolved, v0.2.1)
 
 ---
 
@@ -15,7 +15,7 @@ The host selects a quiz and presses Start. Everything else is automatic.
 - **Developer:** EduardIng
 - **Repository:** https://github.com/EduardIng/quiz-room-local
 - **Local folder:** `/Users/einhorn/quiz-room-local`
-- **Version:** 0.2.0
+- **Version:** 0.2.1
 - **Forked from:** quiz-room-auto v1.3.0 (165/165 tests)
 
 ---
@@ -151,9 +151,9 @@ All 7 items from the "KNOWN REMAINING WORK" table in CLAUDE.md resolved:
 | `backend/src/server.js` | Modified ✅ | Phase 1 |
 | `backend/src/websocket-handler-auto.js` | Modified ✅ | Phase 1 |
 | `frontend/src/components/PlayerView.jsx` | Rewritten ✅ | Phase 2 |
-| `frontend/src/components/ProjectorView.jsx` | Keep as-is | — |
+| `frontend/src/components/ProjectorView.jsx` | Modified ✅ | v0.2.1 |
 | `frontend/src/components/StatsPanel.jsx` | Keep as-is | — |
-| `frontend/src/components/QuizCreator.jsx` | Keep as-is (editor only) | — |
+| `frontend/src/components/QuizCreator.jsx` | Modified ✅ | v0.2.1 |
 | `frontend/src/components/HostView.jsx` | Created ✅ | Phase 3 |
 | `frontend/src/components/AdminPanel.jsx` | Deleted ✅ | Phase 3 |
 | `frontend/src/main.jsx` | Updated ✅ | Phase 3 |
@@ -199,4 +199,4 @@ Same as quiz-room-auto + `NO_ACTIVE_ROOM` (new in kiosk fork).
 Say:
 > "Read CLAUDE.md and PROGRESS.md and continue. Here's what I want: [task]"
 
-All phases complete. Project is v0.2.0 — production-ready for kiosk deployment.
+All phases complete. Project is v0.2.1 — production-ready for kiosk deployment.

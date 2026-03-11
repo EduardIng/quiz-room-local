@@ -1,6 +1,6 @@
 # API Reference — Quiz Room Local
 
-WebSocket events specification for the Quiz Room Auto system.
+WebSocket events specification for the Quiz Room Local system.
 
 **Transport:** Socket.IO 4.x (WebSocket with HTTP long-polling fallback)
 **Default endpoint:** `http://localhost:8080`

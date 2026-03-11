@@ -33,7 +33,7 @@ cd frontend && npm install && cd ..
 # Production mode (serves built frontend)
 npm start
 
-# Development mode (backend on :8080, frontend dev server on :3000 with HMR)
+# Development mode (backend on :8080, frontend dev server on :5173 with HMR)
 npm run dev        # backend
 cd frontend && npm run dev   # frontend (separate terminal)
 ```
