@@ -1,0 +1,37 @@
+/* Timebar.css — смуга зворотного відліку часу */
+
+.timebar-wrapper {
+  width: 100%;
+}
+
+.timebar-container {
+  width: 100%;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.timebar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 1s linear, background-color 0.5s ease;
+  background: #4caf50;
+}
+
+.timebar-fill.warning {
+  background: #ff9800;
+}
+
+.timebar-fill.danger {
+  background: #f44336;
+}
+
+.timebar-label {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 4px;
+}
