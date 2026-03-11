@@ -8,7 +8,7 @@
     "answerRevealTime": 5,
     "leaderboardTime": 5,
     "categoryChosenTime": 4,
-    "autoStart": false,
+    "autoStart": true,
     "waitForAllPlayers": true,
     "minPlayers": 1,
     "maxPlayers": 8,
