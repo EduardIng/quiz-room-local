@@ -12,8 +12,8 @@
  * - Leaderboard між питаннями
  * - Фінальний результат
  *
- * Підключення: #/screen?room=XXXXXX
- * Якщо room не передано у URL — показує форму вводу коду кімнати.
+ * Підключення: автоматично через /api/current-room (кіоск-режим).
+ * Override: #/screen?room=XXXXXX — підключається одразу до вказаної кімнати.
  *
  * Socket.IO: підключається як спостерігач через подію 'watch-room'.
  * Не є гравцем — не впливає на ігровий процес.
@@ -34,19 +34,17 @@ const ANSWER_COLORS = ['#e74c3c', '#3498db', '#f39c12', '#27ae60'];
 
 export default function ProjectorView() {
   // ── Стан підключення ──
-  // 'enter_code' | 'connecting' | 'watching'
+  // Фаза: 'waiting_for_room' | 'connecting' | 'watching'
   const [phase, setPhase] = useState(() => {
-    // Якщо є ?room= в URL — підключаємось одразу
+    // Якщо є ?room= в URL — підключаємось одразу (ручний override)
     const code = new URLSearchParams(window.location.search).get('room');
-    return code ? 'connecting' : 'enter_code';
+    return code ? 'connecting' : 'waiting_for_room';
   });
 
   // Код кімнати (з URL або з форми вводу)
   const [roomCode, setRoomCode] = useState(() => {
     return new URLSearchParams(window.location.search).get('room')?.toUpperCase() || '';
   });
-  const [inputCode, setInputCode] = useState('');
-  const [connectError, setConnectError] = useState('');
 
   // ── Ігровий стан (оновлюється через quiz-update) ──
   const [gameState, setGameState] = useState('WAITING');
@@ -86,19 +84,20 @@ export default function ProjectorView() {
   const timerRef = useRef(null);
   const countdownRef = useRef(null);
   const categoryTimerRef = useRef(null);
+  const pollRef = useRef(null);   // інтервал опитування /api/current-room
 
   // ─────────────────────────────────────────────
   // ПІДКЛЮЧЕННЯ ДО КІМНАТИ
   // ─────────────────────────────────────────────
 
   const connectToRoom = useCallback((code) => {
+    // Валідуємо код — захищає від кривих ?room= параметрів у URL
     const cleanCode = code.trim().toUpperCase();
     if (cleanCode.length !== 6) {
-      setConnectError('Код кімнати має бути 6 символів');
+      // Мовчки ігноруємо невалідний код (форми вводу більше немає)
       return;
     }
 
-    setConnectError('');
     setPhase('connecting');
     setRoomCode(cleanCode);
 
@@ -109,8 +108,8 @@ export default function ProjectorView() {
       // Підписуємось як спостерігач
       socket.emit('watch-room', { roomCode: cleanCode }, (response) => {
         if (!response.success) {
-          setConnectError(response.error || 'Не вдалось підключитись до кімнати');
-          setPhase('enter_code');
+          // Кімната не знайдена — повертаємось в очікування
+          setPhase('waiting_for_room');
           socket.disconnect();
           return;
         }
@@ -122,8 +121,8 @@ export default function ProjectorView() {
     });
 
     socket.on('connect_error', () => {
-      setConnectError('Не вдалось підключитись до сервера');
-      setPhase('enter_code');
+      // Помилка підключення — повертаємось в очікування
+      setPhase('waiting_for_room');
     });
 
     // Слухаємо всі ігрові оновлення
@@ -132,11 +131,33 @@ export default function ProjectorView() {
     return () => socket.disconnect();
   }, []); // eslint-disable-line
 
-  // Авто-підключення якщо є ?room= в URL
+  // Авто-підключення: ?room= override або опитування /api/current-room
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get('room');
-    if (code) connectToRoom(code);
+    const urlCode = new URLSearchParams(window.location.search).get('room');
+
+    if (urlCode) {
+      // Є ?room= → підключаємось одразу (ручний override)
+      connectToRoom(urlCode);
+    } else {
+      // Немає коду → опитуємо /api/current-room кожні 3 секунди
+      setPhase('waiting_for_room');
+      const tryConnect = () => {
+        fetch(`${SERVER_URL}/api/current-room`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.roomCode) {
+              clearInterval(pollRef.current);
+              connectToRoom(data.roomCode);
+            }
+          })
+          .catch(() => {}); // ігноруємо помилки мережі
+      };
+      tryConnect();
+      pollRef.current = setInterval(tryConnect, 3000);
+    }
+
     return () => {
+      clearInterval(pollRef.current);
       clearInterval(timerRef.current);
       clearInterval(countdownRef.current);
       clearInterval(categoryTimerRef.current);
@@ -313,28 +334,15 @@ export default function ProjectorView() {
   const timerDanger = timeLeft <= 5;
   const timerWarning = timeLeft <= 10 && !timerDanger;
 
-  // ── ENTER CODE SCREEN ──
-  if (phase === 'enter_code') {
+  // ── WAITING FOR ROOM ──
+  if (phase === 'waiting_for_room') {
     return (
       <div className="projector-root">
         <div className="projector-enter-screen">
           <div className="projector-logo">📺</div>
           <h1 className="projector-enter-title">Quiz Room — Великий Екран</h1>
-          <p className="projector-enter-sub">Введи код активної кімнати</p>
-          {connectError && <div className="projector-error">{connectError}</div>}
-          <input
-            className="projector-code-input"
-            type="text"
-            placeholder="XXXXXX"
-            maxLength={6}
-            value={inputCode}
-            onChange={e => setInputCode(e.target.value.toUpperCase())}
-            onKeyDown={e => e.key === 'Enter' && connectToRoom(inputCode)}
-            autoFocus
-          />
-          <button className="projector-btn-primary" onClick={() => connectToRoom(inputCode)}>
-            Підключитись
-          </button>
+          <p className="projector-enter-sub">Очікування активної гри...</p>
+          <div className="projector-spinner" />
         </div>
       </div>
     );
