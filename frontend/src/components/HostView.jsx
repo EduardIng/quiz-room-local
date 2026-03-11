@@ -43,6 +43,7 @@ export default function HostView() {
   const [isPaused, setIsPaused] = useState(false);    // пауза
   const [gameEnded, setGameEnded] = useState(false);  // гра завершена
   const [playerCount, setPlayerCount] = useState(0);  // кількість гравців онлайн
+  const [players, setPlayers] = useState([]);    // список нікнеймів гравців
   const [gamePhase, setGamePhase] = useState('');     // поточна фаза (для статусу)
   const [isLaunching, setIsLaunching] = useState(false); // кнопка Старт заблокована
   const [launchError, setLaunchError]  = useState('');   // помилка запуску
@@ -109,6 +110,7 @@ export default function HostView() {
         if (response.success) {
           setRoomCode(response.roomCode);
           setPlayerCount(0);
+          setPlayers([]);
           setGamePhase('waiting');
         } else {
           setLaunchError(response.error || 'Помилка створення кімнати');
@@ -143,6 +145,7 @@ export default function HostView() {
         case 'PLAYER_JOINED':
         case 'PLAYER_LEFT':
           setPlayerCount(data.totalPlayers ?? data.players?.length ?? 0);
+          setPlayers(data.players || []);
           break;
         case 'QUIZ_STARTING':
           setGamePhase('starting');
@@ -202,6 +205,7 @@ export default function HostView() {
     setIsPaused(false);
     setGameEnded(false);
     setPlayerCount(0);
+    setPlayers([]);
     setGamePhase('');
     setLaunchError('');
   }, []);
@@ -283,6 +287,15 @@ export default function HostView() {
             </span>
           </div>
         </div>
+
+        {/* Список гравців */}
+        {players.length > 0 && (
+          <div className="host-player-list">
+            {players.map((p, i) => (
+              <span key={i} className="host-player-chip">{p.nickname}</span>
+            ))}
+          </div>
+        )}
 
         {/* Кнопки керування */}
         {!gameEnded && (
