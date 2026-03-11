@@ -162,7 +162,10 @@ class QuizRoomManager {
         minPlayers: this.config.quiz.minPlayers,
         maxPlayers: this.config.quiz.maxPlayers,
         // Налаштування від хоста перезаписують дефолти (якщо надані)
-        ...(data.settings || {})
+        ...(data.settings || {}),
+        // Додаємо playerCount від ведучого до налаштувань сеансу
+        playerCount: data.playerCount || this.config.quiz.minPlayers,
+        autoStart: true,  // завжди true в кіоск-режимі
       };
 
       // Створюємо новий сеанс

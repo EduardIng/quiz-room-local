@@ -955,6 +955,29 @@ describe('AutoQuizSession — Category Mode', () => {
     expect(result.success).toBe(false);
   });
 
+  it('auto-starts when playerCount players have joined', async () => {
+    const settings = { ...SETTINGS, playerCount: 2, autoStart: true,
+      categoryChosenTime: 4, questionTime: 30, answerRevealTime: 5, leaderboardTime: 5 };
+    const { mockIo } = createMockIO();
+    const session = new AutoQuizSession(CATEGORY_QUIZ, settings);
+    session.init(mockIo, 'ROOM1');
+
+    const broadcasts = [];
+    session.io = {
+      to: () => ({ emit: (_, msg) => broadcasts.push(msg) })
+    };
+
+    session.addPlayer('socket1', 'Alice');
+    expect(broadcasts.find(m => m.type === 'QUIZ_STARTING')).toBeUndefined();
+
+    session.addPlayer('socket2', 'Bob');
+    await new Promise(r => setTimeout(r, 600));
+
+    expect(broadcasts.find(m => m.type === 'QUIZ_STARTING')).toBeDefined();
+    clearTimeout(session.transitionTimer);
+    session.transitionTimer = null;
+  });
+
   it('delays nextQuestion by categoryChosenTime (4s) after CATEGORY_CHOSEN', async () => {
     const settings = { ...SETTINGS, categoryChosenTime: 4, questionTime: 30,
       answerRevealTime: 5, leaderboardTime: 5, waitForAllPlayers: true, autoStart: false };

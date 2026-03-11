@@ -76,6 +76,9 @@ class AutoQuizSession {
     // Момент часу коли поставили на паузу
     this.pausedAt = null;
 
+    // Кількість гравців визначена ведучим (0 = не встановлено, використовує minPlayers)
+    this.playerCount = settings.playerCount || settings.minPlayers || 1;
+
     // Socket.IO об'єкт (встановлюється через init())
     this.io = null;
 
@@ -173,8 +176,8 @@ class AutoQuizSession {
     });
 
     // Перевіряємо умову autoStart:
-    // Якщо autoStart увімкнено І кількість гравців досягла мінімуму → стартуємо
-    if (this.settings.autoStart && this.players.size >= this.settings.minPlayers) {
+    // Якщо autoStart увімкнено І кількість гравців досягла playerCount (заданого ведучим) → стартуємо
+    if (this.settings.autoStart && this.players.size >= this.playerCount) {
       // Запускаємо з невеликою затримкою щоб гравець встиг отримати підтвердження
       setTimeout(() => this.startQuiz(), 500);
     }
