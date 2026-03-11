@@ -837,3 +837,16 @@
   color: var(--color-text-muted);
   font-style: italic;
 }
+
+/* Посилання на Host Panel що з'являється після збереження квізу */
+.creator-host-link {
+  display: inline-block;
+  margin-left: 10px;
+  color: #9b6dff;
+  text-decoration: underline;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.creator-host-link:hover {
+  color: #fff;
+}

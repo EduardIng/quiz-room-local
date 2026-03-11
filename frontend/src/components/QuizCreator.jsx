@@ -70,6 +70,7 @@ export default function QuizCreator() {
   const fileInputRef = useRef(null);
   const [importError, setImportError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState('');
+  const [showHostLink, setShowHostLink] = useState(false); // показуємо посилання на Host Panel після збереження
   const [libraryQuizzes, setLibraryQuizzes] = useState(null); // null = not loaded
   const [showLibrary, setShowLibrary] = useState(false);
 
@@ -588,13 +589,14 @@ export default function QuizCreator() {
       const data = await res.json();
       if (data.success) {
         setSaveSuccess(`✓ Збережено: "${quizData.title}"`);
+        setShowHostLink(true); // показуємо посилання на Host Panel
         // Оновлюємо бібліотеку якщо вона відкрита
         if (showLibrary) {
           const libRes = await fetch('/api/quizzes');
           const libData = await libRes.json();
           setLibraryQuizzes(libData.quizzes || []);
         }
-        setTimeout(() => setSaveSuccess(''), 3000);
+        setTimeout(() => { setSaveSuccess(''); setShowHostLink(false); }, 5000);
       } else {
         setImportError(data.error || 'Could not save quiz');
       }
@@ -1117,7 +1119,16 @@ export default function QuizCreator() {
           {/* Помилка */}
           {error && <div className="creator-error">{error}</div>}
           {importError && <div className="creator-error">{importError}</div>}
-          {saveSuccess && <div className="creator-save-success">{saveSuccess}</div>}
+          {saveSuccess && (
+            <div className="creator-save-success">
+              {saveSuccess}
+              {showHostLink && (
+                <a href="#/host" className="creator-host-link">
+                  {lang === 'uk' ? ' → Перейти до Host Panel' : ' → Go to Host Panel'}
+                </a>
+              )}
+            </div>
+          )}
 
           {/* Library dropdown */}
           {showLibrary && libraryQuizzes && (
