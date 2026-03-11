@@ -128,7 +128,7 @@
 
 .host-quiz-item.selected {
   border-color: var(--color-primary);
-  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-bg-card));
+  background: #20254e;
 }
 
 .host-quiz-name {
@@ -146,7 +146,7 @@
 }
 
 .host-badge-category {
-  background: color-mix(in srgb, var(--color-primary) 20%, transparent);
+  background: rgba(108, 63, 197, 0.2);
   color: var(--color-primary);
   padding: 1px 8px;
   border-radius: 12px;
@@ -171,9 +171,9 @@
   flex-direction: column;
   gap: 4px;
   padding: 10px 12px;
-  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  background: rgba(108, 63, 197, 0.1);
   border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, transparent);
+  border: 1px solid rgba(108, 63, 197, 0.3);
 }
 
 .host-selected-label {
