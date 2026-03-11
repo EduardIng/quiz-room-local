@@ -1,6 +1,6 @@
 {
   "name": "quiz-room-local",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Local kiosk quiz system — tablet podiums, LAN-only, auto-reconnect",
   "main": "backend/src/server.js",
   "scripts": {
