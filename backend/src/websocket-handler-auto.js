@@ -125,31 +125,29 @@ class QuizRoomManager {
       }
 
       // Category mode validation
-      if (data.quizData.categoryMode) {
-        if (!Array.isArray(data.quizData.rounds) || data.quizData.rounds.length === 0) {
-          return respond({ success: false, error: 'Квіз у режимі категорій повинен мати масив раундів' });
-        }
-        for (let i = 0; i < data.quizData.rounds.length; i++) {
-          const round = data.quizData.rounds[i];
-          if (!Array.isArray(round.options) || round.options.length !== 2) {
-            return respond({ success: false, error: `Раунд ${i + 1}: потрібно рівно 2 варіанти категорій` });
-          }
-          for (let j = 0; j < round.options.length; j++) {
-            const opt = round.options[j];
-            if (!opt.category || typeof opt.category !== 'string') {
-              return respond({ success: false, error: `Раунд ${i + 1}, варіант ${j + 1}: вкажіть назву категорії` });
-            }
-            if (!opt.question || !Array.isArray(opt.answers) || opt.answers.length !== 4) {
-              return respond({ success: false, error: `Раунд ${i + 1}, варіант ${j + 1}: неправильний формат (потрібно 4 варіанти відповіді)` });
-            }
-            if (typeof opt.correctAnswer !== 'number' || opt.correctAnswer < 0 || opt.correctAnswer > 3) {
-              return respond({ success: false, error: `Раунд ${i + 1}, варіант ${j + 1}: correctAnswer має бути числом 0-3` });
-            }
-          }
-        }
-        // Встановлюємо порожній масив питань для режиму категорій
-        data.quizData.questions = [];
+      if (!Array.isArray(data.quizData.rounds) || data.quizData.rounds.length === 0) {
+        return respond({ success: false, error: 'Квіз у режимі категорій повинен мати масив раундів' });
       }
+      for (let i = 0; i < data.quizData.rounds.length; i++) {
+        const round = data.quizData.rounds[i];
+        if (!Array.isArray(round.options) || round.options.length !== 2) {
+          return respond({ success: false, error: `Раунд ${i + 1}: потрібно рівно 2 варіанти категорій` });
+        }
+        for (let j = 0; j < round.options.length; j++) {
+          const opt = round.options[j];
+          if (!opt.category || typeof opt.category !== 'string') {
+            return respond({ success: false, error: `Раунд ${i + 1}, варіант ${j + 1}: вкажіть назву категорії` });
+          }
+          if (!opt.question || !Array.isArray(opt.answers) || opt.answers.length !== 4) {
+            return respond({ success: false, error: `Раунд ${i + 1}, варіант ${j + 1}: неправильний формат (потрібно 4 варіанти відповіді)` });
+          }
+          if (typeof opt.correctAnswer !== 'number' || opt.correctAnswer < 0 || opt.correctAnswer > 3) {
+            return respond({ success: false, error: `Раунд ${i + 1}, варіант ${j + 1}: correctAnswer має бути числом 0-3` });
+          }
+        }
+      }
+      // Встановлюємо порожній масив питань для режиму категорій
+      data.quizData.questions = [];
 
       // Генеруємо унікальний код кімнати
       const roomCode = this.generateRoomCode();
