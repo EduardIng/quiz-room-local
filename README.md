@@ -3,7 +3,7 @@
 > Local-kiosk quiz system for venues — tablets connect automatically, no room codes needed
 
 [![Tests](https://img.shields.io/badge/tests-176%20passed-brightgreen)](backend/tests/)
-[![Version](https://img.shields.io/badge/version-0.2.0-blue)](package.json)
+[![Version](https://img.shields.io/badge/version-0.2.1-blue)](package.json)
 [![Fork of](https://img.shields.io/badge/fork%20of-quiz--room--auto%20v1.3.0-purple)](https://github.com/EduardIng/quiz-room-auto)
 
 ---
@@ -71,7 +71,7 @@ npm install
 # Start server (port 8080)
 npm start
 
-# Dev mode (frontend hot-reload on port 3000)
+# Dev mode (frontend hot-reload on port 5173)
 cd frontend && npm run dev
 
 # Run tests

@@ -155,7 +155,7 @@ All 7 items from the "KNOWN REMAINING WORK" table in CLAUDE.md resolved:
 | `frontend/src/components/StatsPanel.jsx` | Keep as-is | — |
 | `frontend/src/components/QuizCreator.jsx` | Keep as-is (editor only) | — |
 | `frontend/src/components/HostView.jsx` | Created ✅ | Phase 3 |
-| `frontend/src/components/AdminPanel.jsx` | Route removed ✅ | Phase 3 |
+| `frontend/src/components/AdminPanel.jsx` | Deleted ✅ | Phase 3 |
 | `frontend/src/main.jsx` | Updated ✅ | Phase 3 |
 | `frontend/src/utils/i18n.js` | Updated ✅ | Phase 2 |
 | `config.json` | Done ✅ | Phase 0 |

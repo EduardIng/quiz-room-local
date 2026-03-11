@@ -1,4 +1,4 @@
-# API Reference — Quiz Room Auto
+# API Reference — Quiz Room Local
 
 WebSocket events specification for the Quiz Room Auto system.
 
@@ -116,7 +116,7 @@ Joins an existing quiz room. Called by each player.
 **Request:**
 ```javascript
 socket.emit('join-quiz', {
-  roomCode: string,   // 6 chars, case-insensitive (auto-uppercased)
+  roomCode?: string,  // Optional in kiosk mode — auto-uses the active room if omitted
   nickname: string    // 2–20 characters
 }, (response) => {
   // response.success: boolean
@@ -129,12 +129,12 @@ socket.emit('join-quiz', {
 ```
 
 **Validation errors:**
-- Room code not 6 characters
-- Room code not found
 - Nickname shorter than 2 or longer than 20 characters
 - Nickname already taken (case-insensitive)
 - Game already started
 - Room is full (maxPlayers reached)
+- If `roomCode` is provided: room code not 6 characters, or room code not found
+- `noActiveRoom: true` in response — returned when no `roomCode` is given and there is no active session
 
 ---
 
@@ -291,6 +291,20 @@ Broadcast when a player disconnects.
   totalPlayers: number
 }
 ```
+
+---
+
+### `quiz-update` — Type: `NO_ACTIVE_ROOM`
+
+Sent to a player who called `join-quiz` without a `roomCode` when there is no active session on the server.
+
+```javascript
+{
+  type: 'NO_ACTIVE_ROOM'
+}
+```
+
+The player tablet should return to "Waiting for host..." state and resume polling `GET /api/current-room`.
 
 ---
 
@@ -511,24 +525,32 @@ Server health check.
 
 ---
 
-### `GET /api/active-quizzes`
+### `GET /api/current-room`
 
-List all active quiz rooms.
+Returns the currently active game room (kiosk model — single room only).
 
-**Response:**
+**Response when active:**
 ```json
-{
-  "success": true,
-  "sessions": [
-    {
-      "roomCode": "AB3C7D",
-      "title": "Friday Night Quiz",
-      "playerCount": 5,
-      "gameState": "QUESTION"
-    }
-  ]
-}
+{ "roomCode": "AB3C7D" }
 ```
+
+**Response when no active room:**
+```json
+{ "roomCode": null }
+```
+
+Player tablets poll this endpoint every 3 seconds. When `roomCode` is non-null, they auto-join without user input.
+
+---
+
+### `GET /api/media/:filename`
+
+Serves a media file from the `media/` directory. Used for offline-capable image and audio in quizzes.
+
+**Parameters:**
+- `:filename` — filename in the `media/` folder (e.g. `logo.png`, `intro.mp3`)
+
+**Response:** File content with appropriate MIME type, or `404` if not found.
 
 ---
 
