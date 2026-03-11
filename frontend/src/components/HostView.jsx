@@ -56,24 +56,27 @@ export default function HostView() {
   // ─────────────────────────────────────────────
 
   /**
-   * Завантажує список квізів з /api/quizzes при монтуванні.
-   * Авто-вибирає перший квіз якщо бібліотека не порожня.
+   * Завантажує список квізів з /api/quizzes.
+   * Авто-вибирає перший квіз якщо бібліотека не порожня і жодного не вибрано.
+   * Викликається при монтуванні та після завершення гри (QUIZ_ENDED).
    */
-  useEffect(() => {
+  const fetchQuizzes = useCallback(() => {
     setLoadingLib(true);
     fetch(`${SERVER_URL}/api/quizzes`)
       .then(r => r.json())
       .then(data => {
         const list = data.quizzes || [];
         setQuizzes(list);
-        if (list.length > 0) setSelectedId(list[0].id);
+        if (list.length > 0 && !selectedId) setSelectedId(list[0].id);
         setLoadingLib(false);
       })
       .catch(() => {
         setLibError('Не вдалось завантажити бібліотеку квізів.');
         setLoadingLib(false);
       });
-  }, []);
+  }, [selectedId]); // eslint-disable-line
+
+  useEffect(() => { fetchQuizzes(); }, []); // eslint-disable-line — початкове завантаження
 
   // ─────────────────────────────────────────────
   // ЗАПУСК КВІЗУ
@@ -171,6 +174,7 @@ export default function HostView() {
         case 'QUIZ_ENDED':
           setGameEnded(true);
           setGamePhase('ended');
+          fetchQuizzes();   // оновлення бібліотеки після завершення гри
           break;
         default:
           break;
@@ -179,7 +183,7 @@ export default function HostView() {
 
     socket.on('quiz-update', handler);
     return () => socket.off('quiz-update', handler);
-  }, [roomCode]);
+  }, [roomCode, fetchQuizzes]);
 
   // ─────────────────────────────────────────────
   // HOST CONTROLS
