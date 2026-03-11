@@ -30,6 +30,7 @@ class AutoQuizSession {
     this.currentChooserSocketId = null;
     this.categorySelectTimer = null;
     this.categorySelectTime = settings.categorySelectTime || 15;
+    this.categoryChosenTime = settings.categoryChosenTime || 4;
 
     // Дані квізу: назва, питання
     // Якщо shuffle увімкнено — перемішуємо копію масиву питань (не змінюємо оригінал)
@@ -596,7 +597,8 @@ class AutoQuizSession {
       wasTimeout
     });
 
-    setTimeout(() => this.nextQuestion(), 1000);
+    // Затримка перед показом питання — дає час гравцям побачити обрану категорію
+    setTimeout(() => this.nextQuestion(), this.categoryChosenTime * 1000);
   }
 
   // ─────────────────────────────────────────────

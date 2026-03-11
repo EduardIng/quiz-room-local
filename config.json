@@ -7,6 +7,7 @@
     "questionTime": 30,
     "answerRevealTime": 5,
     "leaderboardTime": 5,
+    "categoryChosenTime": 4,
     "autoStart": false,
     "waitForAllPlayers": true,
     "minPlayers": 1,

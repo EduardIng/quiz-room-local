@@ -954,4 +954,31 @@ describe('AutoQuizSession — Category Mode', () => {
     const result = session.submitCategory(chooserId, 5); // invalid index (not 0 or 1)
     expect(result.success).toBe(false);
   });
+
+  it('delays nextQuestion by categoryChosenTime (4s) after CATEGORY_CHOSEN', async () => {
+    const settings = { ...SETTINGS, categoryChosenTime: 4, questionTime: 30,
+      answerRevealTime: 5, leaderboardTime: 5, waitForAllPlayers: true, autoStart: false };
+    const session = new AutoQuizSession(CATEGORY_QUIZ, settings);
+    const { mockIo } = createMockIO();
+    session.init(mockIo, 'ROOM1');
+
+    const broadcasts = [];
+    session.io = {
+      to: () => ({ emit: (_, msg) => broadcasts.push(msg) })
+    };
+
+    session._resolveCategory(0, 0, false);
+
+    const chosen = broadcasts.find(m => m.type === 'CATEGORY_CHOSEN');
+    expect(chosen).toBeDefined();
+    expect(broadcasts.find(m => m.type === 'NEW_QUESTION')).toBeUndefined();
+
+    // After 1.5 seconds, NEW_QUESTION must NOT have fired yet (categoryChosenTime=4s)
+    await new Promise(r => setTimeout(r, 1500));
+    expect(broadcasts.find(m => m.type === 'NEW_QUESTION')).toBeUndefined();
+
+    // After 4+ seconds total, NEW_QUESTION must have fired
+    await new Promise(r => setTimeout(r, 2700));
+    expect(broadcasts.find(m => m.type === 'NEW_QUESTION')).toBeDefined();
+  }, 6000);
 });
