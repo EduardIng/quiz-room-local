@@ -147,7 +147,7 @@ quiz-room-local/
 │   │   │   ├── QuizCreator.jsx        <- Visual quiz editor (accessible at #/create)
 │   │   │   ├── ProjectorView.jsx      <- Big screen (#/screen) — still asks for room code
 │   │   │   ├── StatsPanel.jsx         <- Session statistics
-│   │   │   └── AdminPanel.jsx         <- DEAD — route removed in Phase 3, file not deleted
+│   │   │   └── AdminPanel.jsx         <- DELETED — route removed Phase 3, file deleted v0.2.1
 │   │   ├── styles/theme.css
 │   │   └── utils/
 │   │       ├── i18n.js
