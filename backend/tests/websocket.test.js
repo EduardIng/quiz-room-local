@@ -215,7 +215,13 @@ describe('QuizRoomManager — handleCreateQuiz', () => {
 
     const badQuiz = {
       title: 'Bad quiz',
-      questions: [{ question: 'Q?', answers: ['A', 'B', 'C', 'D'], correctAnswer: 5 }]
+      categoryMode: true,
+      rounds: [{
+        options: [
+          { category: 'Science', question: 'Q?', answers: ['A','B','C','D'], correctAnswer: 5 },
+          { category: 'History', question: 'Q2?', answers: ['A','B','C','D'], correctAnswer: 0 }
+        ]
+      }]
     };
 
     manager.handleCreateQuiz(socket, { quizData: badQuiz }, (r) => { response = r; });

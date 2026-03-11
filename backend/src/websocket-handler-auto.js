@@ -125,7 +125,7 @@ class QuizRoomManager {
       }
 
       // Category mode validation
-      if (!Array.isArray(data.quizData.rounds) || data.quizData.rounds.length === 0) {
+      if (data.quizData.rounds.length === 0) {
         return respond({ success: false, error: 'Квіз у режимі категорій повинен мати масив раундів' });
       }
       for (let i = 0; i < data.quizData.rounds.length; i++) {
