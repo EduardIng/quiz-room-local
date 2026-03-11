@@ -21,16 +21,13 @@ const QuizRoomManager = require('../src/websocket-handler-auto');
 
 const QUIZ_DATA = {
   title: 'WS Тестовий квіз',
-  questions: [
+  categoryMode: true,
+  rounds: [
     {
-      question: 'Тестове питання 1?',
-      answers: ['A', 'B', 'C', 'D'],
-      correctAnswer: 0
-    },
-    {
-      question: 'Тестове питання 2?',
-      answers: ['W', 'X', 'Y', 'Z'],
-      correctAnswer: 2
+      options: [
+        { category: 'Cat A', question: 'Q1', answers: ['A', 'B', 'C', 'D'], correctAnswer: 0 },
+        { category: 'Cat B', question: 'Q2', answers: ['W', 'X', 'Y', 'Z'], correctAnswer: 2 }
+      ]
     }
   ]
 };
@@ -190,9 +187,18 @@ describe('QuizRoomManager — handleCreateQuiz', () => {
     const socket = { id: 's1', join: jest.fn() };
     let response;
 
+    // Категорійний квіз з неправильним форматом опції (тільки 2 відповіді замість 4)
     const badQuiz = {
       title: 'Bad quiz',
-      questions: [{ question: 'Q?', answers: ['A', 'B'], correctAnswer: 0 }]
+      categoryMode: true,
+      rounds: [
+        {
+          options: [
+            { category: 'Cat A', question: 'Q?', answers: ['A', 'B'], correctAnswer: 0 },
+            { category: 'Cat B', question: 'Q2', answers: ['W', 'X', 'Y', 'Z'], correctAnswer: 2 }
+          ]
+        }
+      ]
     };
 
     manager.handleCreateQuiz(socket, { quizData: badQuiz }, (r) => { response = r; });
@@ -231,6 +237,20 @@ describe('QuizRoomManager — handleCreateQuiz', () => {
 
     expect(manager.currentActiveRoom).toBe(secondRoomCode);
     expect(manager.currentActiveRoom).not.toBe(firstRoom);
+  });
+
+  it('rejects create-quiz when quizData does not have categoryMode: true', (done) => {
+    const { mockIo } = createMocks();
+    const manager = new QuizRoomManager(mockIo, DEFAULT_CONFIG);
+    const socket = { id: 's1', join: jest.fn() };
+    const standardQuiz = { title: 'Test', questions: [
+      { question: 'Q1', answers: ['A','B','C','D'], correctAnswer: 0 }
+    ]};
+    manager.handleCreateQuiz(socket, { quizData: standardQuiz, settings: {} }, (response) => {
+      expect(response.success).toBe(false);
+      expect(response.error).toMatch(/category mode/i);
+      done();
+    });
   });
 });
 
@@ -359,11 +379,13 @@ describe('QuizRoomManager — handleSubmitAnswer', () => {
 
     manager.handleJoinQuiz(playerSocket, { roomCode, nickname: 'Петро' }, () => {});
 
-    // Симулюємо стан QUESTION
+    // Симулюємо стан QUESTION (в категорійному режимі питання додається до quizData.questions)
     const session = manager.sessions.get(roomCode);
     session.gameState = 'QUESTION';
     session.currentQuestionIndex = 0;
     session.questionStartTime = Date.now() - 5000;
+    // Додаємо поточне питання щоб endQuestion() знайшов його через getCurrentQuestion()
+    session.quizData.questions = [{ question: 'Q1', answers: ['A', 'B', 'C', 'D'], correctAnswer: 0 }];
 
     let response;
     manager.handleSubmitAnswer(playerSocket, { answerId: 0 }, (r) => { response = r; });
@@ -694,6 +716,8 @@ describe('QuizRoomManager — handleHostControl', () => {
     session.gameState = 'QUESTION';
     session.currentQuestionIndex = 0;
     session.questionStartTime = Date.now() - 5000;
+    // Додаємо питання щоб endQuestion() знайшов його через getCurrentQuestion()
+    session.quizData.questions = [{ question: 'Q1', answers: ['A', 'B', 'C', 'D'], correctAnswer: 0 }];
 
     let response;
     manager.handleHostControl(hostSocket, { roomCode, action: 'skip' }, (r) => { response = r; });

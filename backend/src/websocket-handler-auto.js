@@ -117,6 +117,13 @@ class QuizRoomManager {
         return respond({ success: false, error: 'Відсутні дані квізу' });
       }
 
+      const quizData = data.quizData;
+
+      // Перевіряємо що квіз є в режимі категорій (обов'язково для всіх квізів)
+      if (!quizData.categoryMode || !quizData.rounds || !Array.isArray(quizData.rounds)) {
+        return respond({ success: false, error: 'Quiz must be in category mode (categoryMode: true)' });
+      }
+
       // Category mode validation
       if (data.quizData.categoryMode) {
         if (!Array.isArray(data.quizData.rounds) || data.quizData.rounds.length === 0) {
@@ -140,28 +147,8 @@ class QuizRoomManager {
             }
           }
         }
-        // Set empty questions array for category mode
+        // Встановлюємо порожній масив питань для режиму категорій
         data.quizData.questions = [];
-      } else {
-        // Standard quiz validation
-        if (!data.quizData.questions || !Array.isArray(data.quizData.questions)) {
-          return respond({ success: false, error: 'Квіз повинен мати масив питань' });
-        }
-
-        if (data.quizData.questions.length === 0) {
-          return respond({ success: false, error: 'Квіз повинен мати хоча б одне питання' });
-        }
-
-        // Перевіряємо кожне питання
-        for (let i = 0; i < data.quizData.questions.length; i++) {
-          const q = data.quizData.questions[i];
-          if (!q.question || !q.answers || q.answers.length !== 4) {
-            return respond({ success: false, error: `Питання ${i + 1} має неправильний формат (потрібно 4 варіанти відповіді)` });
-          }
-          if (typeof q.correctAnswer !== 'number' || q.correctAnswer < 0 || q.correctAnswer > 3) {
-            return respond({ success: false, error: `Питання ${i + 1}: correctAnswer має бути числом 0-3` });
-          }
-        }
       }
 
       // Генеруємо унікальний код кімнати
