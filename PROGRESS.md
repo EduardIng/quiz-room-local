@@ -124,6 +124,22 @@ See `README.md`, `SETUP.md`, `KIOSK_SETUP.md` in project root.
 
 ---
 
+### Post-v0.2.0 Cleanup — All Pending Items (11 March 2026) ✅
+
+All 7 items from the "KNOWN REMAINING WORK" table in CLAUDE.md resolved:
+
+1. **Deleted AdminPanel.jsx** — dead file, route removed in Phase 3 (`a4e1a6e`)
+2. **ProjectorView auto-discovers room** — polls `/api/current-room`, shows waiting spinner, auto-connects; `?room=` URL override preserved; infinite reconnect; QUIZ_ENDED auto-resets after 12s (`c1dea00`, `53cf31e`)
+3. **color-mix() CSS fallback** — replaced all 4 calls in HostView.css with hardcoded RGBA for Chrome compat (`79b6bf9`)
+4. **Player list in HostView** — player name chips displayed in host controls panel, populated from PLAYER_JOINED/LEFT events (`24c07c7`, `308d144`)
+5. **Quiz library refresh after game ends** — fetchQuizzes extracted as useCallback, called on QUIZ_ENDED (`54d24e9`)
+6. **"Go to Host Panel" link in QuizCreator** — link appears for 5s after successful save (`2a80830`)
+7. **package.json version** — bumped to `0.2.0` (`729d41a`)
+
+**Version:** 0.2.1 — all pending items resolved, project clean
+
+---
+
 ## File Inventory
 
 | File | Status | Phase |

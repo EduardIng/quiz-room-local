@@ -245,17 +245,7 @@ Tiebreaker: avgAnswerTime ascending
 
 ## KNOWN REMAINING WORK
 
-All planned phases (0-6) are complete. The following items were identified post-v0.2.0 but not yet implemented. A new session should read this list before starting any new work.
-
-| # | Item | Priority | Notes |
-|---|------|----------|-------|
-| 1 | Delete `AdminPanel.jsx` | Low | Route removed in Phase 3, file still on disk — dead code |
-| 2 | `ProjectorView` auto-discovers room | High | Currently still asks for room code — should poll `/api/current-room` like PlayerView |
-| 3 | `color-mix()` CSS fallback in HostView.css | Medium | Not supported in older Chrome — replace with hardcoded RGBA |
-| 4 | Player list in HostView | Medium | Host sees only a count; should show joined player names |
-| 5 | Quiz library refresh after game ends | Low | HostView doesn't re-fetch the quiz list after a game completes |
-| 6 | "Go to Host Panel" button in QuizCreator | Low | After saving a quiz, add link to `#/host` for smooth flow |
-| 7 | `package.json` version is still `0.1.0` | Low | Needs bump to `0.2.0` |
+All post-v0.2.0 items resolved in v0.2.1 (11 March 2026). Project is clean.
 
 ---
 
