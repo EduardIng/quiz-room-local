@@ -889,3 +889,52 @@
   background: rgba(255,255,255,0.15);
   border-radius: 20px;
 }
+
+/* ── Answer grid (spec additions — color-keyed by id) ── */
+.answer-btn {
+  padding: 20px 16px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 14px;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.15s;
+  min-height: 80px;
+  text-align: center;
+}
+
+.answer-btn:active { transform: scale(0.97); }
+
+.answer-btn.answer-0 { background: #e53935; }
+.answer-btn.answer-1 { background: #1e88e5; }
+.answer-btn.answer-2 { background: #43a047; }
+.answer-btn.answer-3 { background: #fb8c00; }
+
+/* Color classes on existing answer-button elements */
+.answer-button.answer-0 { background: var(--color-answer-a) !important; }
+.answer-button.answer-1 { background: var(--color-answer-b) !important; }
+.answer-button.answer-2 { background: var(--color-answer-c) !important; }
+.answer-button.answer-3 { background: var(--color-answer-d) !important; }
+
+/* ── Waiting for others overlay ── */
+.waiting-others {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 40px;
+  font-size: 1.3rem;
+  opacity: 0.85;
+}
+
+.waiting-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255,255,255,0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

@@ -19,6 +19,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import './PlayerView.css';
+import Timebar from './Timebar.jsx';
 import { playCorrect, playWrong, playTimeout, playTick, playCountdown, playFinish } from '../utils/sound.js';
 
 // ─────────────────────────────────────────────
@@ -67,6 +68,8 @@ export default function PlayerView() {
   const [timeLimit, setTimeLimit] = useState(30);
   const [timeLeft, setTimeLeft] = useState(30);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [hasAnswered, setHasAnswered] = useState(false);
+  const [myAnswer, setMyAnswer] = useState(null);
 
   // ── Лічильник відповідей ──
   const [answeredCount, setAnsweredCount] = useState(0);
@@ -297,6 +300,8 @@ export default function PlayerView() {
         clearInterval(timerRef.current);
         if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
         setSelectedAnswer(null);
+        setHasAnswered(false);
+        setMyAnswer(null);
         setAnsweredCount(0);
 
         setQuestion(data.question);
@@ -501,18 +506,21 @@ export default function PlayerView() {
    * @param {number} answerId - Індекс обраної відповіді (0-3)
    */
   const handleAnswerClick = useCallback((answerId) => {
-    if (selectedAnswer !== null) return;
+    if (selectedAnswer !== null || hasAnswered) return;
 
     setSelectedAnswer(answerId);
-    setScreen('answer_sent');
+    setHasAnswered(true);
+    setMyAnswer(answerId);
 
     socketRef.current.emit('submit-answer', { answerId }, (response) => {
       if (!response.success) {
         setSelectedAnswer(null);
+        setHasAnswered(false);
+        setMyAnswer(null);
         setScreen('question');
       }
     });
-  }, [selectedAnswer]);
+  }, [selectedAnswer, hasAnswered]);
 
   /**
    * Обробляє отримання результату відповіді
@@ -730,6 +738,7 @@ export default function PlayerView() {
       {/* ── 4. QUESTION ЕКРАН ── */}
       {screen === 'question' && question && (
         <div className="screen-card question-screen" style={{ padding: 0 }}>
+          <Timebar timeLimit={timeLimit} timeRemaining={timeLeft} />
           <div className="question-header">
             <span className="question-number">
               Питання {questionIndex}/{totalQuestions}
@@ -789,18 +798,25 @@ export default function PlayerView() {
             </div>
           )}
 
-          <div className="answers-grid">
-            {question.answers.map((ans) => (
-              <button
-                key={ans.id}
-                className="answer-button"
-                onClick={() => handleAnswerClick(ans.id)}
-              >
-                <span className="answer-letter">{ANSWER_LETTERS[ans.id]}</span>
-                <span>{ans.text}</span>
-              </button>
-            ))}
-          </div>
+          {hasAnswered ? (
+            <div className="waiting-others">
+              <div className="waiting-spinner" />
+              Очікуємо інших гравців...
+            </div>
+          ) : (
+            <div className="answers-grid">
+              {question.answers.map((ans) => (
+                <button
+                  key={ans.id}
+                  className={`answer-button answer-${ans.id}`}
+                  onClick={() => handleAnswerClick(ans.id)}
+                >
+                  <span className="answer-letter">{ANSWER_LETTERS[ans.id]}</span>
+                  <span>{ans.text}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
