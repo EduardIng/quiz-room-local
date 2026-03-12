@@ -582,7 +582,6 @@ export default function PlayerView() {
   // ОБЧИСЛЕНІ ЗНАЧЕННЯ
   // ─────────────────────────────────────────────
 
-  const timerPercent = Math.max(0, (timeLeft / timeLimit) * 100);
   const timerClass = timeLeft <= 5 ? 'danger' : timeLeft <= 10 ? 'warning' : '';
   const myLeaderboardPosition = leaderboard.findIndex(p => p.nickname === myNickname) + 1;
 
@@ -696,30 +695,25 @@ export default function PlayerView() {
           <div style={{ padding: '20px 20px 0' }}>
             <div className="category-timer-text">{categoryTimeLeft}s</div>
 
-            {myNickname === categoryChooser ? (
-              <>
-                <h2 className="screen-title" style={{ marginBottom: 8 }}>Твій вибір!</h2>
-                <p className="screen-subtitle" style={{ marginBottom: 20 }}>Обери категорію питання</p>
-                <div className="category-buttons">
-                  {categoryOptions.map((opt) => (
-                    <button
-                      key={opt.index}
-                      className="category-btn"
-                      onClick={() => handleCategoryClick(opt.index)}
-                    >
-                      {opt.category}
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="category-wait-icon">🎲</div>
-                <p className="category-wait-text">
-                  Чекаємо поки <strong>{categoryChooser}</strong> обере категорію...
-                </p>
-              </>
-            )}
+            {/* Банер: для chooser — заклик, для інших — хто обирає */}
+            <h2 className="screen-title" style={{ marginBottom: 8 }}>
+              {myNickname === categoryChooser
+                ? 'Твоя черга обрати категорію!'
+                : `${categoryChooser} обирає категорію`}
+            </h2>
+            {/* Кнопки видимі всім, але активні тільки для chooser */}
+            <div className="category-buttons">
+              {categoryOptions.map((opt) => (
+                <button
+                  key={opt.index}
+                  className={`category-btn${myNickname !== categoryChooser ? ' disabled' : ''}`}
+                  disabled={myNickname !== categoryChooser}
+                  onClick={() => myNickname === categoryChooser && handleCategoryClick(opt.index)}
+                >
+                  {opt.category}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -747,13 +741,6 @@ export default function PlayerView() {
             <span className={`timer-display ${timerClass}`}>
               {timeLeft}
             </span>
-          </div>
-
-          <div className="timer-bar-wrapper">
-            <div
-              className={`timer-bar ${timerClass}`}
-              style={{ width: `${timerPercent}%` }}
-            />
           </div>
 
           {question.image && (
