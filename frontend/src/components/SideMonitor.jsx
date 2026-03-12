@@ -10,14 +10,15 @@ const POLL_INTERVAL = 2000;
 
 export default function SideMonitor() {
   const [nickname, setNickname] = useState('');
-  const [phase, setPhase] = useState('');
+  const [phase, setPhase] = useState('WAITING');
 
   useEffect(() => {
     const poll = async () => {
       try {
         const res = await fetch('/api/podium/status');
         const data = await res.json();
-        if (data.nickname) setNickname(data.nickname);
+        // Безумовно оновлюємо — щоб null з сервера очистив старий нікнейм
+        setNickname(data.nickname ?? '');
         setPhase(data.phase || '');
       } catch {
         // Сервер недоступний — продовжуємо показувати останній стан

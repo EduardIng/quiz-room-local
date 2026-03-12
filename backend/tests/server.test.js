@@ -288,11 +288,46 @@ describe('GET /api/podium/status', () => {
     server.roomManager.podiumRegistry.clear();
   });
 
-  it('GET /api/podium/status returns null nickname when no active room', async () => {
+  test('GET /api/podium/status returns null nickname when no active room', async () => {
     const res = await request(app).get('/api/podium/status');
     expect(res.status).toBe(200);
     expect(res.body.nickname).toBeNull();
     expect(res.body.phase).toBe('WAITING');
+  });
+
+  test('returns null nickname when room exists but IP not in podiumRegistry', async () => {
+    // Створюємо активну сесію через roomManager напряму
+    server.roomManager.currentActiveRoom = 'TESTXY';
+    // Мок-сесія з мінімальним інтерфейсом який читає /api/podium/status
+    server.roomManager.sessions.set('TESTXY', {
+      gameState: 'WAITING',
+      players: new Map(),
+    });
+    // podiumRegistry порожній — 127.0.0.1 не зареєстрований
+    const res = await request(app).get('/api/podium/status');
+    expect(res.status).toBe(200);
+    expect(res.body.nickname).toBeNull();
+    // Фаза повинна відповідати gameState сесії
+    expect(res.body.phase).toBe('WAITING');
+  });
+
+  test('returns nickname when IP is in podiumRegistry', async () => {
+    // Створюємо активну сесію та реєструємо IP 127.0.0.1 в podiumRegistry
+    server.roomManager.currentActiveRoom = 'TESTXY';
+    const socketId = 'socket-abc-123';
+    const players = new Map();
+    players.set(socketId, { nickname: 'TestPlayer' });
+    server.roomManager.sessions.set('TESTXY', {
+      gameState: 'QUESTION',
+      players,
+    });
+    // Запит з supertest іде з 127.0.0.1; сервер strip ::ffff: → '127.0.0.1'
+    server.roomManager.podiumRegistry.set('127.0.0.1', socketId);
+
+    const res = await request(app).get('/api/podium/status');
+    expect(res.status).toBe(200);
+    expect(res.body.nickname).toBe('TestPlayer');
+    expect(res.body.phase).toBe('QUESTION');
   });
 });
 
