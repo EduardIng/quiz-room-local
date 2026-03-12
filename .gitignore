@@ -35,3 +35,4 @@ coverage/
 
 # SQLite database (auto-created at runtime)
 data/
+.superpowers/
