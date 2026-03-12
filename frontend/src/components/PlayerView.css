@@ -825,3 +825,67 @@
   margin: 8px 0;
   animation: countdownPop 0.5s ease;
 }
+
+/* ── Category Select (spec additions) ── */
+.screen.category-select {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  min-height: 100vh;
+}
+
+.chooser-banner {
+  font-size: 1.4rem;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 16px;
+  padding: 12px 24px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 12px;
+}
+
+.category-options {
+  display: flex;
+  gap: 20px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.category-btn:not(.disabled):hover {
+  background: rgba(255,255,255,0.3);
+  transform: scale(1.03);
+}
+
+.category-btn.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Category Chosen (spec additions) ── */
+.screen.category-chosen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  text-align: center;
+}
+
+.chosen-label {
+  font-size: 1.2rem;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.chosen-name {
+  font-size: 3rem;
+  font-weight: bold;
+  padding: 24px 48px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 20px;
+}
