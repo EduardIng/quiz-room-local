@@ -938,3 +938,86 @@
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Answer Reveal (spec additions) ── */
+.reveal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 600px;
+  margin-top: 20px;
+}
+
+.reveal-btn {
+  padding: 20px;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff;
+  position: relative;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+/* Base colours matching answer buttons */
+.reveal-btn.answer-0 { background: #e53935; }
+.reveal-btn.answer-1 { background: #1e88e5; }
+.reveal-btn.answer-2 { background: #43a047; }
+.reveal-btn.answer-3 { background: #fb8c00; }
+
+.reveal-btn.correct { opacity: 1; box-shadow: 0 0 0 4px #fff; }
+.reveal-btn.my-pick.wrong { opacity: 0.75; outline: 4px solid rgba(255,255,255,0.5); }
+
+.tick {
+  position: absolute;
+  top: 8px; right: 12px;
+  font-size: 1.4rem;
+}
+
+.my-result {
+  margin-top: 24px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+}
+
+.correct-msg { color: #69f0ae; }
+.wrong-msg   { color: #ff5252; }
+.timeout-msg { color: #bbb; }
+
+/* ── Leaderboard (spec additions) ── */
+.lb-list {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  font-size: 1.1rem;
+}
+
+.lb-row.mine {
+  background: rgba(255,255,255,0.22);
+  border: 2px solid rgba(255,255,255,0.5);
+  font-weight: bold;
+}
+
+/* .mine alias on leaderboard-item for spec compatibility */
+.leaderboard-item.mine {
+  background: rgba(108, 63, 197, 0.25);
+  border: 1px solid rgba(108, 63, 197, 0.5);
+}
+
+.lb-pos { width: 32px; opacity: 0.7; }
+.lb-name { flex: 1; }
+.lb-score { font-weight: bold; }

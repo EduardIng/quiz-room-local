@@ -550,7 +550,8 @@ export default function PlayerView() {
       correctAnswerText: currentQuestion?.answers?.[data.correctAnswer]?.text || '',
       isCorrect,
       didNotAnswer,
-      pointsEarned
+      pointsEarned,
+      playerResults: data.playerResults || []
     });
 
     setScreen('reveal');
@@ -856,6 +857,29 @@ export default function PlayerView() {
                 : 'Неправильно!'}
           </div>
 
+          {question?.answers && (
+            <div className="reveal-grid">
+              {question.answers.map(ans => (
+                <div
+                  key={ans.id}
+                  className={`reveal-btn answer-${ans.id}${ans.id === revealData.correctAnswer ? ' correct' : ' wrong'}${ans.id === myAnswer ? ' my-pick' : ''}`}
+                >
+                  {ans.text}
+                  {ans.id === revealData.correctAnswer && <span className="tick">✓</span>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="my-result">
+            {revealData.didNotAnswer
+              ? <span className="timeout-msg">Час вийшов — 0 балів</span>
+              : revealData.isCorrect
+                ? <span className="correct-msg">+{revealData.pointsEarned} балів!</span>
+                : <span className="wrong-msg">Неправильно — 0 балів</span>
+            }
+          </div>
+
           {revealData.isCorrect && (
             <div className="points-earned">
               <div className="points-value">+{revealData.pointsEarned}</div>
@@ -894,7 +918,7 @@ export default function PlayerView() {
             {leaderboard.slice(0, 8).map((player, index) => (
               <div
                 key={player.playerId || index}
-                className={`leaderboard-item ${player.nickname === myNickname ? 'is-me' : ''}`}
+                className={`leaderboard-item ${player.nickname === myNickname ? 'is-me mine' : ''}`}
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
                 <span className={`leaderboard-position ${
@@ -952,7 +976,7 @@ export default function PlayerView() {
               {leaderboard.slice(0, 3).map((player, index) => (
                 <div
                   key={player.playerId || index}
-                  className={`leaderboard-item ${player.nickname === myNickname ? 'is-me' : ''}`}
+                  className={`leaderboard-item ${player.nickname === myNickname ? 'is-me mine' : ''}`}
                 >
                   <span className="leaderboard-position pos-1">
                     {player.position === 1 ? '🥇' : player.position === 2 ? '🥈' : '🥉'}
