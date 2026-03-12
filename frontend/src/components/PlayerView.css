@@ -10,11 +10,10 @@
  * 2. JOIN екран
  * 3. WAITING екран
  * 4. QUESTION екран
- * 5. ANSWER_SENT екран
- * 6. REVEAL екран
- * 7. LEADERBOARD екран
- * 8. ENDED екран
- * 9. Анімації
+ * 5. REVEAL екран
+ * 6. LEADERBOARD екран
+ * 7. ENDED екран
+ * 8. Анімації
  */
 
 /* ─────────────────────────────────────────
@@ -377,38 +376,7 @@
 }
 
 /* ─────────────────────────────────────────
-   5. ANSWER_SENT ЕКРАН
-───────────────────────────────────────── */
-
-.answer-sent-screen {
-  text-align: center;
-}
-
-.answer-sent-icon {
-  font-size: 4rem;
-  margin-bottom: 16px;
-}
-
-.waiting-dots {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.waiting-dots span {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--color-text-muted);
-  animation: pulseDot 1.2s ease-in-out infinite;
-}
-
-.waiting-dots span:nth-child(2) { animation-delay: 0.15s; }
-.waiting-dots span:nth-child(3) { animation-delay: 0.3s; }
-
-/* ─────────────────────────────────────────
-   6. REVEAL ЕКРАН
+   5. REVEAL ЕКРАН
 ───────────────────────────────────────── */
 
 .reveal-screen {

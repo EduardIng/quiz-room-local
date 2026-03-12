@@ -59,7 +59,6 @@ export default function PlayerView() {
   // ── Стан гравця ──
   const [myNickname, setMyNickname] = useState('');
   const [myScore, setMyScore] = useState(0);
-  const [myPosition, setMyPosition] = useState(null);
 
   // ── Стан поточного питання ──
   const [question, setQuestion] = useState(null);
@@ -441,9 +440,10 @@ export default function PlayerView() {
 
     setMyScore(0);
     setMyNickname('');
-    setMyPosition(null);
     setQuestion(null);
     questionRef.current = null;
+    setHasAnswered(false);
+    setMyAnswer(null);
     setSelectedAnswer(null);
     setRevealData(null);
     setLeaderboard([]);
@@ -563,10 +563,8 @@ export default function PlayerView() {
    * @param {number} choiceIndex - 0 або 1
    */
   const handleCategoryClick = useCallback((choiceIndex) => {
-    socketRef.current.emit('submit-category', { choiceIndex }, (response) => {
-      if (!response.success) {
-        console.warn('submit-category error:', response.error);
-      }
+    socketRef.current.emit('submit-category', { choiceIndex }, (_response) => {
+      // Сервер авто-обирає категорію по таймауту — мовчки ігноруємо помилку
     });
   }, []);
 
@@ -808,28 +806,7 @@ export default function PlayerView() {
         </div>
       )}
 
-      {/* ── 5. ANSWER_SENT ЕКРАН ── */}
-      {screen === 'answer_sent' && (
-        <div className="screen-card answer-sent-screen">
-          <div className="answer-sent-icon">✅</div>
-          <h2 className="screen-title">Відповідь надіслана!</h2>
-          <p className="screen-subtitle">
-            Ти обрав: <strong>{selectedAnswer !== null ? ANSWER_LETTERS[selectedAnswer] : '—'}</strong>
-          </p>
-          <p className="screen-subtitle">Чекаємо на інших гравців...</p>
-          <div className="waiting-dots">
-            <span /><span /><span />
-          </div>
-
-          {totalPlayers > 0 && (
-            <p style={{ marginTop: 16, color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-              {answeredCount} з {totalPlayers} відповіли
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* ── 6. REVEAL ЕКРАН ── */}
+      {/* ── 5. REVEAL ЕКРАН ── */}
       {screen === 'reveal' && revealData && (
         <div className="screen-card reveal-screen">
           <div className="result-icon">
