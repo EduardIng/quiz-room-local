@@ -22,6 +22,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import './ProjectorView.css';
+import Timebar from './Timebar.jsx';
 
 // URL бекенду
 const SERVER_URL = import.meta.env.DEV ? 'http://localhost:8080' : window.location.origin;
@@ -63,6 +64,8 @@ export default function ProjectorView() {
   const [timeLimit, setTimeLimit] = useState(30);
   const [answeredCount, setAnsweredCount] = useState(0);
   const [totalPlayers, setTotalPlayers] = useState(0);
+  // Очікувана кількість гравців (з PLAYER_JOINED/PLAYER_LEFT)
+  const [playerCount, setPlayerCount] = useState(0);
 
   // ── Відлік перед стартом ──
   const [countdown, setCountdown] = useState(3);
@@ -202,6 +205,7 @@ export default function ProjectorView() {
     setQuizTitle(gs.quizTitle || '');
     setPlayers(gs.players || []);
     setTotalPlayers(gs.playerCount || gs.players?.length || 0);
+    setPlayerCount(gs.playerCount || gs.players?.length || 0);
     setTotalQuestions(gs.totalQuestions || 0);
 
     if (gs.currentQuestion) {
@@ -238,6 +242,7 @@ export default function ProjectorView() {
       case 'PLAYER_LEFT':
         setPlayers(data.players || []);
         setTotalPlayers(data.totalPlayers || 0);
+        if (data.playerCount) setPlayerCount(data.playerCount);
         break;
 
       case 'QUIZ_STARTING':
@@ -427,33 +432,19 @@ export default function ProjectorView() {
         </div>
       )}
 
-      {/* ── WAITING: очікування гравців ── */}
+      {/* ── WAITING: очікування гравців (кіоск-режим, центральний стенд) ── */}
       {gameState === 'WAITING' && (
-        <div className="projector-waiting-screen">
-          <div className="projector-waiting-left">
-            <h2 className="projector-waiting-title">Приєднуйся!</h2>
-            <p className="projector-waiting-sub">Скануй QR або відкрий у браузері</p>
-            <div className="projector-join-url">
-              {window.location.origin}/?room=<strong>{roomCode}</strong>
-            </div>
-            <div className="projector-player-count">
-              <span className="projector-player-count-num">{players.length}</span>
-              <span className="projector-player-count-label"> гравців приєдналось</span>
-            </div>
-            {players.length > 0 && (
-              <div className="projector-player-chips">
-                {players.map((p, i) => (
-                  <span key={i} className="projector-player-chip">{p.nickname}</span>
-                ))}
-              </div>
-            )}
+        <div className="proj-screen proj-waiting">
+          <div className="proj-quiz-title">{quizTitle || 'Quiz Room'}</div>
+          <div className="proj-join-count">
+            {playerCount > 0
+              ? `${players.length} / ${playerCount} гравців готові`
+              : `${players.length} гравців приєдналось`}
           </div>
-          <div className="projector-waiting-right">
-            <img
-              src={`/api/qr/${roomCode}`}
-              alt="QR код"
-              className="projector-qr"
-            />
+          <div className="proj-player-chips">
+            {players.map(p => (
+              <div key={p.nickname} className="proj-chip">{p.nickname}</div>
+            ))}
           </div>
         </div>
       )}
@@ -466,157 +457,84 @@ export default function ProjectorView() {
         </div>
       )}
 
-      {/* ── CATEGORY_SELECT ── */}
+      {/* ── CATEGORY_SELECT: вибір категорії гравцем ── */}
       {gameState === 'CATEGORY_SELECT' && categoryOptions && (
-        <div className="projector-category-screen">
-          <div className="projector-cat-timer-bar-wrap">
-            <div
-              className="projector-cat-timer-bar"
-              style={{ width: `${Math.max(0, (categoryTimeLeft / categoryTimeLimit) * 100)}%` }}
-            />
-          </div>
-          <div className="projector-cat-inner">
-            <div className="projector-cat-header">
-              <span className="projector-cat-chooser">Обирає: <strong>{categoryChooser}</strong></span>
-              <span className="projector-cat-time">{categoryTimeLeft}с</span>
-            </div>
-            <div className="projector-cat-options">
-              {categoryOptions.map((opt, i) => (
-                <div key={i} className={`projector-cat-option projector-cat-opt-${i}`}>
-                  {opt.category}
-                </div>
-              ))}
-            </div>
+        <div className="proj-screen proj-category-select">
+          <div className="proj-chooser">{categoryChooser} обирає категорію</div>
+          <Timebar timeLimit={categoryTimeLimit} timeRemaining={categoryTimeLeft} />
+          <div className="proj-category-options">
+            {categoryOptions.map((opt, i) => (
+              <div key={i} className="proj-category-card">{opt.category}</div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* ── CATEGORY_CHOSEN ── */}
+      {/* ── CATEGORY_CHOSEN: показуємо обрану категорію 4 секунди ── */}
       {gameState === 'CATEGORY_CHOSEN' && categoryChosen && (
-        <div className="projector-center">
-          <p className="projector-starting-sub">Обрана категорія</p>
-          <div className="projector-cat-chosen">{categoryChosen.category}</div>
-          {categoryChosen.wasTimeout && (
-            <p className="projector-cat-auto">(авто-вибір)</p>
-          )}
+        <div className="proj-screen proj-category-chosen">
+          <div className="proj-chosen-label">Категорія</div>
+          <div className="proj-chosen-name">{categoryChosen.category}</div>
         </div>
       )}
 
-      {/* ── QUESTION ── */}
+      {/* ── QUESTION: питання + відповіді + таймбар + лічильник ── */}
       {gameState === 'QUESTION' && question && (
-        <div className="projector-question-screen">
-          {/* Таймер + прогрес-бар */}
-          <div className="projector-q-header">
-            <span className="projector-q-num">
-              Питання {questionIndex}/{totalQuestions}
-            </span>
-            <div className="projector-timer-bar-wrap">
-              <div
-                className={`projector-timer-bar ${timerDanger ? 'danger' : timerWarning ? 'warning' : ''}`}
-                style={{ width: `${timerPercent}%` }}
-              />
-            </div>
-            <span className={`projector-timer-num ${timerDanger ? 'danger' : timerWarning ? 'warning' : ''}`}>
-              {timeLeft}
-            </span>
+        <div className="proj-screen proj-question">
+          <div className="proj-q-header">
+            <span>Питання {questionIndex}/{totalQuestions}</span>
+            <span className="proj-answer-count">{answeredCount}/{totalPlayers || '?'} відповіли</span>
           </div>
-
-          {/* Зображення питання */}
-          {question.image && (
-            <div className="projector-q-image-wrap">
-              <img src={question.image} alt="" className="projector-q-image"
-                onError={e => { e.target.style.display = 'none'; }} />
-            </div>
-          )}
-
-          {/* Текст питання */}
-          <div className="projector-q-text">{question.text}</div>
-
-          {/* Лічильник відповідей */}
-          {totalPlayers > 0 && (
-            <div className="projector-answer-count">
-              <div
-                className="projector-answer-count-bar"
-                style={{ width: `${(answeredCount / totalPlayers) * 100}%` }}
-              />
-              <span className="projector-answer-count-text">
-                {answeredCount}/{totalPlayers} відповіли
-              </span>
-            </div>
-          )}
-
-          {/* Кнопки відповідей (2×2 сітка, не клікабельні) */}
-          <div className="projector-answers-grid">
-            {question.answers.map((ans) => (
-              <div
-                key={ans.id}
-                className="projector-answer-btn"
-                style={{ background: ANSWER_COLORS[ans.id] }}
-              >
-                <span className="projector-answer-letter">{ANSWER_LETTERS[ans.id]}</span>
-                <span className="projector-answer-text">{ans.text}</span>
+          <Timebar timeLimit={timeLimit} timeRemaining={timeLeft} />
+          <div className="proj-question-text">{question.text}</div>
+          <div className="proj-answer-grid">
+            {question.answers.map(ans => (
+              <div key={ans.id} className={`proj-answer-card answer-${ans.id}`}>
+                <span className="proj-answer-letter">{['A', 'B', 'C', 'D'][ans.id]}</span>
+                <span className="proj-answer-text">{ans.text}</span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* ── ANSWER_REVEAL ── */}
+      {/* ── ANSWER_REVEAL: підсвічуємо правильну відповідь ── */}
       {gameState === 'ANSWER_REVEAL' && question && (
-        <div className="projector-question-screen">
-          {/* Хедер: питання N/N */}
-          <div className="projector-q-header">
-            <span className="projector-q-num">
-              Питання {questionIndex}/{totalQuestions}
-            </span>
-            <span className="projector-reveal-label">Відповідь!</span>
-          </div>
-
-          {/* Текст питання */}
-          <div className="projector-q-text">{question.text}</div>
-
-          {/* Кнопки з підсвіткою правильної відповіді */}
-          <div className="projector-answers-grid">
-            {question.answers.map((ans) => {
-              const isCorrect = ans.id === correctAnswer;
-              const stat = revealStats?.answers?.[ans.id];
-              const count = stat?.count || 0;
-              return (
-                <div
-                  key={ans.id}
-                  className={`projector-answer-btn ${isCorrect ? 'correct' : 'wrong'}`}
-                  style={{ background: isCorrect ? '#27ae60' : '#555' }}
-                >
-                  <span className="projector-answer-letter">{ANSWER_LETTERS[ans.id]}</span>
-                  <span className="projector-answer-text">{ans.text}</span>
-                  {isCorrect && <span className="projector-correct-icon">✓</span>}
-                  {count > 0 && (
-                    <span className="projector-answer-count-badge">{count}</span>
-                  )}
-                </div>
-              );
-            })}
+        <div className="proj-screen proj-reveal">
+          <div className="proj-reveal-label">Правильна відповідь</div>
+          <div className="proj-answer-grid reveal">
+            {question.answers.map(ans => (
+              <div
+                key={ans.id}
+                className={`proj-answer-card answer-${ans.id}${ans.id === correctAnswer ? ' proj-correct' : ' proj-wrong'}`}
+              >
+                <span className="proj-answer-letter">{['A', 'B', 'C', 'D'][ans.id]}</span>
+                <span className="proj-answer-text">{ans.text}</span>
+                {ans.id === correctAnswer && <span className="proj-tick">✓</span>}
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* ── LEADERBOARD ── */}
+      {/* ── LEADERBOARD / ENDED: подіум топ-3 + решта списку ── */}
       {(gameState === 'LEADERBOARD' || gameState === 'ENDED') && (
-        <div className="projector-leaderboard-screen">
-          <h2 className="projector-lb-title">
-            {gameState === 'ENDED' ? '🏆 Фінальний результат' : '📊 Рейтинг'}
-          </h2>
-          <div className="projector-lb-list">
-            {leaderboard.slice(0, 8).map((player, i) => (
-              <div key={player.playerId || i} className={`projector-lb-item pos-${player.position}`}>
-                <span className="projector-lb-pos">
-                  {player.position === 1 ? '🥇' :
-                   player.position === 2 ? '🥈' :
-                   player.position === 3 ? '🥉' :
-                   `#${player.position}`}
-                </span>
-                <span className="projector-lb-name">{player.nickname}</span>
-                <span className="projector-lb-score">{player.score}</span>
+        <div className="proj-screen proj-leaderboard">
+          <div className="proj-podium">
+            {[1, 0, 2].map(idx => leaderboard[idx] && (
+              <div key={leaderboard[idx].nickname} className={`proj-podium-slot pos-${idx + 1}`}>
+                <div className="proj-podium-name">{leaderboard[idx].nickname}</div>
+                <div className="proj-podium-score">{leaderboard[idx].score}</div>
+                <div className="proj-podium-block">{['🥇', '🥈', '🥉'][idx]}</div>
+              </div>
+            ))}
+          </div>
+          <div className="proj-lb-rest">
+            {leaderboard.slice(3).map((p, i) => (
+              <div key={p.nickname} className="proj-lb-row">
+                <span className="proj-lb-pos">#{p.position ?? i + 4}</span>
+                <span className="proj-lb-name">{p.nickname}</span>
+                <span className="proj-lb-score">{p.score}</span>
               </div>
             ))}
           </div>
