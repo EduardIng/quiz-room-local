@@ -4,8 +4,8 @@
 **Developer:** EduardIng
 **Target:** Local kiosk quiz system — tablet podiums, LAN-only, auto-reconnect
 **Forked from:** quiz-room-auto v1.3.0
-**Version:** 0.2.0
-**Date:** March 10, 2026
+**Version:** 0.3.0
+**Date:** March 12, 2026
 
 ---
 
@@ -18,7 +18,7 @@
 **Quick start commands:**
 ```bash
 npm start                  # backend on port 8080
-cd frontend && npm run dev # frontend dev server on port 5173
+cd frontend && npm run dev # frontend dev server on port 3000
 npm test                   # run all tests
 ```
 
@@ -111,12 +111,30 @@ Auto-reconnect: `socket.on('disconnect')` → exponential backoff reconnect (2s,
 Navigation lock: `window.onbeforeunload = () => ''`, block F5/Backspace/Alt+F4 via `keydown`.
 Polling: if no active room, poll `GET /api/current-room` every 3s until one appears.
 
-### State Machine (unchanged from quiz-room-auto)
+### Podium Hardware Model (v0.3.0)
+
+Each podium is a Raspberry Pi 5 with:
+- HDMI-1 → touchscreen running PlayerView (`#/`)
+- HDMI-2 → side monitor running SideMonitor (`#/side`) — shows nickname to other players
+- 4 GPIO buttons (BCM pins 17/27/22/23) → `gpio-service.py` → `podium-button-press` socket event
+
+`podiumRegistry` Map (IP → socketId) is built when players join. GPIO service connects from the same Pi IP, so the server resolves button presses to the correct player automatically.
+
+SideMonitor polls `/api/podium/status` every 2s (HTTP, not localStorage — separate Chromium processes don't share localStorage).
+
+### Category Mode — Mandatory
+
+All quizzes must have `categoryMode: true`. `create-quiz` rejects standard quizzes.
+
+Auto-start: host sets `playerCount` before launch. Quiz starts automatically when that many players have joined. No manual Start needed.
+
+### State Machine
 
 ```
-Standard:  WAITING → STARTING → QUESTION → ANSWER_REVEAL → LEADERBOARD → (repeat) → ENDED
-Category:  WAITING → STARTING → CATEGORY_SELECT → [1s CATEGORY_CHOSEN] → QUESTION → ...
+Category:  WAITING → STARTING → CATEGORY_SELECT → [4s CATEGORY_CHOSEN] → QUESTION → ANSWER_REVEAL → LEADERBOARD → (repeat) → ENDED
 ```
+
+Standard (non-category) quizzes are rejected at session creation.
 
 ---
 
@@ -126,9 +144,9 @@ Category:  WAITING → STARTING → CATEGORY_SELECT → [1s CATEGORY_CHOSEN] →
 quiz-room-local/
 ├── backend/
 │   ├── src/
-│   │   ├── server.js                  <- Express server, static, API endpoints
-│   │   ├── websocket-handler-auto.js  <- Socket.IO all WS events
-│   │   ├── quiz-session-auto.js       <- State machine (unchanged from fork)
+│   │   ├── server.js                  <- Express server, static, API endpoints + /api/podium/status
+│   │   ├── websocket-handler-auto.js  <- Socket.IO events + podiumRegistry + podium-button-press
+│   │   ├── quiz-session-auto.js       <- State machine; categoryChosenTime; playerCount auto-start
 │   │   ├── quiz-storage.js            <- Load/save quizzes from quizzes/
 │   │   ├── db.js                      <- SQLite (better-sqlite3)
 │   │   └── utils.js                   <- Logging, validation
@@ -140,21 +158,27 @@ quiz-room-local/
 │       └── server.test.js
 ├── frontend/
 │   ├── src/
-│   │   ├── main.jsx                   <- Routing (#/, #/host, #/create, #/stats, #/screen)
+│   │   ├── main.jsx                   <- Routing (#/, #/host, #/create, #/stats, #/screen, #/side)
 │   │   ├── components/
-│   │   │   ├── PlayerView.jsx         <- Kiosk player UI (nickname only, auto-reconnect)
-│   │   │   ├── HostView.jsx           <- Host: select quiz + start + controls
+│   │   │   ├── PlayerView.jsx         <- Kiosk player UI; all game states incl. category mode
+│   │   │   ├── HostView.jsx           <- Host: player count selector + quiz launch + controls
+│   │   │   ├── ProjectorView.jsx      <- Central stand (#/screen); all phases + live answer count
+│   │   │   ├── SideMonitor.jsx        <- Podium side display (#/side); polls /api/podium/status
+│   │   │   ├── Timebar.jsx            <- Shared countdown bar (green→orange→red)
 │   │   │   ├── QuizCreator.jsx        <- Visual quiz editor (accessible at #/create)
-│   │   │   ├── ProjectorView.jsx      <- Big screen (#/screen) — still asks for room code
-│   │   │   ├── StatsPanel.jsx         <- Session statistics
-│   │   │   └── AdminPanel.jsx         <- DELETED — route removed Phase 3, file deleted v0.2.1
+│   │   │   └── StatsPanel.jsx         <- Session statistics
 │   │   ├── styles/theme.css
 │   │   └── utils/
 │   │       ├── i18n.js
 │   │       ├── useLang.js
 │   │       └── sound.js
 │   ├── index.html, vite.config.js, package.json
-├── quizzes/                           <- JSON quiz files
+├── pi-setup/
+│   ├── gpio-service.py                <- Python Socket.IO GPIO bridge (runs on each Pi)
+│   ├── kiosk.sh                       <- Dual-display Chromium kiosk boot script
+│   ├── install.sh                     <- One-time Pi setup script
+│   └── README.md                      <- Wiring table + setup guide
+├── quizzes/                           <- JSON quiz files (must have categoryMode: true)
 ├── media/                             <- Local media files (images, audio) for offline use
 ├── data/sessions.db                   <- SQLite (auto-created)
 ├── config.json
@@ -178,6 +202,7 @@ quiz-room-local/
 | GET | `/api/stats` | Aggregated stats + sessions list |
 | GET | `/api/stats/session/:id` | Single session details |
 | GET | `/api/media/:filename` | Serve local media file |
+| GET | `/api/podium/status` | `{ nickname, phase }` — resolves requesting IP via podiumRegistry |
 
 ---
 
@@ -187,13 +212,14 @@ quiz-room-local/
 
 | Event | Data | Notes |
 |-------|------|-------|
-| `create-quiz` | `{ quizData, settings }` | Host only — sets currentActiveRoom |
+| `create-quiz` | `{ quizData, settings, playerCount }` | Host only — sets currentActiveRoom; playerCount triggers auto-start |
 | `join-quiz` | `{ nickname, roomCode? }` | roomCode optional — uses currentActiveRoom if omitted |
 | `submit-answer` | `{ answerId: 0-3 }` | |
 | `submit-category` | `{ choiceIndex: 0-1 }` | |
 | `get-game-state` | `{ roomCode }` | |
 | `watch-room` | `{ roomCode }` | Projector observer |
 | `host-control` | `{ roomCode, action }` | pause/resume/skip/start |
+| `podium-button-press` | `{ buttonIndex: 0-3 }` | GPIO service only — submits answer on behalf of player resolved by IP |
 
 ### Server → Client (`quiz-update` types)
 
@@ -214,7 +240,8 @@ New: `NO_ACTIVE_ROOM` — emitted to joining player when no session exists yet.
     "questionTime": 30,
     "answerRevealTime": 5,
     "leaderboardTime": 5,
-    "autoStart": false,
+    "categoryChosenTime": 4,
+    "autoStart": true,
     "waitForAllPlayers": true,
     "minPlayers": 1,
     "maxPlayers": 8,
@@ -223,12 +250,14 @@ New: `NO_ACTIVE_ROOM` — emitted to joining player when no session exists yet.
   "kiosk": {
     "reconnectBaseDelay": 2000,
     "reconnectMaxDelay": 30000,
-    "roomPollInterval": 3000
+    "roomPollInterval": 3000,
+    "gpioButtonPins": [17, 27, 22, 23],
+    "gpioServerUrl": "http://localhost:8080"
   }
 }
 ```
 
-Note: `autoStart` is `false` — host explicitly presses Start.
+Note: `autoStart` is `true` — quiz starts automatically when `playerCount` players have joined. `categoryChosenTime` is the delay (seconds) between CATEGORY_CHOSEN broadcast and the first question.
 
 ---
 
@@ -245,7 +274,7 @@ Tiebreaker: avgAnswerTime ascending
 
 ## KNOWN REMAINING WORK
 
-All post-v0.2.0 items resolved in v0.2.1 (11 March 2026). Project is clean.
+All post-v0.2.1 items resolved in v0.3.0 (12 March 2026). Project is clean.
 
 ---
 
