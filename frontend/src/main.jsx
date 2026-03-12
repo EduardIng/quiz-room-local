@@ -16,6 +16,7 @@ import HostView from './components/HostView.jsx';
 import QuizCreator from './components/QuizCreator.jsx';
 import StatsPanel from './components/StatsPanel.jsx';
 import ProjectorView from './components/ProjectorView.jsx';
+import SideMonitor from './components/SideMonitor.jsx';
 import './styles/theme.css';
 
 /**
@@ -49,6 +50,7 @@ function App() {
   if (route === '/create')           return <QuizCreator />;
   if (route === '/stats')            return <StatsPanel />;
   if (route.startsWith('/screen'))   return <ProjectorView />;
+  if (route === '/side')             return <SideMonitor />;
   return <PlayerView />;
 }
 

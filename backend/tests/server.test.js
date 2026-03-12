@@ -278,6 +278,25 @@ describe('GET /api/current-room', () => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /api/podium/status
+// ---------------------------------------------------------------------------
+
+describe('GET /api/podium/status', () => {
+  afterEach(() => {
+    server.roomManager.currentActiveRoom = null;
+    server.roomManager.sessions.clear();
+    server.roomManager.podiumRegistry.clear();
+  });
+
+  it('GET /api/podium/status returns null nickname when no active room', async () => {
+    const res = await request(app).get('/api/podium/status');
+    expect(res.status).toBe(200);
+    expect(res.body.nickname).toBeNull();
+    expect(res.body.phase).toBe('WAITING');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // GET /api/media/:filename
 // ---------------------------------------------------------------------------
 

@@ -199,6 +199,35 @@ class QuizServer {
       }
     });
 
+    // GET /api/podium/status — повертає нікнейм і фазу гри для IP цього подіуму
+    // SideMonitor (окремий Chromium на HDMI-2) опитує цей ендпоінт кожні 2с
+    // podiumRegistry зберігається в roomManager — Map: IP → socketId
+    this.app.get('/api/podium/status', (req, res) => {
+      const ip = (req.ip || '').replace('::ffff:', '');
+      const roomCode = this.roomManager.getCurrentRoom();
+
+      if (!roomCode) {
+        return res.json({ nickname: null, phase: 'WAITING' });
+      }
+
+      const session = this.roomManager.sessions.get(roomCode);
+      if (!session) {
+        return res.json({ nickname: null, phase: 'WAITING' });
+      }
+
+      // Знаходимо socket гравця за IP через podiumRegistry
+      const playerSocketId = this.roomManager.podiumRegistry.get(ip);
+      if (!playerSocketId) {
+        return res.json({ nickname: null, phase: session.gameState });
+      }
+
+      const player = session.players.get(playerSocketId);
+      res.json({
+        nickname: player ? player.nickname : null,
+        phase: session.gameState,
+      });
+    });
+
     // Catch-all маршрут для SPA (Single Page Application)
     // Всі інші GET запити відправляємо index.html (React Router handles the rest)
     this.app.get('*', (req, res) => {
