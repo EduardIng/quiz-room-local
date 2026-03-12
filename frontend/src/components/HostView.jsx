@@ -101,7 +101,6 @@ export default function HostView() {
       autoStart: false,   // kiosk: ведучий явно натискає Start
       minPlayers,
       waitForAllPlayers: true,
-      targetPlayerCount  // скільки гравців запрошено на сесію
     };
 
     // Підключаємося до сервера
@@ -109,7 +108,7 @@ export default function HostView() {
     socketRef.current = socket;
 
     socket.on('connect', () => {
-      socket.emit('create-quiz', { quizData, settings }, (response) => {
+      socket.emit('create-quiz', { quizData, settings, playerCount: targetPlayerCount }, (response) => {
         setIsLaunching(false);
 
         if (response.success) {
