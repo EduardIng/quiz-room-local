@@ -90,7 +90,8 @@ export default function ProjectorView() {
   const timerRef = useRef(null);
   const countdownRef = useRef(null);
   const categoryTimerRef = useRef(null);
-  const pollRef = useRef(null);   // інтервал опитування /api/current-room
+  const pollRef = useRef(null);           // інтервал опитування /api/current-room
+  const quizEndedTimerRef = useRef(null); // таймер авто-скидання після QUIZ_ENDED
 
   // ─────────────────────────────────────────────
   // ПІДКЛЮЧЕННЯ ДО КІМНАТИ
@@ -189,6 +190,7 @@ export default function ProjectorView() {
       clearInterval(timerRef.current);
       clearInterval(countdownRef.current);
       clearInterval(categoryTimerRef.current);
+      clearTimeout(quizEndedTimerRef.current);
       socketRef.current?.disconnect();
     };
   }, []); // eslint-disable-line
@@ -298,7 +300,8 @@ export default function ProjectorView() {
 
       case 'GAME_PAUSED':
         setIsPaused(true);
-        setTimeLeft(data.timeRemaining || timeLeft);
+        // Functional updater уникає застарілого замикання на timeLeft
+        setTimeLeft(prev => data.timeRemaining ?? prev);
         clearInterval(timerRef.current);
         break;
 
@@ -324,7 +327,7 @@ export default function ProjectorView() {
         setGameState('ENDED');
         setLeaderboard(data.finalLeaderboard || []);
         // Через 12 секунд автоматично повертаємось до очікування нової гри
-        setTimeout(() => {
+        quizEndedTimerRef.current = setTimeout(() => {
           socketRef.current?.disconnect();
           setPhase('waiting_for_room');
           setGameState('WAITING');
