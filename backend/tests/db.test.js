@@ -23,8 +23,8 @@ const LEADERBOARD = [
 ];
 
 const QUESTION_STATS = [
-  { total: 2, notAnswered: 0, answers: { 0: { count: 1 }, 1: { count: 1 }, 2: { count: 0 }, 3: { count: 0 } } },
-  { total: 1, notAnswered: 1, answers: { 0: { count: 0 }, 1: { count: 1 }, 2: { count: 0 }, 3: { count: 0 } } },
+  { total: 2, notAnswered: 0, correctAnswer: 1, answers: { 0: { count: 1 }, 1: { count: 1 }, 2: { count: 0 }, 3: { count: 0 } } },
+  { total: 1, notAnswered: 1, correctAnswer: 2, answers: { 0: { count: 0 }, 1: { count: 1 }, 2: { count: 0 }, 3: { count: 0 } } },
 ];
 
 // ---------------------------------------------------------------------------
@@ -75,12 +75,14 @@ describe('saveSession', () => {
     expect(results[1].nickname).toBe('Bob');
   });
 
-  test('зберігає question_stats', () => {
+  test('зберігає question_stats з correct_answer', () => {
     db.saveSession('ABCDEF', 'Test Quiz', Date.now() - 1000, Date.now(), 2, LEADERBOARD, QUESTION_STATS);
-    const stats = db.db.prepare('SELECT * FROM question_stats').all();
+    const stats = db.db.prepare('SELECT * FROM question_stats ORDER BY question_index').all();
     expect(stats).toHaveLength(2);
     expect(stats[0].total_answered).toBe(2);
+    expect(stats[0].correct_answer).toBe(1);
     expect(stats[1].not_answered).toBe(1);
+    expect(stats[1].correct_answer).toBe(2);
   });
 
   test('зберігає кілька сесій незалежно', () => {
@@ -231,5 +233,26 @@ describe('cleanupOldSessions', () => {
     db.saveSession('O1', 'Old1', oldTime - 2000, oldTime - 1000, 1, [LEADERBOARD[0]], []);
     db.saveSession('O2', 'Old2', oldTime - 1000, oldTime,        1, [LEADERBOARD[0]], []);
     expect(db.cleanupOldSessions(90)).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getQuestionStats
+// ---------------------------------------------------------------------------
+
+describe('getQuestionStats', () => {
+  test('повертає question_stats для сесії', () => {
+    db.saveSession('ABCDEF', 'Test', Date.now() - 1000, Date.now(), 2, LEADERBOARD, QUESTION_STATS);
+    const sessions = db.getSessions();
+    const qs = db.getQuestionStats(sessions[0].id);
+    expect(qs).toHaveLength(2);
+    expect(qs[0].question_index).toBe(0);
+    expect(qs[0].correct_answer).toBe(1);
+    expect(qs[0].answer_0).toBe(1);
+    expect(qs[0].answer_1).toBe(1);
+  });
+
+  test('повертає порожній масив для неіснуючої сесії', () => {
+    expect(db.getQuestionStats(9999)).toEqual([]);
   });
 });

@@ -23,6 +23,7 @@ class QuizDatabase {
     this.db = new Database(DB_PATH);
     this.db.pragma('journal_mode = WAL');
     this._createTables();
+    this._migrateSchema();
     log('DB', `SQLite database opened: ${DB_PATH}`);
   }
 
@@ -52,6 +53,7 @@ class QuizDatabase {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         session_id INTEGER NOT NULL REFERENCES sessions(id),
         question_index INTEGER NOT NULL,
+        correct_answer INTEGER NOT NULL DEFAULT -1,
         total_answered INTEGER NOT NULL,
         not_answered INTEGER NOT NULL,
         answer_0 INTEGER NOT NULL DEFAULT 0,
@@ -60,6 +62,16 @@ class QuizDatabase {
         answer_3 INTEGER NOT NULL DEFAULT 0
       );
     `);
+  }
+
+  // Міграція схеми: додає нові колонки до існуючих таблиць (ідемпотентно)
+  _migrateSchema() {
+    try {
+      this.db.exec(`ALTER TABLE question_stats ADD COLUMN correct_answer INTEGER NOT NULL DEFAULT -1`);
+      log('DB', 'Міграція: додано колонку correct_answer до question_stats');
+    } catch (_) {
+      // Колонка вже існує — ігноруємо помилку
+    }
   }
 
   /**
@@ -86,8 +98,8 @@ class QuizDatabase {
       `);
 
       const insertQStat = this.db.prepare(`
-        INSERT INTO question_stats (session_id, question_index, total_answered, not_answered, answer_0, answer_1, answer_2, answer_3)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO question_stats (session_id, question_index, correct_answer, total_answered, not_answered, answer_0, answer_1, answer_2, answer_3)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       const save = this.db.transaction(() => {
@@ -100,7 +112,7 @@ class QuizDatabase {
 
         for (let i = 0; i < questionStats.length; i++) {
           const qs = questionStats[i];
-          insertQStat.run(sessionId, i, qs.total, qs.notAnswered,
+          insertQStat.run(sessionId, i, qs.correctAnswer ?? -1, qs.total, qs.notAnswered,
             qs.answers[0]?.count || 0,
             qs.answers[1]?.count || 0,
             qs.answers[2]?.count || 0,
@@ -163,6 +175,29 @@ class QuizDatabase {
       `).all(sessionId);
     } catch (err) {
       log('DB', `Error fetching results: ${err.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * Повертає статистику по кожному питанню для конкретної сесії.
+   * Використовується в /api/stats/session/:id/questions
+   *
+   * @param {number} sessionId
+   * @returns {Array} Масив { question_index, correct_answer, total_answered, not_answered, answer_0..3 }
+   */
+  getQuestionStats(sessionId) {
+    try {
+      return this.db.prepare(`
+        SELECT question_index, correct_answer,
+               total_answered, not_answered,
+               answer_0, answer_1, answer_2, answer_3
+        FROM question_stats
+        WHERE session_id = ?
+        ORDER BY question_index ASC
+      `).all(sessionId);
+    } catch (err) {
+      log('DB', `Помилка отримання question_stats: ${err.message}`);
       return [];
     }
   }

@@ -1184,6 +1184,7 @@ class AutoQuizSession {
     return {
       total: totalAnswered,
       notAnswered: this.players.size - totalAnswered,
+      correctAnswer: correctAnswerId,   // ← додаємо для збереження в БД
       answers
     };
   }
