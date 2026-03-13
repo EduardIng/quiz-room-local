@@ -54,6 +54,7 @@ export default function ProjectorView() {
   const [gameState, setGameState] = useState('WAITING');
   const [isPaused, setIsPaused] = useState(false);
   const [quizTitle, setQuizTitle] = useState('');
+  const [sessionName, setSessionName] = useState(''); // назва сесії від ведучого (опційно)
   const [players, setPlayers] = useState([]);
 
   // ── Питання ──
@@ -205,6 +206,7 @@ export default function ProjectorView() {
     setGameState(gs.gameState);
     setIsPaused(gs.isPaused || false);
     setQuizTitle(gs.quizTitle || '');
+    setSessionName(gs.sessionName || '');
     setPlayers(gs.players || []);
     setTotalPlayers(gs.playerCount || gs.players?.length || 0);
     setPlayerCount(gs.playerCount || gs.players?.length || 0);
@@ -418,13 +420,12 @@ export default function ProjectorView() {
   return (
     <div className="projector-root">
 
-      {/* ── Верхня панель: назва квізу + код кімнати ── */}
+      {/* ── Верхня панель: назва квізу + назва сесії (якщо задана) ── */}
       <header className="projector-header">
         <div className="projector-header-title">{quizTitle || 'Quiz Room'}</div>
-        <div className="projector-header-code">
-          <span className="projector-code-label">Код:</span>
-          <span className="projector-code-value">{roomCode}</span>
-        </div>
+        {sessionName && (
+          <div className="projector-header-session">{sessionName}</div>
+        )}
       </header>
 
       {/* ── ПАУЗА — оверлей ── */}

@@ -37,6 +37,7 @@ export default function HostView() {
   const [selectedId, setSelectedId]         = useState(null); // id вибраного квізу
   const [questionTime, setQuestionTime]     = useState(30);   // час на питання (сек)
   const [targetPlayerCount, setTargetPlayerCount] = useState(4); // скільки гравців сьогодні — також мінімум для автостарту
+  const [sessionName, setSessionName] = useState('');            // назва сесії (відображається на проекторі)
 
   // ── Стан гри після запуску ──
   const [roomCode, setRoomCode] = useState(null);     // код кімнати після create-quiz
@@ -97,9 +98,10 @@ export default function HostView() {
 
     const settings = {
       questionTime,
-      autoStart: true,              // автостарт коли зайшло targetPlayerCount гравців
-      minPlayers: targetPlayerCount, // авто-старт спрацює при такій кількості
+      autoStart: true,               // автостарт коли зайшло targetPlayerCount гравців
+      minPlayers: targetPlayerCount,  // авто-старт спрацює при такій кількості
       waitForAllPlayers: true,
+      ...(sessionName.trim() && { sessionName: sessionName.trim() }),
     };
 
     // Підключаємося до сервера
@@ -129,7 +131,7 @@ export default function HostView() {
       socket.disconnect();
       socketRef.current = null;
     });
-  }, [quizzes, selectedId, questionTime, targetPlayerCount]);
+  }, [quizzes, selectedId, questionTime, targetPlayerCount, sessionName]);
 
   // ─────────────────────────────────────────────
   // ОНОВЛЕННЯ СТАНУ ГРАВЦІВ (QUIZ-UPDATE)
@@ -455,6 +457,19 @@ export default function HostView() {
               {lang === 'uk' ? 'Вибери квіз зліва' : 'Pick a quiz on the left'}
             </p>
           )}
+
+          {/* Назва сесії — відображається на проекторі замість коду кімнати */}
+          <label className="host-setting-label">
+            {lang === 'uk' ? 'Назва сесії (опційно)' : 'Session name (optional)'}
+          </label>
+          <input
+            className="host-setting-input"
+            type="text"
+            maxLength={40}
+            placeholder={lang === 'uk' ? 'напр. Клас 8А — Географія' : 'e.g. Group A — History'}
+            value={sessionName}
+            onChange={e => setSessionName(e.target.value)}
+          />
 
           {/* Час на питання */}
           <label className="host-setting-label">

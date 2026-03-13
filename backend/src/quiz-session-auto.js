@@ -43,6 +43,7 @@ class AutoQuizSession {
 
     // Налаштування: таймери, autoStart, waitForAllPlayers тощо
     this.settings = settings;
+    this.sessionName = settings.sessionName || ''; // назва сесії від ведучого (опційно)
 
     // Поточний стан гри (машина станів)
     // Можливі значення: 'WAITING', 'STARTING', 'QUESTION', 'ANSWER_REVEAL', 'LEADERBOARD', 'ENDED'
@@ -1073,6 +1074,7 @@ class AutoQuizSession {
       totalQuestions,
       currentQuestionIndex: this.currentQuestionIndex,
       quizTitle: this.quizData.title,
+      sessionName: this.sessionName,
       isCategoryMode: this.isCategoryMode,
       playerCount: this.players.size,
     };
