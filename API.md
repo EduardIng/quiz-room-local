@@ -699,6 +699,36 @@ Returns the full leaderboard for a single completed session.
 
 ---
 
+### `GET /api/stats/session/:id/questions`
+
+Returns per-question statistics for a single completed session. Used by `StatsPanel` to render accuracy bars and answer distribution charts.
+
+**Parameters:**
+- `:id` — integer session ID (from `/api/stats`)
+
+**Response:**
+```json
+{
+  "success": true,
+  "questionStats": [
+    {
+      "question_index": 0,
+      "correct_answer": 2,
+      "total_answered": 4,
+      "not_answered": 0,
+      "answer_0": 1,
+      "answer_1": 0,
+      "answer_2": 3,
+      "answer_3": 0
+    }
+  ]
+}
+```
+
+`correct_answer` is the 0-based index of the correct option (`-1` if unknown for sessions recorded before v0.3.1).
+
+---
+
 ### `GET /api/podium/status`
 
 Returns the nickname and current game phase for the device making the request. Used by `SideMonitor` (`#/side`) which runs in a separate Chromium process on the podium's HDMI-2 display and cannot share state via localStorage.

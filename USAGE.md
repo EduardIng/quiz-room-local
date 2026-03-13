@@ -49,8 +49,10 @@ The library lists all quizzes in the `quizzes/` folder. Click a quiz to select i
 
 | Setting | Default | Notes |
 |---------|---------|-------|
-| Time per question | 30s | Applies to all questions (per-question overrides still work) |
+| Session name | *(empty)* | Optional label shown on the projector screen top-right corner |
 | Player count | 4 | Quiz auto-starts when this many players have joined |
+
+> Question time is set globally in `config.json` (`quiz.questionTime`, default 30s). Per-question timer overrides can be set in the Quiz Creator.
 
 ### Step 4 — Launch
 

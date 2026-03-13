@@ -36,3 +36,6 @@ coverage/
 # SQLite database (auto-created at runtime)
 data/
 .superpowers/
+
+# Internal planning artifacts (Claude Code)
+docs/superpowers/
