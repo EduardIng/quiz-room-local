@@ -69,8 +69,11 @@ class QuizDatabase {
     try {
       this.db.exec(`ALTER TABLE question_stats ADD COLUMN correct_answer INTEGER NOT NULL DEFAULT -1`);
       log('DB', 'Міграція: додано колонку correct_answer до question_stats');
-    } catch (_) {
-      // Колонка вже існує — ігноруємо помилку
+    } catch (err) {
+      // Колонка вже існує — це нормально. Інші помилки логуємо для діагностики.
+      if (!err.message.includes('duplicate column name') && !err.message.includes('already exists')) {
+        log('DB', `Міграція: несподівана помилка — ${err.message}`);
+      }
     }
   }
 
