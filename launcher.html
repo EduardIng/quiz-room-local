@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Room — Launcher</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f0b1e;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #c4a8ff;
+    }
+
+    .cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.25rem;
+      justify-content: center;
+      max-width: 860px;
+      width: 100%;
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+      background: #1e1540;
+      border: 2px solid #3a2d6e;
+      border-radius: 16px;
+      padding: 2rem 2.5rem;
+      text-decoration: none;
+      color: #fff;
+      transition: border-color 0.18s, transform 0.15s, background 0.18s;
+      min-width: 220px;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      border-color: #7c5cfc;
+      background: #251b52;
+      transform: translateY(-3px);
+    }
+
+    .card .icon {
+      font-size: 2.8rem;
+      line-height: 1;
+    }
+
+    .card .label {
+      font-size: 1.15rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .card .sublabel {
+      font-size: 0.8rem;
+      color: #9b87c8;
+      text-align: center;
+    }
+
+    .card.host   { border-color: #4a90d9; }
+    .card.host:hover { border-color: #6cb2ff; background: #1a2a42; }
+
+    .card.player { border-color: #27ae60; }
+    .card.player:hover { border-color: #4cde88; background: #132a1e; }
+
+    .card.create { border-color: #e67e22; }
+    .card.create:hover { border-color: #ffaa55; background: #2a1e0f; }
+
+    .card.screen { border-color: #9b59b6; }
+    .card.screen:hover { border-color: #cc88ff; background: #201530; }
+
+    footer {
+      font-size: 0.75rem;
+      color: #5a4f7a;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎮 Quiz Room</h1>
+
+  <div class="cards">
+
+    <a class="card host" href="http://localhost:8080/#/host" target="_blank">
+      <span class="icon">🎤</span>
+      <span class="label">Ведучий</span>
+      <span class="sublabel">Host view — запуск гри, контроль</span>
+    </a>
+
+    <a class="card player" href="http://localhost:8080/#/" target="_blank">
+      <span class="icon">👤</span>
+      <span class="label">Гравець</span>
+      <span class="sublabel">Player view — кіоск-режим</span>
+    </a>
+
+    <a class="card create" href="http://localhost:8080/#/create" target="_blank">
+      <span class="icon">✏️</span>
+      <span class="label">Редактор квізів</span>
+      <span class="sublabel">Quiz Creator — створення та редагування</span>
+    </a>
+
+    <a class="card screen" href="http://localhost:8080/#/screen" target="_blank">
+      <span class="icon">📺</span>
+      <span class="label">Проектор</span>
+      <span class="sublabel">Projector view — центральний екран</span>
+    </a>
+
+  </div>
+
+  <footer>Сервер: localhost:8080 &nbsp;·&nbsp; змініть адресу якщо потрібен інший хост</footer>
+
+</body>
+</html>
