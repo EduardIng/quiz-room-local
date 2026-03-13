@@ -252,6 +252,36 @@ describe('GET /api/stats/session/:id', () => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /api/stats/session/:id/questions
+// ---------------------------------------------------------------------------
+
+describe('GET /api/stats/session/:id/questions', () => {
+  test('повертає question_stats для сесії', async () => {
+    const db = require('../src/db');
+    db.saveSession('QTEST', 'Q Quiz', Date.now() - 1000, Date.now(), 1,
+      [{ position: 1, nickname: 'X', score: 100, correctAnswers: 1, avgAnswerTime: 5 }],
+      [{ total: 1, notAnswered: 0, correctAnswer: 2, answers: { 0: { count: 0 }, 1: { count: 0 }, 2: { count: 1 }, 3: { count: 0 } } }]
+    );
+    const sessions = db.getSessions();
+    const id = sessions[0].id;
+
+    const res = await request(app).get(`/api/stats/session/${id}/questions`);
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.questionStats).toHaveLength(1);
+    expect(res.body.questionStats[0].correct_answer).toBe(2);
+    expect(res.body.questionStats[0].answer_2).toBe(1);
+  });
+
+  test('повертає порожній масив для неіснуючої сесії', async () => {
+    const res = await request(app).get('/api/stats/session/9999/questions');
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.questionStats).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // GET /api/current-room
 // ---------------------------------------------------------------------------
 

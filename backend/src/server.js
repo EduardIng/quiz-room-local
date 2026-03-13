@@ -152,6 +152,12 @@ class QuizServer {
       res.json({ success: true, results });
     });
 
+    // API: статистика питань для конкретної сесії
+    this.app.get('/api/stats/session/:id/questions', (req, res) => {
+      const questionStats = db.getQuestionStats(Number(req.params.id));
+      res.json({ success: true, questionStats });
+    });
+
     // API: список квізів з диску (папка quizzes/)
     this.app.get('/api/quizzes', (req, res) => {
       const quizzes = loadAllQuizzes();
