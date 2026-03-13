@@ -26,10 +26,10 @@ Do not start any work yet — just report back.
 ```
 
 Claude will read both files and give you a status summary. Verify it matches:
-- Version: v0.2.0
-- Tests: 176/176 passing
-- All phases 0–6 complete
-- 7 known remaining items in CLAUDE.md
+- Version: v0.3.0
+- Tests: 186 passing, 1 skipped
+- All phases 0–7 complete
+- No known remaining items
 
 ---
 
@@ -43,7 +43,7 @@ Run the tests and confirm they pass.
 
 Expected output:
 ```
-Tests: 176 passed, 176 total
+Tests: 186 passed, 1 skipped
 ```
 
 If tests fail, stop and ask Claude to diagnose before doing anything else.
@@ -52,19 +52,10 @@ If tests fail, stop and ask Claude to diagnose before doing anything else.
 
 ## Step 4: Choose what to work on
 
-The **KNOWN REMAINING WORK** table in `CLAUDE.md` lists 7 items in priority order.
-The highest-impact ones are:
-
-| # | Item | What it does |
-|---|------|-------------|
-| 2 | ProjectorView auto-discover room | Big screen no longer needs room code — auto-joins like tablets |
-| 4 | Player list in HostView | Host sees player names, not just a count |
-| 3 | color-mix() CSS fallback | Fixes visual glitch on older tablets |
-
-Pick one and tell Claude:
+The project is v0.3.0 — all known work is complete. To add new features, start with:
 
 ```
-Work on item #2 from the KNOWN REMAINING WORK table in CLAUDE.md.
+Read CLAUDE.md and PROGRESS.md and continue. Here's what I want: [describe task]
 ```
 
 ---
@@ -112,7 +103,7 @@ cd frontend && npm run build
 
 # Run all tests
 npm test
-# → 176 tests expected
+# → 186 passing, 1 skipped expected
 
 # Check git status
 git log --oneline -5

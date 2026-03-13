@@ -35,7 +35,9 @@ Callback format:
 
 Creates a new quiz room. Called by the quiz host.
 
-**Standard mode request:**
+> **Note (v0.3.0):** Category mode is **mandatory**. Standard-mode quizzes (without `categoryMode: true`) are rejected with an error. The standard mode example below is kept for reference only.
+
+**Standard mode (rejected in v0.3.0 — use category mode):**
 ```javascript
 socket.emit('create-quiz', {
   quizData: {
@@ -53,28 +55,17 @@ socket.emit('create-quiz', {
       }
     ]
   },
-  settings: {                   // Optional. All fields override config.json defaults
-    questionTime: number,        // 10–120 seconds
-    answerRevealTime: number,    // 2–15 seconds
-    leaderboardTime: number,     // 2–15 seconds
-    autoStart: boolean,
-    waitForAllPlayers: boolean,
-    minPlayers: number,
-    maxPlayers: number
-  }
-}, (response) => {
-  // response.success: boolean
-  // response.roomCode: string (6 chars, e.g. "AB3C7D")
-  // response.error?: string
-});
+  settings: { /* see below */ },
+  playerCount: number           // How many players must join before auto-start
+}, callback);
 ```
 
-**Category mode request:**
+**Category mode request (required in v0.3.0):**
 ```javascript
 socket.emit('create-quiz', {
   quizData: {
     title: string,
-    categoryMode: true,       // Enables category selection between rounds
+    categoryMode: true,       // Required in v0.3.0
     rounds: [
       {
         options: [
@@ -96,8 +87,21 @@ socket.emit('create-quiz', {
       // ... more rounds
     ]
   },
-  settings: { /* same as standard */ }
-}, callback);
+  settings: {                   // Optional. All fields override config.json defaults
+    questionTime: number,        // 10–120 seconds
+    answerRevealTime: number,    // 2–15 seconds
+    leaderboardTime: number,     // 2–15 seconds
+    categoryChosenTime: number,  // seconds to display chosen category (default 4)
+    waitForAllPlayers: boolean,
+    minPlayers: number,
+    maxPlayers: number
+  },
+  playerCount: number            // Required. Quiz auto-starts when this many players join
+}, (response) => {
+  // response.success: boolean
+  // response.roomCode: string (6 chars, e.g. "AB3C7D")
+  // response.error?: string
+});
 ```
 
 **Validation errors:**
@@ -231,6 +235,23 @@ socket.emit('host-control', {
 - Room code not found
 - Socket is not the host of that room
 - Unknown action
+
+---
+
+### `podium-button-press`
+
+Sent by the Raspberry Pi GPIO service (`gpio-service.py`) when a physical button is pressed. The server resolves the sender's IP address via `podiumRegistry` (built when the player joins) and calls `submitAnswer` on their behalf. **Not for use by browser clients.**
+
+**Request:**
+```javascript
+socket.emit('podium-button-press', {
+  buttonIndex: number   // 0=A (red), 1=B (blue), 2=C (green), 3=D (orange)
+});
+```
+
+**Validation errors:**
+- `buttonIndex` not in 0–3
+- Sender IP not found in `podiumRegistry` (player has not joined from this podium)
 
 ---
 
@@ -675,6 +696,26 @@ Returns the full leaderboard for a single completed session.
   ]
 }
 ```
+
+---
+
+### `GET /api/podium/status`
+
+Returns the nickname and current game phase for the device making the request. Used by `SideMonitor` (`#/side`) which runs in a separate Chromium process on the podium's HDMI-2 display and cannot share state via localStorage.
+
+The server resolves the requesting IP address against `podiumRegistry` to find the player.
+
+**Response (player found):**
+```json
+{ "nickname": "Alice", "phase": "QUESTION" }
+```
+
+**Response (no match or no active room):**
+```json
+{ "nickname": null, "phase": "WAITING" }
+```
+
+**Possible `phase` values:** `WAITING`, `STARTING`, `CATEGORY_SELECT`, `CATEGORY_CHOSEN`, `QUESTION`, `ANSWER_REVEAL`, `LEADERBOARD`, `ENDED`
 
 ---
 

@@ -116,3 +116,36 @@ Each decision includes: date, problem, options considered, chosen solution, reas
 **Reasoning:** The audio bar disappears on the answer-reveal screen. If music continued playing invisibly during the answer, it would be confusing. Calling `audioRef.current.pause()` in the REVEAL_ANSWER handler keeps the experience clean. The `loop` attribute means music fills the full question duration without requiring a track of exactly the right length.
 
 ---
+
+## Decision 011 - 2026-03-12
+**Problem:** GPIO button handling — embed in Node.js backend vs. separate process
+**Options:**
+- A: Python subprocess spawned by Node.js using `child_process`
+- B: Separate `gpio-service.py` process connecting via Socket.IO
+
+**Chosen:** Separate Python process (Option B)
+**Reasoning:** RPi.GPIO is a Python library — there is no equivalent native Node.js GPIO library that is stable on Pi 5. A separate process keeps the Node.js backend hardware-agnostic and deployable on non-Pi machines. The service connects as a normal Socket.IO client, so no backend changes are needed to support or test it (aside from the `podium-button-press` event handler).
+
+---
+
+## Decision 012 - 2026-03-12
+**Problem:** SideMonitor communication — localStorage vs. HTTP polling
+**Options:**
+- A: `localStorage` + `storage` events (cross-tab communication)
+- B: HTTP polling `GET /api/podium/status` every 2 seconds
+
+**Chosen:** HTTP polling (Option B)
+**Reasoning:** PlayerView (HDMI-1) and SideMonitor (HDMI-2) run in separate Chromium processes launched against different X displays (`:0` and `:1`). Separate OS-level processes do not share the same localStorage namespace or receive each other's storage events. HTTP polling is the only reliable cross-process communication path without adding a separate IPC channel.
+
+---
+
+## Decision 013 - 2026-03-12
+**Problem:** Category mode — optional vs. mandatory
+**Options:**
+- A: Optional — hosts choose standard or category mode per quiz
+- B: Mandatory — all quizzes must use category mode; standard quizzes rejected at launch
+
+**Chosen:** Mandatory (Option B)
+**Reasoning:** The podium hardware game flow assumes category selection happens between every question. The PlayerView, ProjectorView, and game pacing are all designed around this flow. Allowing standard quizzes would skip the CATEGORY_SELECT phase and produce a disjointed player experience (e.g. buttons sitting idle, timebar appearing without context). Enforcing category mode at the server level makes the constraint explicit and prevents subtle bugs.
+
+---

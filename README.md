@@ -2,8 +2,8 @@
 
 > Local-kiosk quiz system for venues — tablets connect automatically, no room codes needed
 
-[![Tests](https://img.shields.io/badge/tests-176%20passed-brightgreen)](backend/tests/)
-[![Version](https://img.shields.io/badge/version-0.2.1-blue)](package.json)
+[![Tests](https://img.shields.io/badge/tests-186%20passed-brightgreen)](backend/tests/)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue)](package.json)
 [![Fork of](https://img.shields.io/badge/fork%20of-quiz--room--auto%20v1.3.0-purple)](https://github.com/EduardIng/quiz-room-auto)
 
 ---
@@ -17,11 +17,12 @@
 ### How It Works
 
 1. **Host** opens `http://server:8080/#/host` on a laptop/tablet
-2. **Host** selects a quiz from the library and clicks **Launch**
-3. **Host** clicks **Start** when enough players have joined
-4. **Player tablets** (pointed at `http://server:8080/`) automatically detect the new game
-5. Players enter their nickname and the game runs automatically
-6. After the game ends, tablets return to "Waiting for host..." ready for the next round
+2. **Host** selects a quiz from the library, sets the expected **player count**, and clicks **Launch**
+3. **Player tablets** (pointed at `http://server:8080/`) automatically detect the new game
+4. Players enter their nickname — the quiz **auto-starts** when the expected player count is reached (no manual Start needed)
+5. After the game ends, tablets return to "Waiting for host..." ready for the next round
+
+> **Note:** All quizzes must use category mode (`categoryMode: true`). Non-category quizzes are rejected at launch.
 
 ---
 
@@ -59,6 +60,7 @@ Host device (1 device)
 | `#/create` | Quiz editor | Quiz author |
 | `#/screen` | Projector / big screen | TV or projector |
 | `#/stats` | Session statistics | Admin |
+| `#/side` | SideMonitor | Podium side monitors (HDMI-2) |
 
 ---
 
@@ -71,7 +73,7 @@ npm install
 # Start server (port 8080)
 npm start
 
-# Dev mode (frontend hot-reload on port 5173)
+# Dev mode (frontend hot-reload on port 3000)
 cd frontend && npm run dev
 
 # Run tests

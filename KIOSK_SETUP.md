@@ -85,13 +85,12 @@ Bookmark this page. This is where the host:
 
 ## Step 4: Running a Game
 
-1. Host opens `#/host`, selects a quiz, clicks **🚀 Launch Quiz**
+1. Host opens `#/host`, selects a quiz, and sets the **expected player count** before clicking **🚀 Launch Quiz**
 2. Tablets automatically detect the new game and show the nickname input
 3. Players type their nickname and wait
-4. Host sees player count update in real time
-5. Host clicks **▶ Start** when ready
-6. Game runs automatically: questions → answers → leaderboard → repeat
-7. After the final question, tablets show final rankings, then return to "Waiting for host..."
+4. The quiz **auto-starts** as soon as the expected number of players have joined — no manual Start needed
+5. Game runs automatically: questions → answers → leaderboard → repeat
+6. After the final question, tablets show final rankings, then return to "Waiting for host..."
 
 ---
 

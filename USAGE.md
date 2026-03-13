@@ -9,11 +9,11 @@ How to run quiz sessions from start to finish with kiosk tablet podiums.
 ```
 1. Host starts server      →  npm start
 2. Host opens browser      →  http://server:8080/#/host
-3. Host selects a quiz     →  picks from library + configures time/min players
+3. Host selects a quiz     →  picks from library + sets expected player count
 4. Host clicks Launch      →  game session created, tablets auto-discover it
 5. Players join            →  type only their nickname (no room code needed)
-6. Host clicks Start       →  game begins
-7. Game runs automatically →  questions, timers, reveals, leaderboard
+6. Quiz auto-starts        →  when expected player count is reached (no manual Start)
+7. Game runs automatically →  category select → questions → timers → reveals → leaderboard
 8. Quiz ends               →  final standings shown, tablets return to waiting
 9. View history            →  http://server:8080/#/stats
 ```
@@ -25,9 +25,10 @@ How to run quiz sessions from start to finish with kiosk tablet podiums.
 | URL | Who uses it | Purpose |
 |-----|-------------|---------|
 | `http://server:8080/#/` | Player tablets | Kiosk join screen (nickname only) |
-| `http://server:8080/#/host` | Host device | Select quiz, launch, control game |
-| `http://server:8080/#/create` | Quiz author | Create and save quizzes |
+| `http://server:8080/#/host` | Host device | Select quiz, set player count, launch, control game |
+| `http://server:8080/#/create` | Quiz author | Create and save quizzes (must enable category mode) |
 | `http://server:8080/#/screen` | Projector/TV | Read-only big-screen display (auto-discovers room) |
+| `http://server:8080/#/side` | Podium side monitor | Shows player nickname on HDMI-2 (Raspberry Pi podiums) |
 | `http://server:8080/#/stats` | Admin | View completed session history |
 
 ---
@@ -49,19 +50,17 @@ The library lists all quizzes in the `quizzes/` folder. Click a quiz to select i
 | Setting | Default | Notes |
 |---------|---------|-------|
 | Time per question | 30s | Applies to all questions (per-question overrides still work) |
-| Min. players | 1 | Host can still start manually regardless |
+| Player count | 4 | Quiz auto-starts when this many players have joined |
 
 ### Step 4 — Launch
 
-Click **🚀 Launch Quiz**. The room code is shown (internal — tablets connect automatically, no need to share it). Tablets on the LAN will detect the new game within 3 seconds.
+Click **🚀 Launch Quiz**. Tablets on the LAN detect the new game within 3 seconds and show the nickname input screen.
 
 ### Step 5 — Wait for players
 
-The host panel shows the number of connected players and their names in real time.
+The host panel shows connected players in real time. When the expected player count is reached, the quiz **starts automatically** — no manual action needed.
 
-### Step 6 — Start the game
-
-Click **▶ Start** when enough players have joined.
+> All quizzes must use category mode. Non-category quizzes are rejected at launch.
 
 ---
 

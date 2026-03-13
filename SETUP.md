@@ -33,7 +33,7 @@ cd frontend && npm install && cd ..
 # Production mode (serves built frontend)
 npm start
 
-# Development mode (backend on :8080, frontend dev server on :5173 with HMR)
+# Development mode (backend on :8080, frontend dev server on :3000 with HMR)
 npm run dev        # backend
 cd frontend && npm run dev   # frontend (separate terminal)
 ```
@@ -77,7 +77,8 @@ Edit `config.json` in the project root:
     "questionTime": 30,
     "answerRevealTime": 5,
     "leaderboardTime": 5,
-    "autoStart": false,
+    "categoryChosenTime": 4,
+    "autoStart": true,
     "waitForAllPlayers": true,
     "minPlayers": 1,
     "maxPlayers": 8,
@@ -86,15 +87,20 @@ Edit `config.json` in the project root:
   "kiosk": {
     "reconnectBaseDelay": 2000,
     "reconnectMaxDelay": 30000,
-    "roomPollInterval": 3000
+    "roomPollInterval": 3000,
+    "gpioButtonPins": [17, 27, 22, 23],
+    "gpioServerUrl": "http://localhost:8080"
   }
 }
 ```
 
 Key kiosk settings:
-- `autoStart: false` — host must press Start manually (recommended for venue control)
+- `autoStart: true` — quiz starts automatically when the expected `playerCount` players have joined
+- `categoryChosenTime: 4` — seconds between CATEGORY_CHOSEN broadcast and the next question
 - `roomPollInterval: 3000` — tablets check for new game every 3 seconds
 - `reconnectBaseDelay/reconnectMaxDelay` — socket reconnect timing on network drop
+- `gpioButtonPins: [17, 27, 22, 23]` — BCM GPIO pin numbers for A/B/C/D answer buttons (Raspberry Pi podiums)
+- `gpioServerUrl` — URL that `gpio-service.py` connects to (must match the server address)
 
 ---
 
@@ -146,7 +152,7 @@ Reference them in quiz JSON:
 
 ```bash
 npm test
-# 176/176 tests should pass
+# 186 passing, 1 skipped
 ```
 
 ---
