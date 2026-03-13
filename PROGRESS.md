@@ -1,7 +1,7 @@
 # PROGRESS.md — Quiz Room Local (Kiosk Edition)
 
 > Read this file fully before continuing development.
-> Last updated: 13 March 2026 (Session 5 — UI cleanup: HostView and QuizCreator simplified)
+> Last updated: 13 March 2026 (Session 6 — StatsPanel analytics upgrade)
 
 ---
 
@@ -251,6 +251,22 @@ Same as quiz-room-auto + `NO_ACTIVE_ROOM` (new in kiosk fork). `ANSWER_COUNT` ev
 - Removed "Мін. гравців" selector and "Автостарт" checkbox (redundant — autostart is always on; player count is set in HostView)
 - Removed global "Час на питання" (time per question) selector — server uses `config.json` default (30s); per-question timer override in individual question editor still works
 - Removed `questionTime`, `autoStart`, `minPlayers` state variables
+
+---
+
+### Session 6 — StatsPanel Analytics Upgrade (13 March 2026) ✅
+
+**Backend:**
+- `db.js`: Added `correct_answer INTEGER NOT NULL DEFAULT -1` column to `question_stats` table (CREATE TABLE + `_migrateSchema()` migration for existing DBs)
+- `db.js`: New `getQuestionStats(sessionId)` method returns per-question stats ordered by index
+- `quiz-session-auto.js`: `_calculateAnswerStatistics` now includes `correctAnswer` in returned object so it flows into `collectedQuestionStats` → `db.saveSession`
+- `server.js`: New `GET /api/stats/session/:id/questions` endpoint
+
+**Frontend:**
+- `StatsPanel.jsx`: Expanded session row now has two tabs — "Рейтинг" (leaderboard with avg response time per player) and "Питання" (per-question accuracy bar, A/B/C/D distribution bars, most-missed badge)
+- `StatsPanel.css`: New styles for tabs and pure-CSS chart bars
+
+**Tests:** 190 passing, 1 skipped (up from 186 in v0.3.0)
 
 ---
 
