@@ -7,7 +7,7 @@
  * Відповідальність:
  * - Завантаження бібліотеки квізів з /api/quizzes
  * - Відображення списку + вибір квізу
- * - Налаштування гри (час питання, мін. гравців)
+ * - Налаштування гри (час питання, кількість гравців сьогодні)
  * - Запуск квізу через create-quiz (Socket.IO)
  * - Host controls: start / pause / resume / skip
  * - Відображення статусу гри в реальному часі
@@ -36,8 +36,7 @@ export default function HostView() {
   // ── Вибраний квіз та налаштування ──
   const [selectedId, setSelectedId]         = useState(null); // id вибраного квізу
   const [questionTime, setQuestionTime]     = useState(30);   // час на питання (сек)
-  const [minPlayers, setMinPlayers]         = useState(1);    // мінімум гравців
-  const [targetPlayerCount, setTargetPlayerCount] = useState(4); // скільки гравців сьогодні
+  const [targetPlayerCount, setTargetPlayerCount] = useState(4); // скільки гравців сьогодні — також мінімум для автостарту
 
   // ── Стан гри після запуску ──
   const [roomCode, setRoomCode] = useState(null);     // код кімнати після create-quiz
@@ -98,8 +97,8 @@ export default function HostView() {
 
     const settings = {
       questionTime,
-      autoStart: false,   // kiosk: ведучий явно натискає Start
-      minPlayers,
+      autoStart: true,              // автостарт коли зайшло targetPlayerCount гравців
+      minPlayers: targetPlayerCount, // авто-старт спрацює при такій кількості
       waitForAllPlayers: true,
     };
 
@@ -130,7 +129,7 @@ export default function HostView() {
       socket.disconnect();
       socketRef.current = null;
     });
-  }, [quizzes, selectedId, questionTime, minPlayers, targetPlayerCount]);
+  }, [quizzes, selectedId, questionTime, targetPlayerCount]);
 
   // ─────────────────────────────────────────────
   // ОНОВЛЕННЯ СТАНУ ГРАВЦІВ (QUIZ-UPDATE)
@@ -470,20 +469,7 @@ export default function HostView() {
             onChange={e => setQuestionTime(Number(e.target.value))}
           />
 
-          {/* Мінімум гравців */}
-          <label className="host-setting-label">
-            {lang === 'uk' ? 'Мін. гравців' : 'Min. players'}
-          </label>
-          <input
-            className="host-setting-input"
-            type="number"
-            min={1}
-            max={50}
-            value={minPlayers}
-            onChange={e => setMinPlayers(Number(e.target.value))}
-          />
-
-          {/* Кількість гравців сьогодні — для відображення прогресу підключення */}
+          {/* Кількість гравців сьогодні — автостарт спрацює коли стільки гравців зайде */}
           <div className="setting-row">
             <label>{lang === 'uk' ? 'Кількість гравців сьогодні:' : 'Players today:'}</label>
             <div className="player-count-selector">

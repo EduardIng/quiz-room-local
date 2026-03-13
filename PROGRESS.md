@@ -1,7 +1,7 @@
 # PROGRESS.md — Quiz Room Local (Kiosk Edition)
 
 > Read this file fully before continuing development.
-> Last updated: 12 March 2026 (Session 4 — Phase 7 podium hardware integration complete, v0.3.0)
+> Last updated: 13 March 2026 (Session 5 — UI cleanup: HostView and QuizCreator simplified)
 
 ---
 
@@ -84,7 +84,7 @@ Overall:                         [##########] 100%
 
 - Created `frontend/src/components/HostView.jsx`:
   - Quiz library list (fetched from `/api/quizzes`)
-  - Select quiz + configure questionTime + minPlayers
+  - Select quiz + configure questionTime (later moved to HostView only; see Session 5)
   - Launch button → `create-quiz` socket emit
   - Post-launch: roomCode display, game status (players, phase), host controls
   - Controls: Start / Pause / Resume / Skip
@@ -237,6 +237,20 @@ Same as quiz-room-auto + `NO_ACTIVE_ROOM` (new in kiosk fork). `ANSWER_COUNT` ev
 | `#/stats` | StatsPanel | Admin |
 | `#/screen` | ProjectorView | Central stand big screens |
 | `#/side` | SideMonitor | Podium side monitor (HDMI-2) |
+
+---
+
+### Session 5 — UI Cleanup (13 March 2026) ✅
+
+**HostView.jsx:**
+- Removed redundant "Мін. гравців" (minPlayers) spinner — `targetPlayerCount` ("Players today") now serves as both the progress target and the autostart threshold (`minPlayers` is set equal to `targetPlayerCount` in `create-quiz` settings)
+- Quiz starts automatically when exactly `targetPlayerCount` players have joined — no manual Start needed
+
+**QuizCreator.jsx:**
+- Added "Ведучий" (Host) back-navigation button in the header, next to Admin / Player links
+- Removed "Мін. гравців" selector and "Автостарт" checkbox (redundant — autostart is always on; player count is set in HostView)
+- Removed global "Час на питання" (time per question) selector — server uses `config.json` default (30s); per-question timer override in individual question editor still works
+- Removed `questionTime`, `autoStart`, `minPlayers` state variables
 
 ---
 

@@ -161,7 +161,7 @@ quiz-room-local/
 │   │   ├── main.jsx                   <- Routing (#/, #/host, #/create, #/stats, #/screen, #/side)
 │   │   ├── components/
 │   │   │   ├── PlayerView.jsx         <- Kiosk player UI; all game states incl. category mode
-│   │   │   ├── HostView.jsx           <- Host: player count selector + quiz launch + controls
+│   │   │   ├── HostView.jsx           <- Host: quiz list, "Players today" count selector (drives autostart), quiz launch + controls
 │   │   │   ├── ProjectorView.jsx      <- Central stand (#/screen); all phases + live answer count
 │   │   │   ├── SideMonitor.jsx        <- Podium side display (#/side); polls /api/podium/status
 │   │   │   ├── Timebar.jsx            <- Shared countdown bar (green→orange→red)

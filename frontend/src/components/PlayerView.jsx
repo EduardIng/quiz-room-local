@@ -580,8 +580,7 @@ export default function PlayerView() {
   // ОБЧИСЛЕНІ ЗНАЧЕННЯ
   // ─────────────────────────────────────────────
 
-  const timerClass = timeLeft <= 5 ? 'danger' : timeLeft <= 10 ? 'warning' : '';
-  const myLeaderboardPosition = leaderboard.findIndex(p => p.nickname === myNickname) + 1;
+const myLeaderboardPosition = leaderboard.findIndex(p => p.nickname === myNickname) + 1;
 
   // ─────────────────────────────────────────────
   // РЕНДЕР ЕКРАНІВ
@@ -735,9 +734,6 @@ export default function PlayerView() {
           <div className="question-header">
             <span className="question-number">
               Питання {questionIndex}/{totalQuestions}
-            </span>
-            <span className={`timer-display ${timerClass}`}>
-              {timeLeft}
             </span>
           </div>
 

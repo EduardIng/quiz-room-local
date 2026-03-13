@@ -44,10 +44,6 @@ export default function QuizCreator() {
   const [rounds, setRounds] = useState([EMPTY_ROUND()]);
   const [activeRound, setActiveRound] = useState(0);
 
-  // ── Налаштування гри ──
-  const [questionTime, setQuestionTime] = useState(30);
-  const [autoStart, setAutoStart] = useState(true);
-  const [minPlayers, setMinPlayers] = useState(1);
 
   // ── Стан UI ──
   const [activeQuestion, setActiveQuestion] = useState(0); // Індекс активного питання
@@ -309,9 +305,8 @@ export default function QuizCreator() {
     }
 
     const settings = {
-      questionTime,
-      autoStart,
-      minPlayers,
+      autoStart: true,
+      minPlayers: 1,
       waitForAllPlayers: true
     };
 
@@ -338,7 +333,7 @@ export default function QuizCreator() {
       setError('Не вдалось підключитись до сервера. Переконайся що сервер запущений.');
       socket.disconnect();
     });
-  }, [validate, title, questions, rounds, categoryMode, questionTime, autoStart, minPlayers]);
+  }, [validate, title, questions, rounds, categoryMode]);
 
   /**
    * Слухаємо quiz-update після створення кімнати для host controls
@@ -780,6 +775,7 @@ export default function QuizCreator() {
           >
             {lang === 'uk' ? '🇬🇧 EN' : '🇺🇦 UK'}
           </button>
+          <a href="#/host" className="admin-link">🎮 {lang === 'uk' ? 'Ведучий' : 'Host'}</a>
           <a href="#/admin" className="admin-link">🖥️ Admin</a>
           <a href="/" className="admin-link">👤 {t('playerLink')}</a>
         </div>
@@ -886,48 +882,6 @@ export default function QuizCreator() {
           )}
 
           {/* Налаштування гри */}
-          <div className="sidebar-section">
-            <label className="field-label">{t('settings')}</label>
-            <div className="settings-grid">
-              <div className="setting-item">
-                <label>{t('questionTime')}</label>
-                <select
-                  className="creator-select"
-                  value={questionTime}
-                  onChange={e => setQuestionTime(Number(e.target.value))}
-                >
-                  <option value={10}>10 {t('sec')}</option>
-                  <option value={15}>15 {t('sec')}</option>
-                  <option value={20}>20 {t('sec')}</option>
-                  <option value={30}>30 {t('sec')}</option>
-                  <option value={45}>45 {t('sec')}</option>
-                  <option value={60}>60 {t('sec')}</option>
-                </select>
-              </div>
-              <div className="setting-item">
-                <label>{t('minPlayers')}</label>
-                <select
-                  className="creator-select"
-                  value={minPlayers}
-                  onChange={e => setMinPlayers(Number(e.target.value))}
-                >
-                  {[1,2,3,4,5].map(n => (
-                    <option key={n} value={n}>{n}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="setting-item setting-item-full">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={autoStart}
-                    onChange={e => setAutoStart(e.target.checked)}
-                  />
-                  {t('autoStart')}
-                </label>
-              </div>
-            </div>
-          </div>
         </aside>
 
         {/* ── ПРАВА КОЛОНКА: Редактор поточного питання/раунду ── */}
@@ -1062,7 +1016,7 @@ export default function QuizCreator() {
                 <input
                   className="creator-input timer-input"
                   type="number"
-                  placeholder={`${questionTime} (з налаштувань)`}
+                  placeholder={lang === 'uk' ? '30 (з config)' : '30 (from config)'}
                   value={currentQ.timeLimit}
                   onChange={e => updateTimeLimit(activeQuestion, e.target.value)}
                   min={10}
