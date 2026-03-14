@@ -8,6 +8,7 @@
 ```
 [ ] Raspberry Pi 5 (4GB)
 [ ] USB SSD — 120GB+, any USB 3.0 SSD or USB SSD stick (e.g. Samsung T7, Kingston XS2000)
+[ ] microSD card 8GB+ (optional — only needed if Pi won't boot from USB without EEPROM update; most Pi 5 units sold today do not require this)
 [ ] Official Pi 5 PSU — 27W USB-C (5V/5A)
 [ ] Micro-HDMI to HDMI cable × 2  (Ugreen or Vention, v2.0)
 [ ] Female-to-female dupont jumper wires × 8
@@ -38,36 +39,6 @@ On your Mac:
  │ 💾     │  ← connect to Pi USB 3.0 port after flashing
  └────────┘
 ```
-
----
-
-## STEP 1b — Enable USB Boot (one-time per physical Pi)
-
-The Pi 5 boots from the SD slot by default. You must tell it to boot from USB first.
-Do this once on your first Pi — all cloned Pis inherit the setting.
-
-SSH into the Pi and run:
-
-```bash
-sudo raspi-config
-```
-
-Navigate: **Advanced Options → Boot Order → USB Boot**
-
-Confirm and reboot:
-
-```bash
-sudo reboot
-```
-
-> Alternatively, edit the EEPROM directly:
-> ```bash
-> sudo rpi-eeprom-config --edit
-> # Set: BOOT_ORDER=0xf14   (USB first, SD second as fallback)
-> sudo reboot
-> ```
-
-After this reboot the Pi boots from the USB SSD. No SD card is needed.
 
 ---
 
@@ -155,6 +126,37 @@ ssh pi@podium-1.local
 # or
 ssh pi@192.168.X.X
 ```
+
+---
+
+## STEP 4b — Enable USB Boot (one-time per physical Pi)
+
+The Pi 5 boots from the SD slot by default. You must tell it to boot from USB first.
+This must be done on each physical Pi individually — cloning the SSD does not copy EEPROM settings.
+
+SSH into the Pi and run:
+
+```bash
+sudo raspi-config
+```
+
+Navigate: **Advanced Options → Boot Order → USB Boot**
+
+Confirm and reboot:
+
+```bash
+sudo reboot
+```
+
+> Alternatively, edit the EEPROM directly:
+> ```bash
+> sudo rpi-eeprom-config --edit
+> # Set: BOOT_ORDER=0xf14   (USB first, SD as recovery fallback)
+> sudo reboot
+> ```
+> Save and exit the editor (Ctrl+O, Enter, Ctrl+X if using nano), then reboot.
+
+After this reboot the Pi boots from the USB SSD. No SD card is needed for normal operation — the SD slot remains available as a recovery fallback if the SSD fails.
 
 ---
 
@@ -273,7 +275,7 @@ Press each button — you should see in the terminal:
 
 ## CLONING FOR ADDITIONAL PODIUMS
 
-After one Pi works perfectly:
+After setting up one Pi perfectly (including Step 4b USB boot setup):
 
 ```bash
 # Shut down Pi, unplug USB SSD, connect it to your Mac
@@ -290,6 +292,8 @@ sudo reboot
 
 USB 3.0 SSD cloning is ~3× faster than SD card imaging.
 
+> **Note:** Cloning the SSD does not copy EEPROM settings. Run Step 4b on each new Pi after first boot.
+
 Repeat for podium-3, podium-4, etc.
 
 ---
@@ -302,7 +306,7 @@ Repeat for podium-3, podium-4, etc.
 | Monitor 2 blank | Check micro-HDMI-1 cable; check `:1` display config |
 | Buttons do nothing | Run `gpio-service.py` manually and check terminal output |
 | "Waiting for host" never clears | Check server is running and SERVER_URL is correct |
-| Pi won't boot | Check USB boot order in EEPROM (Step 1b); re-flash SSD via Raspberry Pi Imager |
+| Pi won't boot | Check USB boot order in EEPROM (Step 4b); re-flash SSD via Raspberry Pi Imager |
 | npm start fails | `cd frontend && npm run build` to see error |
 
 ---
