@@ -1,0 +1,1789 @@
+# Podium Assembly Manual — Implementation Plan
+
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Build a self-contained, offline-capable HTML manual at `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` that guides a complete hardware novice through assembling one quiz room podium — covering hardware selection, wiring, software install, testing, cloning, troubleshooting, and component justification across 4 navigable pages.
+
+**Architecture:** Single `.html` file with inline CSS and JS. A fixed top nav bar with 4 tabs drives `showPage(n)` visibility toggling. All diagrams are inline SVG (zero external dependencies). Shopping tables have three columns: component, best international pick, Czech/DACH alternative.
+
+**Tech Stack:** Pure HTML5 + CSS3 + vanilla JS. No build step. No CDN. Works offline.
+
+---
+
+## Chunk 1: HTML Shell + Navigation + Page 1 (Hardware Assembly)
+
+### Task 1: HTML shell and navigation system
+
+**Files:**
+- Create: `pi-setup/PODIUM_ASSEMBLY_MANUAL.html`
+
+- [ ] **Step 1: Create the HTML shell with navigation**
+
+Create `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` with this exact structure:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Podium Assembly Manual — Quiz Room Local</title>
+<style>
+/* === RESET & BASE === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0f1117;
+  color: #e2e8f0;
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* === TOP NAV === */
+.top-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: #1a1f2e;
+  border-bottom: 2px solid #22c55e;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  height: 56px;
+  gap: 4px;
+}
+.nav-logo {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #22c55e;
+  letter-spacing: 0.05em;
+  margin-right: 16px;
+  white-space: nowrap;
+}
+.nav-tabs {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  overflow-x: auto;
+}
+.nav-tab {
+  padding: 6px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.nav-tab:hover { color: #94a3b8; background: #1e293b; }
+.nav-tab.active {
+  color: #f8fafc;
+  background: #1e293b;
+  border-color: #334155;
+}
+.nav-tab.active.p1 { border-color: #3b82f6; color: #3b82f6; }
+.nav-tab.active.p2 { border-color: #22c55e; color: #22c55e; }
+.nav-tab.active.p3 { border-color: #f59e0b; color: #f59e0b; }
+.nav-tab.active.p4 { border-color: #8b5cf6; color: #8b5cf6; }
+
+.nav-prev-next {
+  display: flex;
+  gap: 6px;
+  margin-left: 8px;
+}
+.nav-btn {
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 5px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-btn:hover { color: #e2e8f0; border-color: #475569; }
+.nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* === PAGE WRAPPER === */
+.page-content { display: none; padding: 80px 0 60px; }
+.page-content.active { display: block; }
+.page-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* === PAGE HEADER === */
+.page-header {
+  margin-bottom: 36px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #1e293b;
+}
+.page-number {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.page-number.p1 { color: #3b82f6; }
+.page-number.p2 { color: #22c55e; }
+.page-number.p3 { color: #f59e0b; }
+.page-number.p4 { color: #8b5cf6; }
+.page-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+.page-subtitle { font-size: 1rem; color: #64748b; }
+
+/* === SECTIONS === */
+.section { margin-bottom: 44px; }
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-subtitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin: 16px 0 8px;
+}
+p { margin-bottom: 10px; color: #cbd5e1; }
+
+/* === CALLOUT BOXES === */
+.callout {
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 14px 0;
+  border-left: 4px solid;
+  font-size: 0.9rem;
+}
+.callout.info  { background: #0f2040; border-color: #3b82f6; }
+.callout.warn  { background: #1c1200; border-color: #f59e0b; }
+.callout.tip   { background: #0a1f0a; border-color: #22c55e; }
+.callout.danger{ background: #1f0a0a; border-color: #ef4444; }
+.callout-title { font-weight: 700; margin-bottom: 4px; }
+.callout.info  .callout-title { color: #3b82f6; }
+.callout.warn  .callout-title { color: #f59e0b; }
+.callout.tip   .callout-title { color: #22c55e; }
+.callout.danger .callout-title { color: #ef4444; }
+
+/* === TABLES === */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin: 12px 0;
+}
+thead th {
+  background: #1e293b;
+  color: #94a3b8;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 2px solid #334155;
+}
+tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1e293b;
+  color: #cbd5e1;
+  vertical-align: top;
+}
+tbody tr:hover td { background: #141820; }
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.badge.best { background: #052e0f; color: #22c55e; border: 1px solid #166534; }
+.badge.alt  { background: #1e1a05; color: #f59e0b; border: 1px solid #854d0e; }
+.badge.opt  { background: #0f0f20; color: #8b5cf6; border: 1px solid #4c1d95; }
+
+/* === CODE BLOCKS === */
+pre {
+  background: #0d1117;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 0.82rem;
+  overflow-x: auto;
+  margin: 12px 0;
+  line-height: 1.5;
+}
+code { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace; }
+pre code { color: #a5f3fc; }
+.cmd { color: #86efac; }
+.comment { color: #475569; font-style: italic; }
+.highlight { color: #fbbf24; }
+
+/* === STEPS (numbered list) === */
+.steps { counter-reset: step; list-style: none; margin: 0; padding: 0; }
+.steps li {
+  counter-increment: step;
+  display: flex;
+  gap: 14px;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+.steps li::before {
+  content: counter(step);
+  min-width: 28px; height: 28px;
+  background: #1e293b;
+  border: 2px solid #334155;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #94a3b8;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.steps li .step-body { flex: 1; }
+.steps li .step-title { font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+.steps li .step-desc  { font-size: 0.88rem; color: #94a3b8; }
+
+/* === CHECKLIST === */
+.checklist { list-style: none; padding: 0; margin: 8px 0; }
+.checklist li {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid #1a2030;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+.checklist li::before {
+  content: '☐';
+  color: #334155;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* === SVG DIAGRAM WRAPPER === */
+.diagram {
+  background: #0d1117;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 20px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption {
+  text-align: center;
+  font-size: 0.78rem;
+  color: #475569;
+  margin-top: -8px;
+  margin-bottom: 16px;
+}
+
+/* === PAGE FOOTER === */
+.page-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px solid #1e293b;
+}
+.footer-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid #334155;
+  background: #1e293b;
+  color: #94a3b8;
+  transition: all 0.15s;
+}
+.footer-btn:hover { color: #e2e8f0; border-color: #475569; }
+.footer-btn.primary {
+  background: #1a3a1a;
+  border-color: #22c55e;
+  color: #22c55e;
+}
+.footer-btn.primary:hover { background: #1f4a1f; }
+.footer-btn:disabled { opacity: 0.3; cursor: default; }
+.footer-page-label { font-size: 0.78rem; color: #475569; }
+
+/* === COMPARISON CARDS (Page 4) === */
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin: 14px 0;
+}
+.compare-card {
+  background: #111827;
+  border: 2px solid #1e293b;
+  border-radius: 10px;
+  padding: 14px;
+}
+.compare-card.recommended {
+  border-color: #22c55e;
+  box-shadow: 0 0 20px rgba(34,197,94,0.12);
+}
+.compare-card-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #f1f5f9;
+  margin-bottom: 4px;
+}
+.compare-card-subtitle {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+.recommended-badge {
+  display: inline-block;
+  background: #052e0f;
+  color: #22c55e;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid #166534;
+  margin-bottom: 8px;
+}
+.pros-cons { display: flex; flex-direction: column; gap: 4px; }
+.pro, .con {
+  font-size: 0.78rem;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.pro { color: #86efac; }
+.con { color: #fca5a5; }
+.pro::before { content: '✓'; flex-shrink: 0; }
+.con::before { content: '✗'; flex-shrink: 0; }
+
+/* === TROUBLESHOOT TABLE === */
+.trouble-table td:first-child { color: #fbbf24; font-weight: 600; min-width: 200px; }
+.trouble-table td:last-child  { color: #86efac; }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <div class="nav-logo">📦 Podium Manual</div>
+  <div class="nav-tabs">
+    <button class="nav-tab p1 active" onclick="showPage(1)">1 · Hardware Assembly</button>
+    <button class="nav-tab p2" onclick="showPage(2)">2 · Software & Go-Live</button>
+    <button class="nav-tab p3" onclick="showPage(3)">3 · Troubleshooting</button>
+    <button class="nav-tab p4" onclick="showPage(4)">4 · Why These Components?</button>
+  </div>
+  <div class="nav-prev-next">
+    <button class="nav-btn" id="btn-prev" onclick="prevPage()" disabled>← Prev</button>
+    <button class="nav-btn" id="btn-next" onclick="nextPage()">Next →</button>
+  </div>
+</nav>
+
+<!-- PAGES -->
+<div id="page-1" class="page-content active"><!-- Page 1 content goes here --></div>
+<div id="page-2" class="page-content"><!-- Page 2 content goes here --></div>
+<div id="page-3" class="page-content"><!-- Page 3 content goes here --></div>
+<div id="page-4" class="page-content"><!-- Page 4 content goes here --></div>
+
+<script>
+let currentPage = 1;
+const TOTAL = 4;
+const PAGE_COLORS = { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4' };
+
+function showPage(n) {
+  document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-' + n).classList.add('active');
+  document.querySelectorAll('.nav-tab')[n - 1].classList.add('active', PAGE_COLORS[n]);
+  currentPage = n;
+  document.getElementById('btn-prev').disabled = (n === 1);
+  document.getElementById('btn-next').disabled = (n === TOTAL);
+  window.scrollTo(0, 0);
+}
+function prevPage() { if (currentPage > 1) showPage(currentPage - 1); }
+function nextPage() { if (currentPage < TOTAL) showPage(currentPage + 1); }
+</script>
+</body>
+</html>
+```
+
+- [ ] **Step 2: Open in browser and verify navigation works**
+
+```bash
+open pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+```
+
+Expected: 4 nav tabs visible, clicking each switches page, prev/next buttons work, pages are blank (content comes in later tasks).
+
+- [ ] **Step 3: Commit shell**
+
+```bash
+git add pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+git commit -m "feat: add podium manual HTML shell with 4-page navigation"
+```
+
+---
+
+### Task 2: Page 1 — Shopping List
+
+**Files:**
+- Modify: `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` — fill `id="page-1"` div
+
+- [ ] **Step 1: Replace `<!-- Page 1 content goes here -->` with the full page 1 HTML**
+
+The page 1 div must contain the following sections in order. Build each section as a `<div class="section">` inside `<div class="page-inner">`. Start with the page header:
+
+```html
+<div class="page-inner">
+  <div class="page-header">
+    <div class="page-number p1">Page 1 of 4</div>
+    <h1 class="page-title">Hardware Assembly</h1>
+    <p class="page-subtitle">Everything you need to buy, build, and wire one complete player podium.</p>
+  </div>
+  <!-- sections go here -->
+</div>
+```
+
+**Section 1.1 — Shopping List:**
+
+Build a table with columns: Component | Best Pick | Czech / DACH Alternative | Notes
+
+| Component | Best Pick | CZ/DACH Alt | Notes |
+|-----------|-----------|-------------|-------|
+| Raspberry Pi 5 (4 GB) | rpilocator.com → any EU stock | rpishop.cz (official CZ reseller) | Do not get 2GB — 4GB minimum |
+| microSD card 32 GB | SanDisk Endurance 32GB (Amazon.de) | Alza.cz SanDisk Endurance | Must be endurance/high-endurance class |
+| Official Pi 5 PSU 27W USB-C | RPi Foundation via rpishop.cz | Alza.cz "Raspberry Pi PSU 27W" | Never use a phone charger — Pi 5 needs 5V/5A |
+| Micro-HDMI → HDMI cable × 2 | Ugreen 8K Micro-HDMI 1m (Amazon.de) | Alza.cz Ugreen or Vention | HDMI 2.0 minimum; buy 2 per podium |
+| Touchscreen 15.6" IPS USB-C+HDMI | Lepow Z1 Gamut 15.6" (Amazon.de) | Alza.cz: search "portable monitor 15.6 touch" | Must have: HDMI in + USB touch + stand/case |
+| Large monitor 24" (non-touch) | Any 24" HDMI monitor | Alza.cz / Mall.cz: 24" 1080p IPS | BenQ/AOC/Philips all fine; HDMI input required |
+| Arcade buttons × 4 | EG Starts 30mm illuminated (Amazon.de) | Botland.cz / TME.eu 30mm momentary | 4 colours: red, blue, green, yellow |
+| Female-to-female dupont wires × 8 | Generic 20cm F-F pack (Amazon.de) | Botland.cz / GME.cz | Any brand; 20–30cm length |
+| microSD card reader (USB-A or USB-C) | Anker or uni card reader | Alza.cz | Needed for SD flashing from Mac |
+| Ethernet cable Cat 6 1–3m | Any Cat 6 patch cable | Alza.cz / datart.cz | Wired preferred over WiFi |
+
+Render this as an HTML `<table>` with thead/tbody. Add badges (`<span class="badge best">best</span>`, `<span class="badge alt">CZ/DACH</span>`) on the first column entries.
+
+Add this callout below the table:
+
+```html
+<div class="callout info">
+  <div class="callout-title">ℹ️ Total cost estimate (1 podium)</div>
+  Best picks: ~€280–320 | CZ/DACH alternatives: ~€200–240<br>
+  Biggest cost: the touchscreen (~€120–150). Alternatives exist at €70–90 but may lack USB touch input — verify before buying.
+</div>
+```
+
+- [ ] **Step 2: Verify in browser — page 1 shows shopping list table correctly, badges visible**
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+git commit -m "feat: podium manual — page 1 shopping list"
+```
+
+---
+
+### Task 3: Page 1 — Stand Design Section
+
+**Files:**
+- Modify: `pi-setup/PODIUM_ASSEMBLY_MANUAL.html`
+
+- [ ] **Step 1: Add stand design section after shopping list**
+
+**Section 1.2 — Stand Design:**
+
+Add a section titled "🏗️ Stand Design" with this content:
+
+**Recommendation text:**
+
+> The best quiz experience comes from a tilted lectern-style stand — screen angled ~30° toward the player, buttons at hand height. This lets the player glance at the screen naturally while keeping hands on the buttons, like a game show podium.
+
+**Layout diagram — inline SVG showing side profile of stand:**
+
+Draw an SVG (width 400, height 280) showing:
+- A rectangular stand body (the physical wooden/metal stand the user already has)
+- Monitor 1 mounted on top, tilted ~30° toward viewer
+- Monitor 2 on the side/back, vertical
+- Pi box mounted inside or behind the stand
+- 4 buttons on the front face at ~desk height
+- Labels for each element
+
+```svg
+<svg width="400" height="280" viewBox="0 0 400 280" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      text { font-family: 'Segoe UI', system-ui, sans-serif; }
+    </style>
+  </defs>
+
+  <!-- Stand body -->
+  <rect x="130" y="100" width="100" height="140" rx="4" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+  <text x="180" y="175" text-anchor="middle" fill="#475569" font-size="10">STAND</text>
+
+  <!-- Monitor 1 (tilted) -->
+  <g transform="rotate(-30, 180, 100)">
+    <rect x="115" y="58" width="130" height="82" rx="4" fill="#0f1f3f" stroke="#3b82f6" stroke-width="2"/>
+    <rect x="120" y="63" width="120" height="72" rx="2" fill="#0a1628"/>
+    <text x="180" y="103" text-anchor="middle" fill="#3b82f6" font-size="9" font-weight="700">Monitor 1</text>
+    <text x="180" y="115" text-anchor="middle" fill="#334155" font-size="8">PlayerView</text>
+  </g>
+
+  <!-- Monitor 2 (side, vertical) -->
+  <rect x="240" y="80" width="60" height="90" rx="4" fill="#1a1030" stroke="#8b5cf6" stroke-width="2"/>
+  <text x="270" y="122" text-anchor="middle" fill="#8b5cf6" font-size="8" font-weight="700">Monitor 2</text>
+  <text x="270" y="133" text-anchor="middle" fill="#334155" font-size="7">SideMonitor</text>
+
+  <!-- Pi (inside stand) -->
+  <rect x="145" y="200" width="70" height="24" rx="3" fill="#0a2010" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="180" y="216" text-anchor="middle" fill="#22c55e" font-size="8" font-weight="700">Pi 5</text>
+
+  <!-- Buttons -->
+  <circle cx="147" cy="155" r="8" fill="#dc2626" stroke="#991b1b" stroke-width="1.5"/>
+  <circle cx="163" cy="155" r="8" fill="#2563eb" stroke="#1d4ed8" stroke-width="1.5"/>
+  <circle cx="179" cy="155" r="8" fill="#16a34a" stroke="#15803d" stroke-width="1.5"/>
+  <circle cx="195" cy="155" r="8" fill="#d97706" stroke="#b45309" stroke-width="1.5"/>
+  <text x="171" y="145" text-anchor="middle" fill="#64748b" font-size="8">A  B  C  D</text>
+
+  <!-- Annotations -->
+  <line x1="100" y1="75" x2="130" y2="90" stroke="#3b82f6" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="30" y="72" fill="#3b82f6" font-size="10">Monitor 1</text>
+  <text x="30" y="83" fill="#3b82f6" font-size="9">15.6" touchscreen</text>
+  <text x="30" y="94" fill="#3b82f6" font-size="9">tilted ~30°</text>
+
+  <line x1="310" y1="115" x2="300" y2="122" stroke="#8b5cf6" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="313" y="112" fill="#8b5cf6" font-size="10">Monitor 2</text>
+  <text x="313" y="123" fill="#8b5cf6" font-size="9">24" display</text>
+
+  <line x1="230" y1="215" x2="215" y2="212" stroke="#22c55e" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="233" y="218" fill="#22c55e" font-size="9">Raspberry Pi 5</text>
+  <text x="233" y="229" fill="#22c55e" font-size="9">inside / behind stand</text>
+
+  <line x1="90" y1="155" x2="130" y2="155" stroke="#ec4899" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="10" y="152" fill="#ec4899" font-size="10">Buttons</text>
+  <text x="10" y="163" fill="#ec4899" font-size="9">A / B / C / D</text>
+</svg>
+```
+
+Add a callout:
+```html
+<div class="callout tip">
+  <div class="callout-title">💡 Stand tip</div>
+  Mount the Pi behind or inside the stand using M2.5 standoff screws or adhesive velcro pads. Route cables through a hole in the back. A cable gland (€1–2 each, any hardware store) keeps the single power cord entry clean.
+</div>
+```
+
+- [ ] **Step 2: Verify SVG diagram renders, labels are readable**
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+git commit -m "feat: podium manual — stand design section with SVG diagram"
+```
+
+---
+
+### Task 4: Page 1 — Monitor Mounting Sections
+
+**Files:**
+- Modify: `pi-setup/PODIUM_ASSEMBLY_MANUAL.html`
+
+- [ ] **Step 1: Add Monitor 1 (touchscreen) section**
+
+Write this HTML block into page 1 after the stand section:
+
+```html
+<div class="section">
+  <h2 class="section-title">🖥️ Monitor 1 — Touchscreen (PlayerView)</h2>
+  <p>This is the main player screen. It must be a <strong>touchscreen</strong> so players can tap answers directly, in addition to the physical buttons.</p>
+  <p><strong>Recommended spec:</strong> 15.6" IPS, 1920×1080, capacitive touch, HDMI input + USB touch output.</p>
+
+  <h3 class="section-subtitle">Must-have checklist before buying</h3>
+  <ul class="checklist">
+    <li>HDMI input (not just USB-C video) — connects to Pi's micro-HDMI 0</li>
+    <li>USB-A or USB-C touch output — connects to Pi USB port for touch events</li>
+    <li>IPS panel (not TN) — wider viewing angle; players approach from the side</li>
+    <li>Built-in kickstand or VESA mount holes — for stand attachment</li>
+  </ul>
+
+  <h3 class="section-subtitle">Cables needed</h3>
+  <ul class="checklist">
+    <li>Micro-HDMI → HDMI cable (from shopping list) — video from Pi to monitor</li>
+    <li>USB-A to USB-A or USB-C cable (usually included in monitor box) — touch data from monitor to Pi</li>
+  </ul>
+
+  <p><strong>Mounting:</strong> Attach a VESA arm or bracket to the stand. Position at ~chest height when the player is standing at the podium. Tilt ~25–35° toward the player for comfortable viewing.</p>
+
+  <div class="callout warn">
+    <div class="callout-title">⚠️ Touch won't work without the USB cable</div>
+    The HDMI cable carries video only. Touch input requires a separate USB connection from the monitor to the Pi. This cable is almost always included in the box — check before discarding packaging.
+  </div>
+</div>
+```
+
+- [ ] **Step 2: Add Monitor 2 (side display) section**
+
+Write this HTML block into page 1 after the Monitor 1 section:
+
+```html
+<div class="section">
+  <h2 class="section-title">📺 Monitor 2 — Side Display (SideMonitor)</h2>
+  <p>This display shows the player's nickname large enough to read from across the room. It is <strong>not a touchscreen</strong> — display only.</p>
+  <p><strong>Recommended spec:</strong> Any 24" 1080p IPS HDMI monitor. Brand does not matter — BenQ, AOC, Philips all work. HDMI input required.</p>
+
+  <h3 class="section-subtitle">Cables needed</h3>
+  <ul class="checklist">
+    <li>Micro-HDMI → HDMI cable (from shopping list) — connects Pi's micro-HDMI 1 port to this monitor</li>
+    <li>No USB cable needed — this monitor is display only</li>
+  </ul>
+
+  <p><strong>Mounting:</strong> Mount on the side or back of the stand, facing outward toward other players and the room. Can be mounted vertically (portrait) or horizontally.</p>
+
+  <div class="callout tip">
+    <div class="callout-title">💡 Portrait orientation tip</div>
+    Rotating Monitor 2 to portrait (vertical) mode makes the player's nickname extremely large and readable from across the room, while keeping the monitor footprint narrow on the stand. Portrait rotation is configured in the Pi display settings.
+  </div>
+</div>
+```
+
+- [ ] **Step 3: Verify in browser**
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+git commit -m "feat: podium manual — monitor 1 and 2 sections"
+```
+
+---
+
+### Task 5: Page 1 — Raspberry Pi Setup + SD Card Flashing
+
+**Files:**
+- Modify: `pi-setup/PODIUM_ASSEMBLY_MANUAL.html`
+
+- [ ] **Step 1: Add Pi setup section**
+
+**Section 1.5 — Raspberry Pi 5 Setup:**
+
+Write this HTML block (Pi board SVG + SD flashing steps) into page 1 after the Monitor 2 section:
+
+```html
+<div class="section">
+  <h2 class="section-title">🍓 Raspberry Pi 5 — Board Overview</h2>
+  <p>The Pi 5 is the brain of the podium. Before connecting anything, familiarise yourself with its ports.</p>
+
+  <div class="diagram">
+    <svg width="520" height="300" viewBox="0 0 520 300" xmlns="http://www.w3.org/2000/svg">
+      <defs><style>text{font-family:'Segoe UI',system-ui,sans-serif;}</style></defs>
+
+      <!-- Board body -->
+      <rect x="100" y="30" width="300" height="200" rx="8" fill="#0a2010" stroke="#166534" stroke-width="2.5"/>
+      <text x="250" y="22" text-anchor="middle" fill="#475569" font-size="10">Raspberry Pi 5 — top view (ports on edges)</text>
+
+      <!-- USB-C power (top-left edge) -->
+      <rect x="85" y="48" width="18" height="28" rx="3" fill="#92400e" stroke="#f59e0b" stroke-width="2"/>
+      <text x="50" y="58" text-anchor="end" fill="#f59e0b" font-size="10" font-weight="700">USB-C</text>
+      <text x="50" y="70" text-anchor="end" fill="#f59e0b" font-size="9">Power 27W</text>
+
+      <!-- micro-HDMI 0 -->
+      <rect x="85" y="84" width="18" height="22" rx="2" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2"/>
+      <text x="50" y="93" text-anchor="end" fill="#3b82f6" font-size="10" font-weight="700">HDMI-0</text>
+      <text x="50" y="105" text-anchor="end" fill="#3b82f6" font-size="9">→ Monitor 1</text>
+
+      <!-- micro-HDMI 1 -->
+      <rect x="85" y="112" width="18" height="22" rx="2" fill="#2e1065" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="50" y="120" text-anchor="end" fill="#8b5cf6" font-size="10" font-weight="700">HDMI-1</text>
+      <text x="50" y="132" text-anchor="end" fill="#8b5cf6" font-size="9">→ Monitor 2</text>
+
+      <!-- USB-A ×4 (right side) -->
+      <rect x="397" y="50" width="18" height="18" rx="2" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+      <rect x="397" y="72" width="18" height="18" rx="2" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+      <rect x="397" y="94" width="18" height="18" rx="2" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+      <rect x="397" y="116" width="18" height="18" rx="2" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+      <text x="428" y="83" fill="#64748b" font-size="10">USB-A ×4</text>
+      <text x="428" y="95" fill="#64748b" font-size="9">(keyboard, mouse,</text>
+      <text x="428" y="107" fill="#64748b" font-size="9">touch adapter)</text>
+
+      <!-- Ethernet (right side, lower) -->
+      <rect x="397" y="144" width="18" height="24" rx="2" fill="#0c2a2a" stroke="#14b8a6" stroke-width="2"/>
+      <text x="428" y="155" fill="#14b8a6" font-size="10" font-weight="700">Ethernet</text>
+      <text x="428" y="167" fill="#14b8a6" font-size="9">→ LAN switch</text>
+
+      <!-- GPIO header (top-right of board) -->
+      <rect x="290" y="38" width="100" height="22" rx="3" fill="#2d0040" stroke="#ec4899" stroke-width="2"/>
+      <text x="340" y="54" text-anchor="middle" fill="#ec4899" font-size="9" font-weight="700">40-pin GPIO</text>
+      <!-- small dots for pins -->
+      <g fill="#6b21a8">
+        <circle cx="298" cy="49" r="2.5"/><circle cx="306" cy="49" r="2.5"/><circle cx="314" cy="49" r="2.5"/>
+        <circle cx="322" cy="49" r="2.5"/><circle cx="330" cy="49" r="2.5"/><circle cx="338" cy="49" r="2.5"/>
+        <circle cx="346" cy="49" r="2.5"/><circle cx="354" cy="49" r="2.5"/><circle cx="362" cy="49" r="2.5"/>
+        <circle cx="370" cy="49" r="2.5"/><circle cx="378" cy="49" r="2.5"/>
+        <circle cx="298" cy="55" r="2.5"/><circle cx="306" cy="55" r="2.5"/><circle cx="314" cy="55" r="2.5"/>
+        <circle cx="322" cy="55" r="2.5"/><circle cx="330" cy="55" r="2.5"/><circle cx="338" cy="55" r="2.5"/>
+        <circle cx="346" cy="55" r="2.5"/><circle cx="354" cy="55" r="2.5"/><circle cx="362" cy="55" r="2.5"/>
+        <circle cx="370" cy="55" r="2.5"/><circle cx="378" cy="55" r="2.5"/>
+      </g>
+      <text x="340" y="78" text-anchor="middle" fill="#ec4899" font-size="8">↑ buttons wire here</text>
+
+      <!-- microSD slot (bottom edge) -->
+      <rect x="170" y="227" width="40" height="10" rx="2" fill="#374151" stroke="#6b7280" stroke-width="1.5"/>
+      <text x="190" y="250" text-anchor="middle" fill="#6b7280" font-size="10">microSD slot</text>
+      <text x="190" y="262" text-anchor="middle" fill="#475569" font-size="9">(underside of board)</text>
+
+      <!-- BCM chip -->
+      <rect x="185" y="100" width="80" height="80" rx="4" fill="#0d1f0d" stroke="#166534" stroke-width="1.5"/>
+      <text x="225" y="138" text-anchor="middle" fill="#22c55e" font-size="9" font-weight="700">BCM2712</text>
+      <text x="225" y="150" text-anchor="middle" fill="#166534" font-size="8">Cortex-A76</text>
+      <text x="225" y="162" text-anchor="middle" fill="#166534" font-size="8">2.4 GHz · 4-core</text>
+    </svg>
+  </div>
+  <p class="diagram-caption">Raspberry Pi 5 port layout — ports on left and right edges, GPIO header at top, microSD on underside</p>
+```
+
+After the SVG, add the numbered steps list for SD card flashing on Mac:
+
+```html
+<ol class="steps">
+  <li>
+    <div class="step-body">
+      <div class="step-title">Download Raspberry Pi Imager</div>
+      <div class="step-desc">Go to <code>raspberrypi.com/software</code> → Download for macOS. Install and open it.</div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">Insert microSD card into your Mac</div>
+      <div class="step-desc">Use the USB card reader from the shopping list. The card will appear in Finder as a drive.</div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">Choose OS in Imager</div>
+      <div class="step-desc">Click <strong>Choose OS</strong> → <strong>Raspberry Pi OS (64-bit, Desktop)</strong>. Do not pick Lite — you need the desktop for Chromium.</div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">Click the gear icon ⚙️ — configure before flashing</div>
+      <div class="step-desc">
+        Set hostname: <code>podium-1</code><br>
+        Enable SSH ✓<br>
+        Username: <code>pi</code> · Password: (choose something and write it down)<br>
+        Configure WiFi — or skip if using Ethernet (recommended)<br>
+        Locale: set to your timezone
+      </div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">Choose Storage → select your microSD card</div>
+      <div class="step-desc">Double-check it is the SD card and not your Mac's internal drive.</div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">Click Write and wait ~5 minutes</div>
+      <div class="step-desc">Imager will flash and verify automatically. Eject the card when done.</div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">Insert microSD into Pi</div>
+      <div class="step-desc">The SD slot is on the underside of the Pi board. Push until it clicks.</div>
+    </div>
+  </li>
+</ol>
+```
+
+Add a danger callout:
+```html
+<div class="callout danger">
+  <div class="callout-title">🚫 Do not power on the Pi yet</div>
+  Connect all cables (HDMI, buttons) before applying power. Plugging in HDMI after boot may result in one display not being detected.
+</div>
+```
+
+- [ ] **Step 2: Verify steps list renders correctly with numbered circles**
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+git commit -m "feat: podium manual — Pi 5 board diagram and SD flashing steps"
+```
+
+---
+
+### Task 6: Page 1 — GPIO Button Wiring Diagram
+
+**Files:**
+- Modify: `pi-setup/PODIUM_ASSEMBLY_MANUAL.html`
+
+- [ ] **Step 1: Add GPIO wiring section with annotated SVG**
+
+**Section 1.6 — GPIO Button Wiring:**
+
+Opening text: GPIO stands for General Purpose Input/Output. The Pi has 40 pins on a header — some provide power, some are GND (ground), and some are programmable signals. We use 4 signal pins and 1 GND pin. No resistors needed — the Pi has built-in pull-up resistors.
+
+**SVG pinout diagram (width 560, height 420):**
+
+Draw the full 40-pin GPIO header as a 2×20 grid of circles, with:
+- Used pins highlighted (GPIO 17=pin11, GPIO 27=pin13, GPIO 22=pin15, GPIO 23=pin16, GND=pin6) in their button colors
+- Unused pins in dark grey
+- Pin numbers on each circle
+- Function labels next to used pins
+- A legend below
+
+Then a wiring table:
+
+| Button | Label | Color | Pi Physical Pin | Pi GPIO Number | Connect to |
+|--------|-------|-------|-----------------|----------------|------------|
+| A | Answer 1 | Red | Pin 11 | GPIO 17 | Pin 6 (GND) |
+| B | Answer 2 | Blue | Pin 13 | GPIO 27 | Pin 6 (GND) |
+| C | Answer 3 | Green | Pin 15 | GPIO 22 | Pin 6 (GND) |
+| D | Answer 4 | Orange | Pin 16 | GPIO 23 | Pin 6 (GND) |
+| All | Shared ground | — | Pin 6 | GND | Other leg of each button |
+
+Key callout:
+```html
+<div class="callout tip">
+  <div class="callout-title">💡 How to wire a button</div>
+  Each arcade button has two terminals (legs). Connect one leg to the GPIO pin using a female-to-female dupont wire. Connect the other leg to GND (Pin 6). That's it — press the button and the GPIO pin reads LOW, which the software interprets as a button press.
+</div>
+```
+
+Add this one-button wiring illustration SVG directly after the wiring table:
+
+```html
+<div class="diagram">
+  <svg width="420" height="160" viewBox="0 0 420 160" xmlns="http://www.w3.org/2000/svg">
+    <defs><style>text{font-family:'Segoe UI',system-ui,sans-serif;}</style></defs>
+
+    <!-- Button (left) -->
+    <circle cx="70" cy="80" r="32" fill="#7f1d1d" stroke="#dc2626" stroke-width="3"/>
+    <circle cx="70" cy="80" r="18" fill="#991b1b" stroke="#ef4444" stroke-width="2"/>
+    <text x="70" y="84" text-anchor="middle" fill="white" font-size="11" font-weight="700">A</text>
+    <text x="70" y="130" text-anchor="middle" fill="#64748b" font-size="10">Button A (Red)</text>
+    <!-- terminal dots -->
+    <circle cx="50" cy="107" r="5" fill="#dc2626" stroke="#fff" stroke-width="1.5"/>
+    <circle cx="90" cy="107" r="5" fill="#dc2626" stroke="#fff" stroke-width="1.5"/>
+
+    <!-- Wire from left terminal to GPIO pin -->
+    <path d="M50,107 Q50,145 150,145 Q250,145 250,110" fill="none" stroke="#ec4899" stroke-width="2.5" stroke-dasharray="6,3"/>
+    <text x="150" y="158" text-anchor="middle" fill="#ec4899" font-size="9">one wire</text>
+
+    <!-- Wire from right terminal to GND pin -->
+    <path d="M90,107 Q90,135 185,135 Q330,135 330,110" fill="none" stroke="#94a3b8" stroke-width="2.5" stroke-dasharray="6,3"/>
+    <text x="240" y="148" text-anchor="middle" fill="#94a3b8" font-size="9">other wire</text>
+
+    <!-- Pi header (right) -->
+    <rect x="240" y="35" width="130" height="80" rx="5" fill="#0a2010" stroke="#166534" stroke-width="2"/>
+    <text x="305" y="52" text-anchor="middle" fill="#166534" font-size="9">GPIO Header</text>
+
+    <!-- Pin 11 (GPIO17) -->
+    <rect x="252" y="60" width="42" height="20" rx="3" fill="#2d0040" stroke="#ec4899" stroke-width="2"/>
+    <text x="273" y="74" text-anchor="middle" fill="#ec4899" font-size="8" font-weight="700">Pin 11 (GPIO17)</text>
+    <!-- dot -->
+    <circle cx="250" cy="70" r="4" fill="#ec4899"/>
+
+    <!-- Pin 6 (GND) -->
+    <rect x="252" y="88" width="42" height="20" rx="3" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="273" y="102" text-anchor="middle" fill="#94a3b8" font-size="8" font-weight="700">Pin 6 (GND)</text>
+    <circle cx="250" cy="98" r="4" fill="#94a3b8"/>
+
+    <!-- Labels -->
+    <text x="305" y="128" text-anchor="middle" fill="#475569" font-size="9">→ repeat for B, C, D</text>
+    <text x="305" y="140" text-anchor="middle" fill="#475569" font-size="9">(all share same GND pin)</text>
+  </svg>
+</div>
+<p class="diagram-caption">Each button needs exactly 2 wires: one to its GPIO pin, one to GND (Pin 6). All 4 buttons can share the same GND pin.</p>
+```
+
+- [ ] **Step 2: Verify pinout diagram renders, correct pins highlighted**
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+git commit -m "feat: podium manual — GPIO wiring diagram and button table"
+```
+
+---
+
+### Task 7: Page 1 — Cable Routing + Final Assembly Checklist
+
+**Files:**
+- Modify: `pi-setup/PODIUM_ASSEMBLY_MANUAL.html`
+
+- [ ] **Step 1: Add cable routing and assembly checklist section**
+
+**Section 1.7 — Cable Routing & Final Assembly:**
+
+Recommended cable routing order:
+1. Mount Pi inside/behind stand using velcro or M2.5 standoffs
+2. Route micro-HDMI 0 cable from Pi → Monitor 1 (keep cable length ≤1m)
+3. Route micro-HDMI 1 cable from Pi → Monitor 2
+4. Route USB-A cable from Pi → Monitor 1 (touch input)
+5. Route ethernet cable from Pi → switch/wall port
+6. Wire GPIO buttons (pins 11/13/15/16 + pin 6 GND)
+7. Plug in USB-C PSU last — power on only when all cables are connected
+
+Cable management tips:
+- Use velcro cable ties (not zip ties — easier to adjust)
+- Label each cable at both ends with tape
+- Route HDMI and power on opposite sides to avoid interference
+- Leave 10cm slack at each connector
+
+**Pre-power checklist:**
+
+```html
+<ul class="checklist">
+  <li>microSD card inserted in Pi (underside slot)</li>
+  <li>micro-HDMI 0 cable connected Pi → Monitor 1</li>
+  <li>micro-HDMI 1 cable connected Pi → Monitor 2</li>
+  <li>USB cable connected Pi → Monitor 1 (touch)</li>
+  <li>Ethernet cable connected Pi → network switch</li>
+  <li>Button A (Red) wired: Pin 11 → one terminal, Pin 6 → other terminal</li>
+  <li>Button B (Blue) wired: Pin 13 → one terminal, Pin 6 → other terminal</li>
+  <li>Button C (Green) wired: Pin 15 → one terminal, Pin 6 → other terminal</li>
+  <li>Button D (Orange) wired: Pin 16 → one terminal, Pin 6 → other terminal</li>
+  <li>All cables secured with velcro ties</li>
+  <li>Nothing touching the Pi board directly (use standoffs or velcro)</li>
+  <li>Power supply plugged in last → Pi should start immediately (no on/off switch)</li>
+</ul>
+```
+
+- [ ] **Step 2: Add page footer with Next Page button pointing to page 2**
+
+```html
+<div class="page-footer">
+  <button class="footer-btn" disabled>← Previous</button>
+  <span class="footer-page-label">Page 1 of 4</span>
+  <button class="footer-btn primary" onclick="showPage(2)">Software & Go-Live →</button>
+</div>
+```
+
+- [ ] **Step 3: Verify full page 1 in browser — all sections present, checklist renders, footer button works**
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+git commit -m "feat: podium manual — cable routing, assembly checklist, page 1 complete"
+```
+
+---
+
+## Chunk 2: Page 2 (Software & Go-Live) + Page 3 (Troubleshooting)
+
+### Task 8: Page 2 — SSH, Software Install, Configuration
+
+**Files:**
+- Modify: `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` — fill `id="page-2"` div
+
+- [ ] **Step 1: Add page 2 header and SSH section**
+
+```html
+<div class="page-inner">
+  <div class="page-header">
+    <div class="page-number p2">Page 2 of 4</div>
+    <h1 class="page-title">Software & Go-Live</h1>
+    <p class="page-subtitle">SSH in, install the quiz software, test everything, then clone for all 8 podiums.</p>
+  </div>
+```
+
+**Section 2.1 — First Boot & SSH:**
+
+Explain what happens on first boot (~60 seconds). Then:
+
+```html
+<ol class="steps">
+  <li>
+    <div class="step-body">
+      <div class="step-title">Power on the Pi</div>
+      <div class="step-desc">The green activity LED will flash. Monitor 1 should show the Raspberry Pi boot logo, then a desktop. Wait ~60 seconds for first boot to complete.</div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">Find the Pi's IP address</div>
+      <div class="step-desc">
+        On your Mac, open Terminal and run:<br>
+        <pre><code class="cmd">ping podium-1.local</code></pre>
+        If it responds, note the IP address shown in brackets. If it doesn't respond after 30 seconds, check your router's admin panel (usually 192.168.1.1 or 192.168.0.1) and look for a device named "podium-1".
+      </div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">SSH into the Pi from your Mac</div>
+      <div class="step-desc">
+        <pre><code class="cmd">ssh pi@podium-1.local</code></pre>
+        Type <code>yes</code> when asked about fingerprint. Enter your password. You should see a prompt like <code>pi@podium-1:~$</code>
+      </div>
+    </div>
+  </li>
+</ol>
+```
+
+**Section 2.2 — Install Quiz Room Software:**
+
+```html
+<ol class="steps">
+  <li>
+    <div class="step-body">
+      <div class="step-title">Clone the repository</div>
+      <div class="step-desc">
+        <pre><code class="cmd">git clone https://github.com/EduardIng/quiz-room-local.git /home/pi/quiz-room-local</code></pre>
+      </div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">Run the install script</div>
+      <div class="step-desc">
+        <pre><code class="cmd">cd /home/pi/quiz-room-local/pi-setup
+bash install.sh</code></pre>
+        This installs Chromium, Node.js, Python GPIO libraries, builds the frontend, sets up autostart, and disables the screensaver. Takes ~5 minutes.
+      </div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">Enter podium number when prompted</div>
+      <div class="step-desc">
+        <pre><code>Введіть номер подіуму (1-8): <span class="highlight">1</span></code></pre>
+        Enter <code>1</code> for the first podium.
+      </div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">If quiz server runs on a separate machine — update the server address</div>
+      <div class="step-desc">
+        <pre><code class="comment"># Edit gpio-service.py</code>
+<code class="cmd">nano /home/pi/quiz-room-local/pi-setup/gpio-service.py</code>
+<code class="comment"># Change: SERVER_URL = 'http://localhost:8080'</code>
+<code class="comment"># To:     SERVER_URL = 'http://192.168.X.X:8080'</code></pre>
+        Do the same in <code>kiosk.sh</code> for the <code>QUIZ_SERVER</code> variable.
+      </div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">Reboot the Pi</div>
+      <div class="step-desc">
+        <pre><code class="cmd">sudo reboot</code></pre>
+        After ~30 seconds, both monitors should show the quiz room interface automatically.
+      </div>
+    </div>
+  </li>
+</ol>
+```
+
+- [ ] **Step 2: Add Section 2.3 — End-to-End Test**
+
+Write this HTML block into page 2 after Section 2.2:
+
+```html
+<div class="section">
+  <h2 class="section-title">✅ End-to-End Test</h2>
+  <p>Run through all 9 steps below before declaring this podium complete.</p>
+  <ol class="steps">
+    <li>
+      <div class="step-body">
+        <div class="step-title">Start the quiz server on your Mac</div>
+        <div class="step-desc">
+          <pre><code class="cmd">cd /Users/einhorn/quiz-room-local
+npm start</code></pre>
+          You should see: <code>Server running on port 8080</code>
+        </div>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <div class="step-title">Check Monitor 1 shows "Waiting for host"</div>
+        <div class="step-desc">After the Pi boots (30 seconds), Monitor 1 should show the PlayerView waiting screen. If it shows a desktop or error, check Troubleshooting.</div>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <div class="step-title">Test GPIO buttons via SSH</div>
+        <div class="step-desc">
+          <pre><code class="cmd">ssh pi@podium-1.local
+python3 /home/pi/quiz-room-local/pi-setup/gpio-service.py</code></pre>
+          Leave this running. Press each physical button — you should see output in the terminal.
+        </div>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <div class="step-title">Verify button output</div>
+        <div class="step-desc">
+          Expected output when pressing each button:
+          <pre><code>[GPIO] Кнопка 0 натиснута (GPIO 17)   ← Button A
+[GPIO] Кнопка 1 натиснута (GPIO 27)   ← Button B
+[GPIO] Кнопка 2 натиснута (GPIO 22)   ← Button C
+[GPIO] Кнопка 3 натиснута (GPIO 23)   ← Button D</code></pre>
+          Note: the prompt text is in Ukrainian — this is the install script's output language and is normal.
+        </div>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <div class="step-title">Open Host panel on your Mac</div>
+        <div class="step-desc">
+          In your Mac browser, open: <code>http://192.168.X.X:8080/#/host</code><br>
+          (Replace X.X with your server's LAN IP — found via <code>ipconfig getifaddr en0</code> on Mac)
+        </div>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <div class="step-title">Launch a quiz</div>
+        <div class="step-desc">Select any quiz from the list. Set player count to <strong>1</strong>. Click Launch.</div>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <div class="step-title">Join on Monitor 1</div>
+        <div class="step-desc">On the podium's Monitor 1 touchscreen: enter any nickname, tap Join. The quiz should auto-start immediately (playerCount = 1).</div>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <div class="step-title">Answer a question</div>
+        <div class="step-desc">When the first question appears, press a physical button (A/B/C/D) — it should register as an answer. Then tap an answer on the touchscreen — that should also work.</div>
+      </div>
+    </li>
+    <li>
+      <div class="step-body">
+        <div class="step-title">Check Monitor 2</div>
+        <div class="step-desc">Monitor 2 should display the nickname you entered. If blank, check micro-HDMI 1 cable and Troubleshooting page.</div>
+      </div>
+    </li>
+  </ol>
+
+  <div class="callout tip">
+    <div class="callout-title">✅ All 9 steps pass?</div>
+    This podium is complete. Jump to the Cloning section below to prepare podiums 2–8. If anything failed, see Page 3 (Troubleshooting) before continuing.
+  </div>
+</div>
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+git commit -m "feat: podium manual — page 2 SSH install and testing sections"
+```
+
+---
+
+### Task 9: Page 2 — Cloning for Podiums 2–8
+
+**Files:**
+- Modify: `pi-setup/PODIUM_ASSEMBLY_MANUAL.html`
+
+- [ ] **Step 1: Add cloning section**
+
+**Section 2.4 — Cloning for Podiums 2–8:**
+
+Explain the strategy: once podium 1 works perfectly, clone its SD card image to a file on your Mac, then flash that image onto each subsequent podium's SD card. Saves repeating the install process 7 times.
+
+```html
+<ol class="steps">
+  <li>
+    <div class="step-body">
+      <div class="step-title">Shut down podium 1 cleanly</div>
+      <div class="step-desc">
+        <pre><code class="cmd">sudo shutdown -h now</code></pre>
+        Wait for the Pi to fully power off (green LED stops). Remove the SD card.
+      </div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">Insert SD card into your Mac and find its disk number</div>
+      <div class="step-desc">
+        <pre><code class="cmd">diskutil list</code></pre>
+        Look for a disk ~32GB in size. It will be something like <code>/dev/disk4</code>. Do NOT confuse it with your Mac's internal drive.
+      </div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">Create image from SD card</div>
+      <div class="step-desc">
+        <pre><code class="cmd">sudo dd if=/dev/disk4 of=~/podium-base.img bs=4m status=progress</code></pre>
+        Replace <code>disk4</code> with your actual disk number. Takes ~10 minutes. The file will be ~32GB.
+      </div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">For each additional podium (2–8): flash the image</div>
+      <div class="step-desc">
+        Insert new SD card, find its disk number, then:
+        <pre><code class="cmd">sudo dd if=~/podium-base.img of=/dev/disk4 bs=4m status=progress</code></pre>
+      </div>
+    </div>
+  </li>
+  <li>
+    <div class="step-body">
+      <div class="step-title">Set unique hostname on each new Pi</div>
+      <div class="step-desc">
+        After flashing and booting the new Pi, SSH in (it will have the same IP as podium-1 briefly — use router to find it), then:
+        <pre><code class="cmd">sudo hostnamectl set-hostname podium-2
+sudo reboot</code></pre>
+        Repeat with podium-3, podium-4 ... podium-8.
+      </div>
+    </div>
+  </li>
+</ol>
+```
+
+Add warn callout:
+```html
+<div class="callout warn">
+  <div class="callout-title">⚠️ dd is silent and permanent</div>
+  The <code>dd</code> command will overwrite whatever is on the destination disk with no confirmation. Triple-check you have the right disk number (<code>/dev/diskN</code>) before pressing Enter. Writing to the wrong disk can erase your Mac's drive.
+</div>
+```
+
+- [ ] **Step 2: Add page 2 footer**
+
+```html
+<div class="page-footer">
+  <button class="footer-btn" onclick="showPage(1)">← Hardware Assembly</button>
+  <span class="footer-page-label">Page 2 of 4</span>
+  <button class="footer-btn primary" onclick="showPage(3)">Troubleshooting →</button>
+</div>
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+git commit -m "feat: podium manual — page 2 cloning section, page 2 complete"
+```
+
+---
+
+### Task 10: Page 3 — Troubleshooting
+
+**Files:**
+- Modify: `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` — fill `id="page-3"` div
+
+- [ ] **Step 1: Add full troubleshooting page**
+
+```html
+<div class="page-inner">
+  <div class="page-header">
+    <div class="page-number p3">Page 3 of 4</div>
+    <h1 class="page-title">Troubleshooting</h1>
+    <p class="page-subtitle">Something not working? Find your symptom below.</p>
+  </div>
+```
+
+Write the full troubleshooting page HTML into the `id="page-3"` div. The `.trouble-table` CSS class is already defined in the shell (Task 1) — it colours `td:first-child` amber and `td:last-child` green:
+
+```html
+<div class="page-inner">
+  <div class="page-header">
+    <div class="page-number p3">Page 3 of 4</div>
+    <h1 class="page-title">Troubleshooting</h1>
+    <p class="page-subtitle">Something not working? Find your symptom below.</p>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">🖥️ Display Issues</h2>
+    <table class="trouble-table">
+      <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Monitor 1 blank after reboot</td><td>HDMI not detected at boot</td><td>Ensure HDMI cable is plugged in before power-on. SSH in and run <code>bash ~/quiz-room-local/pi-setup/kiosk.sh</code> manually to see errors.</td></tr>
+        <tr><td>Monitor 2 blank</td><td>micro-HDMI 1 cable or display config</td><td>Check micro-HDMI 1 cable is in port 1 (not port 0). SSH in: <code>DISPLAY=:1 xrandr</code> — if display not listed, cable or monitor issue.</td></tr>
+        <tr><td>Both monitors show desktop, not quiz</td><td>Autostart not configured</td><td>Check file exists: <code>cat ~/.config/autostart/quiz-kiosk.desktop</code>. If missing, re-run <code>bash install.sh</code>.</td></tr>
+        <tr><td>Screen sideways / wrong rotation</td><td>Display rotation not set</td><td>In <code>kiosk.sh</code>, add <code>--rotate=90</code> to the Chromium call, or set display rotation via <code>sudo raspi-config</code> → Display Options.</td></tr>
+        <tr><td>Touch not working on Monitor 1</td><td>USB touch cable missing</td><td>Connect USB-A cable from monitor's USB output to any Pi USB port. Check <code>xinput list</code> via SSH — touch device should appear.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">🕹️ Input Issues</h2>
+    <table class="trouble-table">
+      <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Buttons do nothing</td><td>Wrong GPIO pins or loose wires</td><td>SSH in, run <code>python3 ~/quiz-room-local/pi-setup/gpio-service.py</code> manually. Press each button — check terminal output. If silent, check wiring.</td></tr>
+        <tr><td>One button doesn't work</td><td>Loose dupont connector</td><td>Re-seat the connector on the GPIO pin. Swap with a known-working wire to isolate the problem.</td></tr>
+        <tr><td>Button registers wrong answer</td><td>Wrong pin assignment</td><td>Wiring must be: A=Pin11, B=Pin13, C=Pin15, D=Pin16. Count pins from the corner nearest the USB-C port.</td></tr>
+        <tr><td>Touch acts as mouse pointer, not game input</td><td>Chromium touch mode</td><td>Ensure <code>kiosk.sh</code> launches Chromium with <code>--touch-events=enabled</code> flag.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">🌐 Network &amp; Software Issues</h2>
+    <table class="trouble-table">
+      <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>"Waiting for host" never clears</td><td>Server not running or wrong IP</td><td>Confirm <code>npm start</code> is running on server. Check <code>SERVER_URL</code> in <code>gpio-service.py</code> and <code>QUIZ_SERVER</code> in <code>kiosk.sh</code> match the server's actual LAN IP.</td></tr>
+        <tr><td><code>ping podium-1.local</code> times out</td><td>mDNS not resolving</td><td>Use router admin panel to find Pi's IP directly. SSH by IP: <code>ssh pi@192.168.X.X</code>. Or install avahi: <code>sudo apt install avahi-daemon</code>.</td></tr>
+        <tr><td>npm start fails on server</td><td>Frontend not built</td><td>Run <code>cd frontend && npm run build</code> on the server machine to see the error message.</td></tr>
+        <tr><td>Quiz auto-start never triggers</td><td>playerCount mismatch</td><td>In Host panel, playerCount must equal the exact number of players who have joined. Rejoin if needed.</td></tr>
+        <tr><td>SSH: connection refused</td><td>Pi still booting</td><td>Wait 60s and retry. If persistent after 3 minutes, re-flash SD card.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">⚡ Hardware Issues</h2>
+    <table class="trouble-table">
+      <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Pi won't boot (no LED activity)</td><td>Bad PSU or bad SD card</td><td>Try the official 27W USB-C PSU. Re-flash SD card from scratch using Raspberry Pi Imager.</td></tr>
+        <tr><td>Pi crashes or reboots randomly</td><td>Underpowered supply</td><td>Must use the official 27W PSU. Third-party 3A chargers are insufficient for Pi 5 under full load.</td></tr>
+        <tr><td>SD card corrupted after power cut</td><td>Unclean shutdown</td><td>Always run <code>sudo shutdown -h now</code> before unplugging. For permanent install, set filesystem to read-only.</td></tr>
+        <tr><td>Pi gets hot to touch</td><td>Poor ventilation inside stand</td><td>Ensure the Pi has airflow. Add the official active cooler (€5, clips on without tools).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-title">ℹ️ Still stuck?</div>
+    Run <code>journalctl -xe</code> on the Pi via SSH to see system logs. Most hardware issues show up here. For software issues, check the quiz server terminal output on the host machine.
+  </div>
+</div>
+```
+
+- [ ] **Step 2: Add page 3 footer**
+
+```html
+<div class="page-footer">
+  <button class="footer-btn" onclick="showPage(2)">← Software & Go-Live</button>
+  <span class="footer-page-label">Page 3 of 4</span>
+  <button class="footer-btn primary" onclick="showPage(4)">Why These Components? →</button>
+</div>
+```
+
+- [ ] **Step 3: Verify tables render and are colour-coded**
+
+Run this grep to confirm the `.trouble-table` class is present in the file (defined in Task 1 CSS as: `td:first-child { color: #fbbf24 }` amber symptom, `td:last-child { color: #86efac }` green fix):
+
+```bash
+grep -c 'trouble-table' pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+```
+
+Expected: 5 or more (one CSS definition + four table usages). Then open in browser and confirm symptom column is amber, fix column is green.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+git commit -m "feat: podium manual — page 3 troubleshooting complete"
+```
+
+---
+
+## Chunk 3: Page 4 (Component Justification) + Final Polish
+
+### Task 11: Page 4 — Component Justification & Alternatives
+
+**Files:**
+- Modify: `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` — fill `id="page-4"` div
+
+- [ ] **Step 1: Add page 4 header and Pi comparison**
+
+```html
+<div class="page-inner">
+  <div class="page-header">
+    <div class="page-number p4">Page 4 of 4</div>
+    <h1 class="page-title">Why These Components?</h1>
+    <p class="page-subtitle">Every recommendation justified and compared to alternatives. Read this before making substitutions.</p>
+  </div>
+```
+
+Write the complete Section 4.1 HTML into page 4 after the page header:
+
+```html
+<div class="section">
+  <h2 class="section-title">🍓 Single-Board Computer</h2>
+  <p>The Pi 5 is the correct choice for this build. Here is why, and what you lose with alternatives.</p>
+  <div class="compare-grid">
+    <div class="compare-card recommended">
+      <div class="recommended-badge">✓ RECOMMENDED</div>
+      <div class="compare-card-title">Raspberry Pi 5 (4GB)</div>
+      <div class="compare-card-subtitle">~€75 · rpishop.cz / rpilocator.com</div>
+      <div class="pros-cons">
+        <div class="pro">Native dual micro-HDMI outputs</div>
+        <div class="pro">BCM2712 A76 cores — 2.4 GHz, ~40% faster than Pi 4</div>
+        <div class="pro">PCIe interface → SD reads ~3× faster</div>
+        <div class="pro">4 GB handles browser + GPIO service comfortably</div>
+        <div class="pro">Same 40-pin GPIO pinout — wiring identical</div>
+        <div class="con">Slightly harder to find (use rpilocator.com)</div>
+        <div class="con">Costs €10–15 more than Pi 4</div>
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-title">Raspberry Pi 4 Model B (4GB)</div>
+      <div class="compare-card-subtitle">~€60 · widely available</div>
+      <div class="pros-cons">
+        <div class="pro">Cheaper, easier to find</div>
+        <div class="pro">Same GPIO pinout — software runs unchanged</div>
+        <div class="con">Older A72 CPU — 30–40% slower under load</div>
+        <div class="con">No PCIe — SD access notably slower</div>
+        <div class="con">Thermal throttling common without active cooling</div>
+        <div class="con">Noticeable at scale across 8 podiums</div>
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-title">Raspberry Pi 400</div>
+      <div class="compare-card-subtitle">~€70 · keyboard enclosure built in</div>
+      <div class="pros-cons">
+        <div class="pro">Same CPU as Pi 4</div>
+        <div class="con">GPIO pins are recessed inside keyboard enclosure — hard to wire</div>
+        <div class="con">Keyboard adds bulk inside stand for no benefit</div>
+        <div class="con">Same thermal/performance drawbacks as Pi 4</div>
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-title">Intel N100 Mini PC</div>
+      <div class="compare-card-subtitle">~€140–200 · e.g. Beelink EQ12</div>
+      <div class="pros-cons">
+        <div class="pro">Much faster (x86, modern cores)</div>
+        <div class="pro">Familiar Linux/Windows environment</div>
+        <div class="con">No GPIO — needs USB GPIO adapter (adds cost + complexity)</div>
+        <div class="con">gpio-service.py not natively compatible</div>
+        <div class="con">Most models have only 1 HDMI output</div>
+        <div class="con">2× the cost, overkill for a browser kiosk</div>
+      </div>
+    </div>
+  </div>
+  <div class="callout tip">
+    <div class="callout-title">✅ Verdict: Raspberry Pi 5 (4GB)</div>
+    Best performance-per-euro for a dual-display GPIO kiosk. The Pi 4 works but runs hotter and slower — acceptable for 1–2 podiums, but across 8 podiums the difference is noticeable in quiz load times and touch responsiveness. The Pi 5's PCIe interface makes SD card reads ~3× faster, which matters for boot and frontend loading.
+  </div>
+</div>
+```
+
+- [ ] **Step 2: Add touchscreen comparison (Section 4.2)**
+
+Write this HTML block into page 4 after Section 4.1:
+
+```html
+<div class="section">
+  <h2 class="section-title">🖥️ Touchscreen — Monitor 1</h2>
+  <p>The player-facing screen must be a capacitive touchscreen with both HDMI video input and USB touch output. These are the key options.</p>
+  <div class="callout warn">
+    <div class="callout-title">⚠️ Always verify before buying</div>
+    Must have: (1) HDMI input (not just USB-C video), (2) USB touch output. Many portable monitors have only USB-C video — those won't work with the Pi's micro-HDMI output without an adapter, and touch may not be exposed.
+  </div>
+  <div class="compare-grid">
+    <div class="compare-card recommended">
+      <div class="recommended-badge">✓ RECOMMENDED</div>
+      <div class="compare-card-title">15.6" Portable Touchscreen</div>
+      <div class="compare-card-subtitle">~€120–150 · e.g. Lepow Z1 Gamut, ARZOPA</div>
+      <div class="pros-cons">
+        <div class="pro">Purpose-built with kickstand / case included</div>
+        <div class="pro">HDMI + USB touch — plug and play on Pi</div>
+        <div class="pro">IPS panel — wide viewing angle for side-on players</div>
+        <div class="pro">Compact — fits neatly on stand</div>
+        <div class="con">~€120–150 is the biggest per-podium cost</div>
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-title">13.3" Portable Touchscreen</div>
+      <div class="compare-card-subtitle">~€80–100 · smaller variant</div>
+      <div class="pros-cons">
+        <div class="pro">Cheaper, narrower footprint</div>
+        <div class="pro">Same HDMI + USB touch interface</div>
+        <div class="con">Text and buttons harder to read</div>
+        <div class="con">Answer buttons feel cramped for large hands</div>
+        <div class="con">Best only if stand width is very constrained</div>
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-title">Regular Monitor + USB Touch Overlay</div>
+      <div class="compare-card-subtitle">~€80–120 total · any HDMI monitor + overlay frame</div>
+      <div class="pros-cons">
+        <div class="pro">Any size screen possible</div>
+        <div class="pro">Touch overlay frames are cheap (~€50–60)</div>
+        <div class="con">Touch overlay reduces screen brightness noticeably</div>
+        <div class="con">Bulky — overlay frame adds ~2cm border</div>
+        <div class="con">Touch overlay drivers can be unreliable on Pi OS</div>
+        <div class="con">Extra cables and mounting complexity</div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+- [ ] **Step 3: Add button, PSU, and SD card comparisons (Sections 4.3, 4.4, 4.5)**
+
+Write these three HTML sections into page 4 after Section 4.2:
+
+```html
+<div class="section">
+  <h2 class="section-title">🕹️ Answer Buttons</h2>
+  <div class="compare-grid">
+    <div class="compare-card recommended">
+      <div class="recommended-badge">✓ RECOMMENDED</div>
+      <div class="compare-card-title">30mm Illuminated Arcade Buttons</div>
+      <div class="compare-card-subtitle">~€3–5 each · EG Starts, Sanwa, generic</div>
+      <div class="pros-cons">
+        <div class="pro">Satisfying tactile click — players feel each press</div>
+        <div class="pro">Large 30mm target — easy to hit under excitement</div>
+        <div class="pro">LED illumination visible in any lighting</div>
+        <div class="pro">100,000+ cycle rating — effectively indestructible</div>
+        <div class="con">Requires drilling a 30mm hole in stand panel</div>
+        <div class="con">~€12–20 for a set of 4</div>
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-title">Small Tactile PCB Buttons</div>
+      <div class="compare-card-subtitle">&lt;€1 each · generic 6mm or 12mm</div>
+      <div class="pros-cons">
+        <div class="pro">Extremely cheap</div>
+        <div class="pro">PCB-mountable — no drilling</div>
+        <div class="con">Tiny target — bad experience for excited players</div>
+        <div class="con">No satisfying click, no illumination</div>
+        <div class="con">Not suitable for a game show context</div>
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-title">Capacitive Touch Pads</div>
+      <div class="compare-card-subtitle">~€5–15 · TTP223-based modules</div>
+      <div class="pros-cons">
+        <div class="pro">No moving parts — zero mechanical wear</div>
+        <div class="con">False triggers from nearby objects / sweat</div>
+        <div class="con">No haptic feedback — player can't feel boundary</div>
+        <div class="con">Hard to mount cleanly on panel surface</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2 class="section-title">⚡ Power Supply</h2>
+  <div class="compare-grid">
+    <div class="compare-card recommended">
+      <div class="recommended-badge">✓ RECOMMENDED</div>
+      <div class="compare-card-title">Official Raspberry Pi 27W USB-C PSU</div>
+      <div class="compare-card-subtitle">~€12 · rpishop.cz / Alza.cz</div>
+      <div class="pros-cons">
+        <div class="pro">5V / 5A — guaranteed stable output</div>
+        <div class="pro">Designed for Pi 5 — USB PD negotiation works correctly</div>
+        <div class="pro">Suppresses under-voltage warnings permanently</div>
+        <div class="pro">Same price as a decent third-party charger</div>
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-title">Third-Party USB-C PD Charger</div>
+      <div class="compare-card-subtitle">~€8–15 · various</div>
+      <div class="pros-cons">
+        <div class="pro">Widely available, often cheaper</div>
+        <div class="con">Pi 5 requires USB PD negotiation to unlock 5A — most third-party chargers don't negotiate correctly</div>
+        <div class="con">Pi runs in degraded mode: CPU throttled, lightning bolt icon shown</div>
+        <div class="con">Not worth the €3 saving across 8 podiums</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2 class="section-title">💾 Storage</h2>
+  <div class="compare-grid">
+    <div class="compare-card recommended">
+      <div class="recommended-badge">✓ RECOMMENDED (for initial build)</div>
+      <div class="compare-card-title">microSD — Endurance Class 32GB</div>
+      <div class="compare-card-subtitle">~€12–18 · SanDisk Max Endurance, Samsung Pro Endurance</div>
+      <div class="pros-cons">
+        <div class="pro">Simple setup — Raspberry Pi Imager writes directly</div>
+        <div class="pro">Easy cloning via dd (Task 9)</div>
+        <div class="pro">Endurance-class handles continuous read/write for years</div>
+        <div class="con">~3× slower than SSD for boot and file access</div>
+        <div class="con">Power-cut corruption risk (use clean shutdown)</div>
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-title">USB SSD Boot (Advanced)</div>
+      <div class="compare-card-subtitle">~€30–50 · Samsung T7, Kingston XS2000</div>
+      <div class="pros-cons">
+        <div class="pro">~3× faster boot and file access</div>
+        <div class="pro">Much more durable — no SD corruption risk</div>
+        <div class="pro">Recommended for permanent production deployment</div>
+        <div class="con">Requires one-time EEPROM bootloader config on each Pi</div>
+        <div class="con">dd cloning requires different procedure</div>
+        <div class="con">Adds complexity to initial setup — do SD first, upgrade later</div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+- [ ] **Step 4: Add stand form factor comparison (Section 4.6)**
+
+Write this HTML block into page 4 after the storage section:
+
+```html
+<div class="section">
+  <h2 class="section-title">🏗️ Stand Form Factor</h2>
+  <p>You already have a stand — but if you are choosing one, here are the trade-offs.</p>
+  <div class="compare-grid">
+    <div class="compare-card recommended">
+      <div class="recommended-badge">✓ RECOMMENDED</div>
+      <div class="compare-card-title">Tilted Lectern Style</div>
+      <div class="compare-card-subtitle">Screen angled ~30° toward player</div>
+      <div class="pros-cons">
+        <div class="pro">Natural viewing angle — no neck strain</div>
+        <div class="pro">Buttons at hand height — ergonomic and fast</div>
+        <div class="pro">Cables hidden inside — clean appearance</div>
+        <div class="pro">Classic quiz show podium feel — immersive</div>
+        <div class="con">Requires angled bracket or arm for screen</div>
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-title">Flat Pedestal / Column</div>
+      <div class="compare-card-subtitle">Screen vertical or horizontal on top</div>
+      <div class="pros-cons">
+        <div class="pro">Simpler to build — no tilt hardware needed</div>
+        <div class="con">Screen faces straight up (bad glare) or straight forward at wrong height</div>
+        <div class="con">Requires separate arm to achieve good viewing angle</div>
+        <div class="con">Less immersive for players</div>
+      </div>
+    </div>
+    <div class="compare-card">
+      <div class="compare-card-title">Wall-Mounted Panel</div>
+      <div class="compare-card-subtitle">Fixed installation on wall or divider</div>
+      <div class="pros-cons">
+        <div class="pro">Saves floor space</div>
+        <div class="pro">Very clean — all wiring in wall</div>
+        <div class="con">Not portable — permanent installation only</div>
+        <div class="con">Requires wall access for cable routing</div>
+        <div class="con">Buttons must be mounted separately at hand height</div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+- [ ] **Step 5: Add page 4 footer**
+
+```html
+<div class="page-footer">
+  <button class="footer-btn" onclick="showPage(3)">← Troubleshooting</button>
+  <span class="footer-page-label">Page 4 of 4</span>
+  <button class="footer-btn" disabled>End of Manual</button>
+</div>
+```
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+git commit -m "feat: podium manual — page 4 component justification complete"
+```
+
+---
+
+### Task 12: Final Polish + Gitignore
+
+**Files:**
+- Modify: `pi-setup/PODIUM_ASSEMBLY_MANUAL.html`
+- Modify: `.gitignore`
+
+- [ ] **Step 1: Add .superpowers to .gitignore if not present**
+
+```bash
+grep -q '.superpowers' .gitignore || echo '.superpowers/' >> .gitignore
+```
+
+- [ ] **Step 2: Automated structural checks**
+
+Run these grep checks — all must pass before opening browser:
+
+```bash
+# All 4 page divs present
+grep -c 'id="page-[1-4]"' pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+# Expected: 4
+
+# All 4 footer nav buttons present
+grep -c 'page-footer' pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+# Expected: 4
+
+# Shopping list table present
+grep -c 'shopping' pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+# Expected: 1 or more
+
+# All 4 trouble-table sections present
+grep -c 'trouble-table' pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+# Expected: 5 or more (1 CSS + 4 usages)
+
+# All compare-grid sections present (Pi, touchscreen, buttons, PSU, SD, stand = 6)
+grep -c 'compare-grid' pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+# Expected: 6 or more
+```
+
+- [ ] **Step 3: Check the file is completely self-contained (no CDN dependencies)**
+
+```bash
+# No CDN links
+grep -E 'cdn\.|unpkg\.|jsdelivr\.' pi-setup/PODIUM_ASSEMBLY_MANUAL.html | wc -l
+# Expected: 0
+
+# No external stylesheet or script src (github.com clone URL in <pre> text is acceptable)
+grep -E '<link[^>]+href="https?://' pi-setup/PODIUM_ASSEMBLY_MANUAL.html | wc -l
+grep -E '<script[^>]+src="https?://' pi-setup/PODIUM_ASSEMBLY_MANUAL.html | wc -l
+# Expected: both 0
+```
+
+- [ ] **Step 3b: Visual review in browser (human step)**
+
+```bash
+open /Users/einhorn/quiz-room-local/pi-setup/PODIUM_ASSEMBLY_MANUAL.html
+```
+
+Check: all 4 tabs clickable, prev/next work, SVG diagrams visible, tables not overflowing, callout colours correct (blue=info, green=tip, amber=warn, red=danger), checklist boxes visible, code blocks readable.
+
+- [ ] **Step 4: Final commit**
+
+```bash
+git add pi-setup/PODIUM_ASSEMBLY_MANUAL.html .gitignore
+git commit -m "feat: complete podium assembly manual — 4-page HTML guide"
+```
+
+- [ ] **Step 5: Update PROGRESS.md**
+
+Add a session entry: Session 7, built PODIUM_ASSEMBLY_MANUAL.html, 4-page offline HTML manual covering hardware assembly, software install, troubleshooting, and component justification. Shopping list covers Czech/DACH alternatives.
+
+```bash
+git add PROGRESS.md
+git commit -m "docs: update PROGRESS.md — Session 7 podium assembly manual"
+```
