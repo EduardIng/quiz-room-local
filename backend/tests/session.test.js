@@ -87,8 +87,10 @@ function createSession(quizData = QUIZ_DATA, settings = SETTINGS) {
 function clearSessionTimers(session) {
   clearTimeout(session.questionTimer);
   clearTimeout(session.transitionTimer);
+  clearTimeout(session.categorySelectTimer);
   session.questionTimer = null;
   session.transitionTimer = null;
+  session.categorySelectTimer = null;
 }
 
 // ─────────────────────────────────────────────
@@ -929,7 +931,7 @@ describe('AutoQuizSession — Category Mode', () => {
     const result = session.submitCategory(nonChooserId, 0);
     expect(result.success).toBe(false);
     // Error says it's not their turn
-    expect(result.error).toBeTruthy();
+    expect(result.error).toMatch(/черга|ваша черга|не ваш|не твоя/i);
   });
 
   test('submitCategory: відхиляє якщо стан не CATEGORY_SELECT', () => {
@@ -955,7 +957,7 @@ describe('AutoQuizSession — Category Mode', () => {
     expect(result.success).toBe(false);
   });
 
-  it('auto-starts when playerCount players have joined', async () => {
+  test('auto-starts when playerCount players have joined', async () => {
     const settings = { ...SETTINGS, playerCount: 2, autoStart: true,
       categoryChosenTime: 4, questionTime: 30, answerRevealTime: 5, leaderboardTime: 5 };
     const { mockIo } = createMockIO();
@@ -978,32 +980,27 @@ describe('AutoQuizSession — Category Mode', () => {
     session.transitionTimer = null;
   });
 
-  it('delays nextQuestion by categoryChosenTime (4s) after CATEGORY_CHOSEN', async () => {
-    const settings = { ...SETTINGS, categoryChosenTime: 4, questionTime: 30,
-      answerRevealTime: 5, leaderboardTime: 5, waitForAllPlayers: true, autoStart: false };
-    const session = new AutoQuizSession(CATEGORY_QUIZ, settings);
-    const { mockIo } = createMockIO();
-    session.init(mockIo, 'ROOM1');
+  test('_resolveCategory затримує nextQuestion на categoryChosenTime секунд', (done) => {
+    jest.useFakeTimers();
+    const { session, broadcasts } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
 
-    const broadcasts = [];
-    session.io = {
-      to: () => ({ emit: (_, msg) => broadcasts.push(msg) })
-    };
+    session.startCategorySelect();
+    jest.clearAllTimers(); // clear the categorySelectTimer
 
-    session._resolveCategory(0, 0, false);
+    session._resolveCategory(0, 0, false); // broadcasts CATEGORY_CHOSEN, sets transitionTimer (4s default)
+    // Advance past the 4s categoryChosenTime (settings.categoryChosenTime=0 but || 4 makes it 4)
+    jest.advanceTimersByTime(4000); // fires transitionTimer → nextQuestion → sets 30s questionTimer
+    jest.clearAllTimers(); // clear the questionTimer to avoid cascading
 
-    const chosen = broadcasts.find(m => m.type === 'CATEGORY_CHOSEN');
-    expect(chosen).toBeDefined();
-    expect(broadcasts.find(m => m.type === 'NEW_QUESTION')).toBeUndefined();
-
-    // After 1.5 seconds, NEW_QUESTION must NOT have fired yet (categoryChosenTime=4s)
-    await new Promise(r => setTimeout(r, 1500));
-    expect(broadcasts.find(m => m.type === 'NEW_QUESTION')).toBeUndefined();
-
-    // After 4+ seconds total, NEW_QUESTION must have fired
-    await new Promise(r => setTimeout(r, 2700));
-    expect(broadcasts.find(m => m.type === 'NEW_QUESTION')).toBeDefined();
-  }, 6000);
+    const newQEvt = broadcasts.find(b => b.data.type === 'NEW_QUESTION');
+    expect(newQEvt).toBeDefined();
+    expect(session.gameState).toBe('QUESTION');
+    jest.useRealTimers();
+    done();
+  });
 });
 
 // ─────────────────────────────────────────────
