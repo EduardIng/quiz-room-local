@@ -1,17 +1,37 @@
 import '@testing-library/jest-dom';
 
+// Мок localStorage — jsdom інколи не ініціалізує його коректно в тестовому середовищі
+const localStorageMock = (() => {
+  let store = {};
+  return {
+    getItem: vi.fn((key) => store[key] ?? null),
+    setItem: vi.fn((key, value) => { store[key] = String(value); }),
+    removeItem: vi.fn((key) => { delete store[key]; }),
+    clear: vi.fn(() => { store = {}; }),
+  };
+})();
+Object.defineProperty(window, 'localStorage', { value: localStorageMock, writable: true });
+
 // Мок AudioContext — jsdom не реалізує Web Audio API
 window.AudioContext = class MockAudioContext {
   createOscillator() {
     return {
       connect: vi.fn(), start: vi.fn(), stop: vi.fn(),
-      frequency: { setValueAtTime: vi.fn() }
+      frequency: {
+        setValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+      }
     };
   }
   createGain() {
     return {
       connect: vi.fn(),
-      gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }
+      gain: {
+        setValueAtTime: vi.fn(),
+        exponentialRampToValueAtTime: vi.fn(),
+        linearRampToValueAtTime: vi.fn(),
+      }
     };
   }
   get destination() { return {}; }
