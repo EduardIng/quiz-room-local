@@ -102,6 +102,7 @@ function clearAllTimers(manager) {
     clearTimeout(session.questionTimer);
     clearTimeout(session.transitionTimer);
     clearTimeout(session.categorySelectTimer);
+    clearTimeout(session.autoStartTimer);
   }
 }
 

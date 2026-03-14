@@ -1,7 +1,7 @@
 # PROGRESS.md — Quiz Room Local (Kiosk Edition)
 
 > Read this file fully before continuing development.
-> Last updated: 14 March 2026 (Session 10 — PlayerView answer reveal cleanup)
+> Last updated: 14 March 2026 (Session 11 — Extensive test coverage + autoStart timer fix)
 
 ---
 

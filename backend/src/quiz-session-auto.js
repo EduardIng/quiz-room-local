@@ -29,6 +29,7 @@ class AutoQuizSession {
     this.playerJoinOrder = [];
     this.currentChooserSocketId = null;
     this.categorySelectTimer = null;
+    this.autoStartTimer = null;
     this.categorySelectTime = settings.categorySelectTime !== undefined ? settings.categorySelectTime : 15;
     this.categoryChosenTime = settings.categoryChosenTime !== undefined ? settings.categoryChosenTime : 4;
 
@@ -181,7 +182,7 @@ class AutoQuizSession {
     // Якщо autoStart увімкнено І кількість гравців досягла playerCount (заданого ведучим) → стартуємо
     if (this.settings.autoStart && this.players.size >= this.playerCount) {
       // Запускаємо з невеликою затримкою щоб гравець встиг отримати підтвердження
-      setTimeout(() => this.startQuiz(), 500);
+      this.autoStartTimer = setTimeout(() => this.startQuiz(), 500);
     }
 
     return { success: true };
@@ -777,9 +778,11 @@ class AutoQuizSession {
     clearTimeout(this.questionTimer);
     clearTimeout(this.transitionTimer);
     clearTimeout(this.categorySelectTimer);
+    clearTimeout(this.autoStartTimer);
     this.questionTimer = null;
     this.transitionTimer = null;
     this.categorySelectTimer = null;
+    this.autoStartTimer = null;
 
     this.gameState = 'ENDED';
 

@@ -88,9 +88,11 @@ function clearSessionTimers(session) {
   clearTimeout(session.questionTimer);
   clearTimeout(session.transitionTimer);
   clearTimeout(session.categorySelectTimer);
+  clearTimeout(session.autoStartTimer);
   session.questionTimer = null;
   session.transitionTimer = null;
   session.categorySelectTimer = null;
+  session.autoStartTimer = null;
 }
 
 // ─────────────────────────────────────────────
