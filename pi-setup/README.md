@@ -21,7 +21,7 @@ All buttons use internal pull-up resistors (PUD_UP). Connect one leg to the GPIO
 ## One-Time Setup
 
 ```bash
-# 1. Flash Raspberry Pi OS (64-bit, Desktop) to SD card / USB SSD
+# 1. Flash Raspberry Pi OS (64-bit, Desktop) to USB SSD via Raspberry Pi Imager
 # 2. Enable SSH and set WiFi/ethernet in Raspberry Pi Imager
 # 3. SSH in and clone the repo
 git clone https://github.com/EduardIng/quiz-room-local.git /home/pi/quiz-room-local
@@ -44,15 +44,20 @@ If the quiz server is on a different machine, update `SERVER_URL` in `gpio-servi
 
 ## Imaging for Multiple Podiums
 
-After setting up one Pi perfectly:
+After setting up one Pi perfectly (including USB boot EEPROM config — see PODIUM_MANUAL.md Step 4b):
 
 ```bash
-# On your Mac — create image from SD card
-sudo dd if=/dev/diskN of=podium-base.img bs=4m status=progress
+# Shut down Pi, unplug USB SSD, connect it to your Mac
+diskutil list                          # find the SSD disk number
 
-# Flash to each additional Pi
-sudo dd if=podium-base.img of=/dev/diskN bs=4m status=progress
+# Create image from SSD (file will be ~120 GB — ensure 130+ GB free on Mac)
+sudo dd if=/dev/rdiskN of=~/podium-base.img bs=4m status=progress
+
+# Connect next SSD to Mac, find its disk number, flash it
+sudo dd if=~/podium-base.img of=/dev/rdiskN bs=4m status=progress
 ```
+
+> **Note:** EEPROM settings are not copied when cloning. Run `sudo raspi-config` → Advanced Options → Boot Order → USB Boot on each new Pi after first boot.
 
 Then SSH to each Pi and run: `sudo hostnamectl set-hostname podium-N`
 
@@ -60,6 +65,7 @@ Then SSH to each Pi and run: `sudo hostnamectl set-hostname podium-N`
 
 | Problem | Solution |
 |---------|----------|
+| Pi won't boot | Check USB boot enabled in EEPROM (PODIUM_MANUAL.md Step 4b); re-flash USB SSD via Raspberry Pi Imager |
 | Chromium doesn't open | Check `~/.config/autostart/quiz-kiosk.desktop` |
 | GPIO buttons don't work | Run `python3 gpio-service.py` manually, check wiring |
 | Side monitor blank | Check HDMI-2 connection and display `:1` config |
