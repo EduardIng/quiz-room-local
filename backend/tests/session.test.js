@@ -381,7 +381,13 @@ describe('AutoQuizSession — Переходи між станами', () => {
 // ─────────────────────────────────────────────
 
 describe('AutoQuizSession — Подача відповідей', () => {
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
   test('submitAnswer: приймає правильну відповідь', () => {
+    jest.useFakeTimers();
     const { session } = createSession();
     session.addPlayer('s1', 'Петро');
     session.gameState = 'QUESTION';
@@ -895,19 +901,19 @@ describe('AutoQuizSession — Category Mode', () => {
   });
 
   test('submitCategory: гравець-chooser може обрати категорію', () => {
+    jest.useFakeTimers();
     const { session, broadcasts } = createSession(CATEGORY_QUIZ);
     session.addPlayer('s1', 'Петро');
     session.addPlayer('s2', 'Марія');
     session.gameState = 'STARTING';
     session.startCategorySelect();
-    clearSessionTimers(session);
 
     // Chooser socket is stored directly on session
     const chooserId = session.currentChooserSocketId;
 
     broadcasts.length = 0;
     const result = session.submitCategory(chooserId, 0);
-    clearSessionTimers(session);
+    jest.clearAllTimers();
 
     expect(result.success).toBe(true);
     // Має broadcast CATEGORY_CHOSEN
@@ -957,7 +963,8 @@ describe('AutoQuizSession — Category Mode', () => {
     expect(result.success).toBe(false);
   });
 
-  test('auto-starts when playerCount players have joined', async () => {
+  test('auto-starts when playerCount players have joined', () => {
+    jest.useFakeTimers();
     const settings = { ...SETTINGS, playerCount: 2, autoStart: true,
       categoryChosenTime: 4, questionTime: 30, answerRevealTime: 5, leaderboardTime: 5 };
     const { mockIo } = createMockIO();
@@ -973,11 +980,11 @@ describe('AutoQuizSession — Category Mode', () => {
     expect(broadcasts.find(m => m.type === 'QUIZ_STARTING')).toBeUndefined();
 
     session.addPlayer('socket2', 'Bob');
-    await new Promise(r => setTimeout(r, 600));
+    jest.advanceTimersByTime(600);
 
     expect(broadcasts.find(m => m.type === 'QUIZ_STARTING')).toBeDefined();
-    clearTimeout(session.transitionTimer);
-    session.transitionTimer = null;
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   test('_resolveCategory затримує nextQuestion на categoryChosenTime секунд', (done) => {
@@ -1127,6 +1134,7 @@ describe('AutoQuizSession — Category Mode: submitCategory', () => {
   afterEach(() => jest.useRealTimers());
 
   test('chooser може обрати категорію', () => {
+    jest.useFakeTimers();
     const { session, broadcasts } = createCategorySession();
     session.addPlayer('s1', 'Аліса');
     session.gameState = 'STARTING';
@@ -1141,7 +1149,7 @@ describe('AutoQuizSession — Category Mode: submitCategory', () => {
     expect(chosenEvt.data.choiceIndex).toBe(0);
     expect(chosenEvt.data.category).toBe('Географія');
     expect(chosenEvt.data.wasTimeout).toBe(false);
-    clearTimeout(session.transitionTimer);
+    jest.clearAllTimers();
   });
 
   test('не-chooser не може обрати категорію', () => {
@@ -1186,6 +1194,7 @@ describe('AutoQuizSession — Category Mode: submitCategory', () => {
   });
 
   test('_resolveCategory додає питання до quizData.questions', () => {
+    jest.useFakeTimers();
     const { session } = createCategorySession();
     session.addPlayer('s1', 'Аліса');
     session.gameState = 'STARTING';
@@ -1193,7 +1202,7 @@ describe('AutoQuizSession — Category Mode: submitCategory', () => {
     session.startCategorySelect();
 
     session.submitCategory('s1', 1); // вибираємо 'Наука'
-    clearTimeout(session.transitionTimer);
+    jest.clearAllTimers();
 
     expect(session.quizData.questions).toHaveLength(1);
     expect(session.quizData.questions[0].category).toBe('Наука');
@@ -1203,6 +1212,7 @@ describe('AutoQuizSession — Category Mode: submitCategory', () => {
 
 describe('AutoQuizSession — Category Mode: chooser disconnects during CATEGORY_SELECT', () => {
   test('chooser відключається → авто-вибір випадкової категорії', () => {
+    jest.useFakeTimers();
     const { session, broadcasts } = createCategorySession();
     session.addPlayer('s1', 'Аліса');
     session.addPlayer('s2', 'Богдан');
@@ -1217,7 +1227,7 @@ describe('AutoQuizSession — Category Mode: chooser disconnects during CATEGORY
     const chosenEvt = broadcasts.find(b => b.data.type === 'CATEGORY_CHOSEN');
     expect(chosenEvt).toBeDefined();
     expect(chosenEvt.data.wasTimeout).toBe(true);
-    clearTimeout(session.transitionTimer);
+    jest.clearAllTimers();
   });
 });
 
