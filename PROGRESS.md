@@ -1,7 +1,7 @@
 # PROGRESS.md — Quiz Room Local (Kiosk Edition)
 
 > Read this file fully before continuing development.
-> Last updated: 13 March 2026 (Session 6 — StatsPanel analytics upgrade)
+> Last updated: 14 March 2026 (Session 7 — Podium Assembly Manual)
 
 ---
 
@@ -267,6 +267,43 @@ Same as quiz-room-auto + `NO_ACTIVE_ROOM` (new in kiosk fork). `ANSWER_COUNT` ev
 - `StatsPanel.css`: New styles for tabs and pure-CSS chart bars
 
 **Tests:** 190 passing, 1 skipped (up from 186 in v0.3.0)
+
+---
+
+### Session 7 — Podium Assembly Manual (14 March 2026) ✅
+
+Built `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` — a fully offline, single-file 4-page HTML manual for assembling, configuring, and operating physical quiz podiums.
+
+**Page 1 — Hardware Assembly:**
+- Shopping list table with Czech/DACH supplier alternatives for every component (Raspberry Pi 5, touchscreen, HDMI monitor, GPIO buttons, cables, stand hardware)
+- SVG stand design diagram (MDF shelf dimensions, cable routing channel)
+- Pi board placement diagram with HDMI-1/HDMI-2 labelling
+- Full 40-pin GPIO pinout SVG with BCM 17/27/22/23 answer buttons highlighted
+- Step-by-step assembly checklist (8 steps, checkbox per step)
+
+**Page 2 — Software & Go-Live:**
+- SSH first-boot procedure
+- `install.sh` one-command setup instructions
+- 9-step end-to-end test sequence (GPIO, kiosk launch, host join, quiz run)
+- Cloning section: full workflow to image a configured SD card and flash all remaining podiums
+
+**Page 3 — Troubleshooting:**
+- 4 symptom tables covering: display/kiosk not launching, GPIO buttons not registering, network/reconnect issues, quiz logic problems
+- Each row: symptom → likely cause → fix command or action
+
+**Page 4 — Why These Components?**
+- 6 comparison grids: Pi 5 vs alternatives, touchscreen options, HDMI monitor choices, button types, power supply, SD card
+- Decision rationale for each chosen component (performance, price, availability in Czech/DACH)
+
+**Structural verification (all passed):**
+- 4 page divs (`id="page-1"` … `id="page-4"`) ✅
+- 5 page-footer sections ✅
+- 6 trouble-table instances ✅
+- 7 compare-grid instances ✅
+- 0 CDN links ✅
+- 0 external `<link>` or `<script>` tags ✅
+
+**Commits:** `2416cde`, `274496f`, `23441e1`, `bf9e63d`
 
 ---
 
