@@ -122,9 +122,9 @@ Each podium is a Raspberry Pi 5 with:
 
 SideMonitor polls `/api/podium/status` every 2s (HTTP, not localStorage — separate Chromium processes don't share localStorage).
 
-### Category Mode — Mandatory
+### Category Mode — Only Mode
 
-All quizzes must have `categoryMode: true`. `create-quiz` rejects standard quizzes.
+All quizzes are category mode. There is no standard (flat questions) mode. `create-quiz` no longer enforces `categoryMode: true` server-side — all quizzes in `quizzes/` are already category format.
 
 Auto-start: host sets `playerCount` before launch. Quiz starts automatically when that many players have joined. No manual Start needed.
 
@@ -178,7 +178,7 @@ quiz-room-local/
 │   ├── kiosk.sh                       <- Dual-display Chromium kiosk boot script
 │   ├── install.sh                     <- One-time Pi setup script
 │   └── README.md                      <- Wiring table + setup guide
-├── quizzes/                           <- JSON quiz files (must have categoryMode: true)
+├── quizzes/                           <- JSON quiz files (category mode only)
 ├── media/                             <- Local media files (images, audio) for offline use
 ├── data/sessions.db                   <- SQLite (auto-created)
 ├── config.json
