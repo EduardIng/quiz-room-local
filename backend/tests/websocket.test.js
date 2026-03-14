@@ -245,19 +245,6 @@ describe('QuizRoomManager — handleCreateQuiz', () => {
     expect(manager.currentActiveRoom).not.toBe(firstRoom);
   });
 
-  it('rejects create-quiz when quizData does not have categoryMode: true', (done) => {
-    const { mockIo } = createMocks();
-    const manager = new QuizRoomManager(mockIo, DEFAULT_CONFIG);
-    const socket = { id: 's1', join: jest.fn() };
-    const standardQuiz = { title: 'Test', questions: [
-      { question: 'Q1', answers: ['A','B','C','D'], correctAnswer: 0 }
-    ]};
-    manager.handleCreateQuiz(socket, { quizData: standardQuiz, settings: {} }, (response) => {
-      expect(response.success).toBe(false);
-      expect(response.error).toMatch(/category mode/i);
-      done();
-    });
-  });
 });
 
 // ─────────────────────────────────────────────

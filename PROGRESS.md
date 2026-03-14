@@ -326,6 +326,21 @@ Built `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` — a fully offline, single-file 4-
 
 ---
 
+### Session 9 — Remove Standard Quiz Mode (14 March 2026) ✅
+
+**Decision:** All quizzes are category mode. Standard (flat questions) mode removed entirely.
+
+**Changes:**
+- `quizzes/dummy-quiz-1.json` + `dummy-quiz-2.json` — deleted (old standard-format quizzes)
+- `websocket-handler-auto.js` — removed `categoryMode: true` enforcement check (red error gone from HostView)
+- `QuizCreator.jsx` — removed `categoryMode` state + toggle checkbox; removed all standard mode branches (validation, launch, export, save, import, library select, sidebar, main editor); always emits category format
+- `websocket.test.js` — removed test for now-deleted categoryMode rejection
+- Frontend rebuilt
+
+**Tests:** 189 passing, 1 skipped (down from 190 — removed obsolete test)
+
+---
+
 ## How to Continue Development
 
 Say:

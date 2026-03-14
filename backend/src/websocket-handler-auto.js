@@ -162,11 +162,6 @@ class QuizRoomManager {
 
       const quizData = data.quizData;
 
-      // Перевіряємо що квіз є в режимі категорій (обов'язково для всіх квізів)
-      if (!quizData.categoryMode || !quizData.rounds || !Array.isArray(quizData.rounds)) {
-        return respond({ success: false, error: 'Quiz must be in category mode (categoryMode: true)' });
-      }
-
       // Category mode validation
       if (data.quizData.rounds.length === 0) {
         return respond({ success: false, error: 'Квіз у режимі категорій повинен мати масив раундів' });
