@@ -1000,9 +1000,572 @@ pre code { color: #a5f3fc; }
   </div>
 </div>
 </div>
-<div id="page-2" class="page-content"></div>
-<div id="page-3" class="page-content"></div>
-<div id="page-4" class="page-content"></div>
+<div id="page-2" class="page-content"><div class="page-inner">
+  <div class="page-header">
+    <div class="page-number p2">Page 2 of 4</div>
+    <h1 class="page-title">Software &amp; Go-Live</h1>
+    <p class="page-subtitle">SSH in, install the quiz software, test everything, then clone for all 8 podiums.</p>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">🔐 First Boot &amp; SSH</h2>
+    <p>After powering on the Pi, wait ~60 seconds for the first boot to complete. The green activity LED will flash, then Monitor 1 should show the Raspberry Pi desktop.</p>
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <div class="step-title">Power on the Pi</div>
+          <div class="step-desc">Connect the USB-C PSU. The Pi boots automatically. Monitor 1 shows the boot logo, then the desktop. Wait ~60 seconds.</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Find the Pi's IP address</div>
+          <div class="step-desc">
+            On your Mac, open Terminal and run:<br>
+            <pre><code class="cmd">ping podium-1.local</code></pre>
+            If it responds, note the IP address in brackets. If no response after 30 seconds, check your router's admin panel (usually 192.168.1.1 or 192.168.0.1) and look for a device named "podium-1".
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">SSH into the Pi from your Mac</div>
+          <div class="step-desc">
+            <pre><code class="cmd">ssh pi@podium-1.local</code></pre>
+            Type <code>yes</code> when asked about the fingerprint. Enter your password. You should see a prompt like <code>pi@podium-1:~$</code>
+          </div>
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">⚙️ Install Quiz Room Software</h2>
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <div class="step-title">Clone the repository</div>
+          <div class="step-desc">
+            <pre><code class="cmd">git clone https://github.com/EduardIng/quiz-room-local.git /home/pi/quiz-room-local</code></pre>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Run the install script</div>
+          <div class="step-desc">
+            <pre><code class="cmd">cd /home/pi/quiz-room-local/pi-setup
+bash install.sh</code></pre>
+            This installs Chromium, Node.js, Python GPIO libraries, builds the frontend, sets up autostart, and disables the screensaver. Takes ~5 minutes.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Enter podium number when prompted</div>
+          <div class="step-desc">
+            The script will ask for the podium number. Enter <code>1</code> for the first podium:
+            <pre><code>Введіть номер подіуму (1-8): <span class="highlight">1</span></code></pre>
+            Note: the prompt is in Ukrainian — this is the install script's language and is normal.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">If the quiz server runs on a separate machine — update the server address</div>
+          <div class="step-desc">
+            <pre><code class="cmd">nano /home/pi/quiz-room-local/pi-setup/gpio-service.py</code></pre>
+            Change: <code>SERVER_URL = 'http://localhost:8080'</code><br>
+            To: <code>SERVER_URL = 'http://192.168.X.X:8080'</code><br><br>
+            Do the same in <code>kiosk.sh</code> for the <code>QUIZ_SERVER</code> variable.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Reboot the Pi</div>
+          <div class="step-desc">
+            <pre><code class="cmd">sudo reboot</code></pre>
+            After ~30 seconds, both monitors should show the quiz room interface automatically.
+          </div>
+        </div>
+      </li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">✅ End-to-End Test</h2>
+    <p>Run through all 9 steps below before declaring this podium complete.</p>
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <div class="step-title">Start the quiz server on your Mac</div>
+          <div class="step-desc">
+            <pre><code class="cmd">cd /Users/einhorn/quiz-room-local
+npm start</code></pre>
+            You should see: <code>Server running on port 8080</code>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Check Monitor 1 shows "Waiting for host"</div>
+          <div class="step-desc">After the Pi boots (30 seconds), Monitor 1 should show the PlayerView waiting screen. If it shows a desktop or error, check Troubleshooting.</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Test GPIO buttons via SSH</div>
+          <div class="step-desc">
+            <pre><code class="cmd">ssh pi@podium-1.local
+python3 /home/pi/quiz-room-local/pi-setup/gpio-service.py</code></pre>
+            Leave this running. Press each physical button — you should see output in the terminal.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Verify button output</div>
+          <div class="step-desc">
+            Expected output when pressing each button:
+            <pre><code>[GPIO] Кнопка 0 натиснута (GPIO 17)   ← Button A
+[GPIO] Кнопка 1 натиснута (GPIO 27)   ← Button B
+[GPIO] Кнопка 2 натиснута (GPIO 22)   ← Button C
+[GPIO] Кнопка 3 натиснута (GPIO 23)   ← Button D</code></pre>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Open Host panel on your Mac</div>
+          <div class="step-desc">
+            In your Mac browser: <code>http://192.168.X.X:8080/#/host</code><br>
+            Find your server IP via: <code>ipconfig getifaddr en0</code> in Mac Terminal.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Launch a quiz</div>
+          <div class="step-desc">Select any quiz from the list. Set player count to <strong>1</strong>. Click Launch.</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Join on Monitor 1</div>
+          <div class="step-desc">On the podium's Monitor 1 touchscreen: enter any nickname, tap Join. The quiz should auto-start immediately (playerCount = 1).</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Answer a question using both input methods</div>
+          <div class="step-desc">When the first question appears: press a physical button (A/B/C/D) — it should register as an answer. Then tap an answer on the touchscreen — that should also work.</div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Check Monitor 2</div>
+          <div class="step-desc">Monitor 2 should display the nickname you entered. If blank, check micro-HDMI 1 cable and see Troubleshooting.</div>
+        </div>
+      </li>
+    </ol>
+    <div class="callout tip">
+      <div class="callout-title">✅ All 9 steps pass?</div>
+      This podium is complete. Jump to the Cloning section below to prepare podiums 2–8. If anything failed, see Page 3 (Troubleshooting) before continuing.
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">📋 Cloning for Podiums 2–8</h2>
+    <p>Once podium 1 works perfectly, clone its SD card image to a file on your Mac, then flash that image onto each subsequent podium's SD card. Saves repeating the full install process 7 times.</p>
+    <ol class="steps">
+      <li>
+        <div class="step-body">
+          <div class="step-title">Shut down podium 1 cleanly</div>
+          <div class="step-desc">
+            <pre><code class="cmd">sudo shutdown -h now</code></pre>
+            Wait for the Pi to fully power off (green LED stops). Remove the SD card.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Insert SD card into your Mac and find its disk number</div>
+          <div class="step-desc">
+            <pre><code class="cmd">diskutil list</code></pre>
+            Look for a disk ~32 GB in size. It will be something like <code>/dev/disk4</code>. Do NOT confuse it with your Mac's internal drive.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Create image from SD card</div>
+          <div class="step-desc">
+            <pre><code class="cmd">sudo dd if=/dev/rdisk4 of=~/podium-base.img bs=4m status=progress</code></pre>
+            Replace <code>rdisk4</code> with your actual disk number (use <code>rdisk</code> not <code>disk</code> for faster reads on macOS). Takes ~10 minutes. The file will be ~32 GB.
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">For each additional podium (2–8): flash the image</div>
+          <div class="step-desc">
+            Insert new SD card, find its disk number with <code>diskutil list</code>, then:
+            <pre><code class="cmd">sudo dd if=~/podium-base.img of=/dev/rdisk4 bs=4m status=progress</code></pre>
+          </div>
+        </div>
+      </li>
+      <li>
+        <div class="step-body">
+          <div class="step-title">Set unique hostname on each new Pi</div>
+          <div class="step-desc">
+            After booting the new Pi, SSH in (use router to find IP), then:
+            <pre><code class="cmd">sudo hostnamectl set-hostname podium-2
+sudo reboot</code></pre>
+            Repeat with podium-3, podium-4 … podium-8.
+          </div>
+        </div>
+      </li>
+    </ol>
+    <div class="callout warn">
+      <div class="callout-title">⚠️ dd is silent and permanent</div>
+      The <code>dd</code> command overwrites the destination disk with no confirmation. Triple-check you have the correct disk number (<code>/dev/rdiskN</code>) before pressing Enter. Writing to the wrong disk can erase your Mac's internal drive.
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <button class="footer-btn" onclick="showPage(1)">← Hardware Assembly</button>
+    <span class="footer-page-label">Page 2 of 4</span>
+    <button class="footer-btn primary" onclick="showPage(3)">Troubleshooting →</button>
+  </div>
+</div></div>
+<div id="page-3" class="page-content"><div class="page-inner">
+  <div class="page-header">
+    <div class="page-number p3">Page 3 of 4</div>
+    <h1 class="page-title">Troubleshooting</h1>
+    <p class="page-subtitle">Something not working? Find your symptom below.</p>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">🖥️ Display Issues</h2>
+    <table class="trouble-table">
+      <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Monitor 1 blank after reboot</td><td>HDMI not detected at boot</td><td>Ensure HDMI cable is plugged in before power-on. SSH in and run <code>bash ~/quiz-room-local/pi-setup/kiosk.sh</code> manually to see errors.</td></tr>
+        <tr><td>Monitor 2 blank</td><td>micro-HDMI 1 cable or display config</td><td>Check micro-HDMI 1 cable is in port 1 (not port 0). SSH in: <code>DISPLAY=:1 xrandr</code> — if display not listed, cable or monitor issue.</td></tr>
+        <tr><td>Both monitors show desktop, not quiz</td><td>Autostart not configured</td><td>Check file exists: <code>cat ~/.config/autostart/quiz-kiosk.desktop</code>. If missing, re-run <code>bash install.sh</code>.</td></tr>
+        <tr><td>Screen sideways / wrong rotation</td><td>Display rotation not set</td><td>In <code>kiosk.sh</code>, add <code>--rotate=90</code> to the Chromium call, or set display rotation via <code>sudo raspi-config</code> → Display Options.</td></tr>
+        <tr><td>Touch not working on Monitor 1</td><td>USB touch cable missing</td><td>Connect USB-A cable from monitor's USB output to any Pi USB port. Check <code>xinput list</code> via SSH — touch device should appear.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">🕹️ Input Issues</h2>
+    <table class="trouble-table">
+      <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Buttons do nothing</td><td>Wrong GPIO pins or loose wires</td><td>SSH in, run <code>python3 ~/quiz-room-local/pi-setup/gpio-service.py</code> manually. Press each button — check terminal output. If silent, check wiring.</td></tr>
+        <tr><td>One button doesn't work</td><td>Loose dupont connector</td><td>Re-seat the connector on the GPIO pin. Swap with a known-working wire to isolate the problem.</td></tr>
+        <tr><td>Button registers wrong answer</td><td>Wrong pin assignment</td><td>Wiring must be: A=Pin11, B=Pin13, C=Pin15, D=Pin16. Count pins from the corner nearest the USB-C port.</td></tr>
+        <tr><td>Touch acts as mouse pointer, not game input</td><td>Chromium touch mode</td><td>Ensure <code>kiosk.sh</code> launches Chromium with <code>--touch-events=enabled</code> flag.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">🌐 Network &amp; Software Issues</h2>
+    <table class="trouble-table">
+      <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>"Waiting for host" never clears</td><td>Server not running or wrong IP</td><td>Confirm <code>npm start</code> is running on server. Check <code>SERVER_URL</code> in <code>gpio-service.py</code> and <code>QUIZ_SERVER</code> in <code>kiosk.sh</code> match the server's actual LAN IP.</td></tr>
+        <tr><td><code>ping podium-1.local</code> times out</td><td>mDNS not resolving</td><td>Use router admin panel to find Pi's IP directly. SSH by IP: <code>ssh pi@192.168.X.X</code>. Or install avahi: <code>sudo apt install avahi-daemon</code>.</td></tr>
+        <tr><td>npm start fails on server</td><td>Frontend not built</td><td>Run <code>cd frontend &amp;&amp; npm run build</code> on the server machine to see the error message.</td></tr>
+        <tr><td>Quiz auto-start never triggers</td><td>playerCount mismatch</td><td>In Host panel, playerCount must equal the exact number of players who have joined. Rejoin if needed.</td></tr>
+        <tr><td>SSH: connection refused</td><td>Pi still booting</td><td>Wait 60 s and retry. If persistent after 3 minutes, re-flash SD card.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">⚡ Hardware Issues</h2>
+    <table class="trouble-table">
+      <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Pi won't boot (no LED activity)</td><td>Bad PSU or bad SD card</td><td>Try the official 27W USB-C PSU. Re-flash SD card from scratch using Raspberry Pi Imager.</td></tr>
+        <tr><td>Pi crashes or reboots randomly</td><td>Underpowered supply</td><td>Must use the official 27W PSU. Third-party 3A chargers are insufficient for Pi 5 under full load.</td></tr>
+        <tr><td>SD card corrupted after power cut</td><td>Unclean shutdown</td><td>Always run <code>sudo shutdown -h now</code> before unplugging. For permanent install, set filesystem to read-only.</td></tr>
+        <tr><td>Pi gets hot to touch</td><td>Poor ventilation inside stand</td><td>Ensure the Pi has airflow. Add the official active cooler (€5, clips on without tools).</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-title">ℹ️ Still stuck?</div>
+    Run <code>journalctl -xe</code> on the Pi via SSH to see system logs. Most hardware issues show up here. For software issues, check the quiz server terminal output on the host machine.
+  </div>
+
+  <div class="page-footer">
+    <button class="footer-btn" onclick="showPage(2)">← Software &amp; Go-Live</button>
+    <span class="footer-page-label">Page 3 of 4</span>
+    <button class="footer-btn primary" onclick="showPage(4)">Why These Components? →</button>
+  </div>
+</div></div>
+<div id="page-4" class="page-content"><div class="page-inner">
+  <div class="page-header">
+    <div class="page-number p4">Page 4 of 4</div>
+    <h1 class="page-title">Why These Components?</h1>
+    <p class="page-subtitle">Every recommendation justified and compared to alternatives. Read this before making substitutions.</p>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">🍓 Single-Board Computer</h2>
+    <p>The Pi 5 is the correct choice for this build. Here is why, and what you lose with alternatives.</p>
+    <div class="compare-grid">
+      <div class="compare-card recommended">
+        <div class="recommended-badge">✓ RECOMMENDED</div>
+        <div class="compare-card-title">Raspberry Pi 5 (4 GB)</div>
+        <div class="compare-card-subtitle">~€75 · rpishop.cz / rpilocator.com</div>
+        <div class="pros-cons">
+          <div class="pro">Native dual micro-HDMI outputs</div>
+          <div class="pro">BCM2712 A76 cores — 2.4 GHz, ~40% faster than Pi 4</div>
+          <div class="pro">PCIe interface → SD reads ~3× faster</div>
+          <div class="pro">4 GB handles browser + GPIO service comfortably</div>
+          <div class="pro">Same 40-pin GPIO pinout — wiring identical</div>
+          <div class="con">Slightly harder to find (use rpilocator.com)</div>
+          <div class="con">Costs €10–15 more than Pi 4</div>
+        </div>
+      </div>
+      <div class="compare-card">
+        <div class="compare-card-title">Raspberry Pi 4 Model B (4 GB)</div>
+        <div class="compare-card-subtitle">~€60 · widely available</div>
+        <div class="pros-cons">
+          <div class="pro">Cheaper, easier to find</div>
+          <div class="pro">Same GPIO pinout — software runs unchanged</div>
+          <div class="con">Older A72 CPU — 30–40% slower under load</div>
+          <div class="con">No PCIe — SD access notably slower</div>
+          <div class="con">Thermal throttling common without active cooling</div>
+          <div class="con">Noticeable at scale across 8 podiums</div>
+        </div>
+      </div>
+      <div class="compare-card">
+        <div class="compare-card-title">Raspberry Pi 400</div>
+        <div class="compare-card-subtitle">~€70 · keyboard enclosure built in</div>
+        <div class="pros-cons">
+          <div class="pro">Same CPU as Pi 4</div>
+          <div class="con">GPIO pins recessed inside keyboard enclosure — hard to wire</div>
+          <div class="con">Keyboard adds bulk inside stand for no benefit</div>
+          <div class="con">Same thermal/performance drawbacks as Pi 4</div>
+        </div>
+      </div>
+      <div class="compare-card">
+        <div class="compare-card-title">Intel N100 Mini PC</div>
+        <div class="compare-card-subtitle">~€140–200 · e.g. Beelink EQ12</div>
+        <div class="pros-cons">
+          <div class="pro">Much faster (x86, modern cores)</div>
+          <div class="pro">Familiar Linux / Windows environment</div>
+          <div class="con">No GPIO — needs USB GPIO adapter (cost + complexity)</div>
+          <div class="con">gpio-service.py not natively compatible</div>
+          <div class="con">Most models have only 1 HDMI output</div>
+          <div class="con">2× the cost, overkill for a browser kiosk</div>
+        </div>
+      </div>
+    </div>
+    <div class="callout tip">
+      <div class="callout-title">✅ Verdict: Raspberry Pi 5 (4 GB)</div>
+      Best performance-per-euro for a dual-display GPIO kiosk. The Pi 4 works but runs hotter and slower — acceptable for 1–2 podiums, but across 8 the difference is noticeable in quiz load times and touch responsiveness. The Pi 5's PCIe interface makes SD card reads ~3× faster.
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">🖥️ Touchscreen — Monitor 1</h2>
+    <p>The player-facing screen must be a capacitive touchscreen with both HDMI video input and USB touch output.</p>
+    <div class="callout warn">
+      <div class="callout-title">⚠️ Always verify before buying</div>
+      Must have: (1) HDMI input — not just USB-C video, (2) USB touch output. Many portable monitors have only USB-C video — those won't work with the Pi's micro-HDMI output without an adapter, and touch may not be exposed.
+    </div>
+    <div class="compare-grid">
+      <div class="compare-card recommended">
+        <div class="recommended-badge">✓ RECOMMENDED</div>
+        <div class="compare-card-title">15.6" Portable Touchscreen</div>
+        <div class="compare-card-subtitle">~€120–150 · e.g. Lepow Z1 Gamut, ARZOPA</div>
+        <div class="pros-cons">
+          <div class="pro">Purpose-built with kickstand / case included</div>
+          <div class="pro">HDMI + USB touch — plug and play on Pi</div>
+          <div class="pro">IPS panel — wide viewing angle for side-on players</div>
+          <div class="pro">Compact — fits neatly on stand</div>
+          <div class="con">~€120–150 is the biggest per-podium cost</div>
+        </div>
+      </div>
+      <div class="compare-card">
+        <div class="compare-card-title">13.3" Portable Touchscreen</div>
+        <div class="compare-card-subtitle">~€80–100 · smaller variant</div>
+        <div class="pros-cons">
+          <div class="pro">Cheaper, narrower footprint</div>
+          <div class="pro">Same HDMI + USB touch interface</div>
+          <div class="con">Text and buttons harder to read</div>
+          <div class="con">Answer buttons feel cramped for large hands</div>
+          <div class="con">Best only if stand width is very constrained</div>
+        </div>
+      </div>
+      <div class="compare-card">
+        <div class="compare-card-title">Regular Monitor + USB Touch Overlay</div>
+        <div class="compare-card-subtitle">~€80–120 total</div>
+        <div class="pros-cons">
+          <div class="pro">Any size screen possible</div>
+          <div class="pro">Touch overlay frames are cheap (~€50–60)</div>
+          <div class="con">Overlay reduces screen brightness noticeably</div>
+          <div class="con">Bulky — overlay adds ~2 cm border</div>
+          <div class="con">Touch overlay drivers can be unreliable on Pi OS</div>
+          <div class="con">Extra cables and mounting complexity</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">🕹️ Answer Buttons</h2>
+    <div class="compare-grid">
+      <div class="compare-card recommended">
+        <div class="recommended-badge">✓ RECOMMENDED</div>
+        <div class="compare-card-title">30 mm Illuminated Arcade Buttons</div>
+        <div class="compare-card-subtitle">~€3–5 each · EG Starts, Sanwa, generic</div>
+        <div class="pros-cons">
+          <div class="pro">Satisfying tactile click — players feel each press</div>
+          <div class="pro">Large 30 mm target — easy to hit under excitement</div>
+          <div class="pro">LED illumination visible in any lighting</div>
+          <div class="pro">100,000+ cycle rating — effectively indestructible</div>
+          <div class="con">Requires drilling a 30 mm hole in stand panel</div>
+          <div class="con">~€12–20 for a set of 4</div>
+        </div>
+      </div>
+      <div class="compare-card">
+        <div class="compare-card-title">Small Tactile PCB Buttons</div>
+        <div class="compare-card-subtitle">&lt;€1 each · generic 6 mm or 12 mm</div>
+        <div class="pros-cons">
+          <div class="pro">Extremely cheap</div>
+          <div class="pro">PCB-mountable — no drilling</div>
+          <div class="con">Tiny target — bad UX for excited players</div>
+          <div class="con">No click, no illumination</div>
+          <div class="con">Not suitable for a game show context</div>
+        </div>
+      </div>
+      <div class="compare-card">
+        <div class="compare-card-title">Capacitive Touch Pads</div>
+        <div class="compare-card-subtitle">~€5–15 · TTP223-based modules</div>
+        <div class="pros-cons">
+          <div class="pro">No moving parts — zero mechanical wear</div>
+          <div class="con">False triggers from nearby objects / sweat</div>
+          <div class="con">No haptic feedback — player can't feel boundary</div>
+          <div class="con">Hard to mount cleanly on panel surface</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">⚡ Power Supply</h2>
+    <div class="compare-grid">
+      <div class="compare-card recommended">
+        <div class="recommended-badge">✓ RECOMMENDED</div>
+        <div class="compare-card-title">Official Raspberry Pi 27W USB-C PSU</div>
+        <div class="compare-card-subtitle">~€12 · rpishop.cz / Alza.cz</div>
+        <div class="pros-cons">
+          <div class="pro">5V / 5A — guaranteed stable output</div>
+          <div class="pro">Designed for Pi 5 — USB PD negotiation works correctly</div>
+          <div class="pro">Suppresses under-voltage warnings permanently</div>
+          <div class="pro">Same price as a decent third-party charger</div>
+        </div>
+      </div>
+      <div class="compare-card">
+        <div class="compare-card-title">Third-Party USB-C PD Charger</div>
+        <div class="compare-card-subtitle">~€8–15 · various</div>
+        <div class="pros-cons">
+          <div class="pro">Widely available, often cheaper</div>
+          <div class="con">Pi 5 requires USB PD negotiation to unlock 5A — most third-party chargers don't negotiate correctly</div>
+          <div class="con">Pi runs in degraded mode: CPU throttled, lightning bolt icon shown</div>
+          <div class="con">Not worth the €3 saving across 8 podiums</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">💾 Storage</h2>
+    <div class="compare-grid">
+      <div class="compare-card recommended">
+        <div class="recommended-badge">✓ RECOMMENDED (for initial build)</div>
+        <div class="compare-card-title">microSD — Endurance Class 32 GB</div>
+        <div class="compare-card-subtitle">~€12–18 · SanDisk Max Endurance, Samsung Pro Endurance</div>
+        <div class="pros-cons">
+          <div class="pro">Simple setup — Raspberry Pi Imager writes directly</div>
+          <div class="pro">Easy cloning via dd</div>
+          <div class="pro">Endurance-class handles continuous read/write for years</div>
+          <div class="con">~3× slower than SSD for boot and file access</div>
+          <div class="con">Power-cut corruption risk (use clean shutdown)</div>
+        </div>
+      </div>
+      <div class="compare-card">
+        <div class="compare-card-title">USB SSD Boot (Advanced)</div>
+        <div class="compare-card-subtitle">~€30–50 · Samsung T7, Kingston XS2000</div>
+        <div class="pros-cons">
+          <div class="pro">~3× faster boot and file access</div>
+          <div class="pro">Much more durable — no SD corruption risk</div>
+          <div class="pro">Recommended for permanent production deployment</div>
+          <div class="con">Requires one-time EEPROM bootloader config on each Pi</div>
+          <div class="con">Different cloning procedure</div>
+          <div class="con">Adds complexity to initial setup — do SD first, upgrade later</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">🏗️ Stand Form Factor</h2>
+    <p>You already have a stand — but if you are choosing one, here are the trade-offs.</p>
+    <div class="compare-grid">
+      <div class="compare-card recommended">
+        <div class="recommended-badge">✓ RECOMMENDED</div>
+        <div class="compare-card-title">Tilted Lectern Style</div>
+        <div class="compare-card-subtitle">Screen angled ~30° toward player</div>
+        <div class="pros-cons">
+          <div class="pro">Natural viewing angle — no neck strain</div>
+          <div class="pro">Buttons at hand height — ergonomic and fast</div>
+          <div class="pro">Cables hidden inside — clean appearance</div>
+          <div class="pro">Classic quiz show podium feel — immersive</div>
+          <div class="con">Requires angled bracket or arm for screen</div>
+        </div>
+      </div>
+      <div class="compare-card">
+        <div class="compare-card-title">Flat Pedestal / Column</div>
+        <div class="compare-card-subtitle">Screen vertical or horizontal on top</div>
+        <div class="pros-cons">
+          <div class="pro">Simpler to build — no tilt hardware needed</div>
+          <div class="con">Screen faces straight up (bad glare) or straight forward</div>
+          <div class="con">Requires separate arm to achieve good viewing angle</div>
+          <div class="con">Less immersive for players</div>
+        </div>
+      </div>
+      <div class="compare-card">
+        <div class="compare-card-title">Wall-Mounted Panel</div>
+        <div class="compare-card-subtitle">Fixed installation on wall or divider</div>
+        <div class="pros-cons">
+          <div class="pro">Saves floor space</div>
+          <div class="pro">Very clean — all wiring in wall</div>
+          <div class="con">Not portable — permanent installation only</div>
+          <div class="con">Requires wall access for cable routing</div>
+          <div class="con">Buttons must be mounted separately at hand height</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-footer">
+    <button class="footer-btn" onclick="showPage(3)">← Troubleshooting</button>
+    <span class="footer-page-label">Page 4 of 4</span>
+    <button class="footer-btn" disabled>End of Manual</button>
+  </div>
+</div></div>
 
 <script>
 let currentPage = 1;
