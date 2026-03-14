@@ -62,3 +62,9 @@ global.fetch = vi.fn(() =>
     json: () => Promise.resolve({ roomCode: null }),
   })
 );
+
+// Скидаємо localStorage та всі моки перед кожним тестом для ізоляції
+beforeEach(() => {
+  localStorage.clear();
+  vi.clearAllMocks();
+});

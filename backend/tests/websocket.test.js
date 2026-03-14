@@ -101,6 +101,7 @@ function clearAllTimers(manager) {
   for (const session of manager.sessions.values()) {
     clearTimeout(session.questionTimer);
     clearTimeout(session.transitionTimer);
+    clearTimeout(session.categorySelectTimer);
   }
 }
 

@@ -963,7 +963,7 @@ describe('AutoQuizSession — Category Mode', () => {
     expect(result.success).toBe(false);
   });
 
-  test('auto-starts when playerCount players have joined', () => {
+  test('autoStart запускає гру коли playerCount гравців приєдналось', () => {
     jest.useFakeTimers();
     const settings = { ...SETTINGS, playerCount: 2, autoStart: true,
       categoryChosenTime: 4, questionTime: 30, answerRevealTime: 5, leaderboardTime: 5 };
@@ -997,8 +997,9 @@ describe('AutoQuizSession — Category Mode', () => {
     session.startCategorySelect();
     jest.clearAllTimers(); // clear the categorySelectTimer
 
-    session._resolveCategory(0, 0, false); // broadcasts CATEGORY_CHOSEN, sets transitionTimer (4s default)
-    // Advance past the 4s categoryChosenTime (settings.categoryChosenTime=0 but || 4 makes it 4)
+    session._resolveCategory(0, 0, false); // broadcasts CATEGORY_CHOSEN, sets transitionTimer
+    // CATEGORY_SETTINGS.categoryChosenTime=0, після фікса це дійсно 0мс,
+    // але advanceTimersByTime(4000) все одно проходить таймер
     jest.advanceTimersByTime(4000); // fires transitionTimer → nextQuestion → sets 30s questionTimer
     jest.clearAllTimers(); // clear the questionTimer to avoid cascading
 
@@ -1341,7 +1342,8 @@ describe('AutoQuizSession — Full category game flow (1 round)', () => {
 
     // Гравець вибирає категорію 0 (Географія, correctAnswer=2)
     session.submitCategory('s1', 0);
-    // categoryChosenTime = 0 але || 4 робить його 4s; чекаємо 4001ms
+    // CATEGORY_SETTINGS.categoryChosenTime=0, після фікса це дійсно 0мс,
+    // але advanceTimersByTime(4100) все одно проходить таймер
     jest.advanceTimersByTime(4100);
     expect(session.gameState).toBe('QUESTION');
 
