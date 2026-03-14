@@ -307,6 +307,25 @@ Built `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` — a fully offline, single-file 4-
 
 ---
 
+### Session 8 — UI Fixes & GitHub Push (14 March 2026) ✅
+
+**Root cause resolved:** Frontend build was stale (March 12) — predated Session 5 UI cleanup. Rebuilt frontend; all Session 5+ changes now live.
+
+**Bug fixed — ProjectorView lobby counter:**
+- `getState()` was returning `playerCount: this.players.size` (current joined count) instead of the host-set target
+- Added `targetPlayerCount: this.playerCount` to `getState()`, `PLAYER_JOINED`, and `PLAYER_LEFT` broadcasts
+- ProjectorView `syncState` and `PLAYER_JOINED` handler now use `targetPlayerCount` for the lobby "X / N гравців готові" display
+
+**Visual changes now live (were in source since Session 5, now in build):**
+- HostView: "Мін. гравців" spinner removed
+- QuizCreator: "Мін. гравців" + "Автостарт" controls removed; "🎮 Ведучий" back link in header
+- ProjectorView: room code removed from header; lobby shows "X / N гравців готові" when target is set
+
+**Tests:** 190 passing, 1 skipped (unchanged)
+**Pushed to GitHub:** https://github.com/EduardIng/quiz-room-local
+
+---
+
 ## How to Continue Development
 
 Say:

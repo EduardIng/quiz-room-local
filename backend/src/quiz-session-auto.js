@@ -173,7 +173,8 @@ class AutoQuizSession {
     this.broadcast({
       type: 'PLAYER_JOINED',
       players: this._getPlayerList(),
-      totalPlayers: this.players.size
+      totalPlayers: this.players.size,
+      targetPlayerCount: this.playerCount,   // ціль для лобі-дисплею на проекторі
     });
 
     // Перевіряємо умову autoStart:
@@ -232,7 +233,8 @@ class AutoQuizSession {
       type: 'PLAYER_LEFT',
       nickname: player.nickname,
       players: this._getPlayerList(),
-      totalPlayers: this.players.size
+      totalPlayers: this.players.size,
+      targetPlayerCount: this.playerCount,
     });
 
     // Якщо гра в процесі і стоїть умова waitForAllPlayers:
@@ -1076,7 +1078,8 @@ class AutoQuizSession {
       quizTitle: this.quizData.title,
       sessionName: this.sessionName,
       isCategoryMode: this.isCategoryMode,
-      playerCount: this.players.size,
+      playerCount: this.players.size,        // поточна кількість гравців онлайн
+      targetPlayerCount: this.playerCount,   // ціль, задана ведучим (для лобі-дисплею)
     };
 
     // Дані поточного питання (без правильної відповіді) — для Projector sync

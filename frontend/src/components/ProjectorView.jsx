@@ -209,7 +209,7 @@ export default function ProjectorView() {
     setSessionName(gs.sessionName || '');
     setPlayers(gs.players || []);
     setTotalPlayers(gs.playerCount || gs.players?.length || 0);
-    setPlayerCount(gs.playerCount || gs.players?.length || 0);
+    setPlayerCount(gs.targetPlayerCount || gs.playerCount || gs.players?.length || 0);
     setTotalQuestions(gs.totalQuestions || 0);
 
     if (gs.currentQuestion) {
@@ -246,7 +246,7 @@ export default function ProjectorView() {
       case 'PLAYER_LEFT':
         setPlayers(data.players || []);
         setTotalPlayers(data.totalPlayers || 0);
-        if (data.playerCount) setPlayerCount(data.playerCount);
+        if (data.targetPlayerCount) setPlayerCount(data.targetPlayerCount);
         break;
 
       case 'QUIZ_STARTING':
