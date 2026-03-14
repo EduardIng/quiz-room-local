@@ -1,7 +1,7 @@
 # PROGRESS.md — Quiz Room Local (Kiosk Edition)
 
 > Read this file fully before continuing development.
-> Last updated: 14 March 2026 (Session 7 — Podium Assembly Manual)
+> Last updated: 14 March 2026 (Session 10 — PlayerView answer reveal cleanup)
 
 ---
 
@@ -169,7 +169,7 @@ Physical quiz podium system: Raspberry Pi 5 per seat, GPIO buttons, dual HDMI, c
 **Key architectural decisions:**
 - GPIO Python service connects from same Pi IP as player browser → server resolves IP to player socket
 - SideMonitor on HDMI-2 uses HTTP polling (not localStorage — separate Chromium processes don't share it)
-- Category mode enforced server-side — `create-quiz` rejects non-category quizzes
+- Category mode enforced server-side at launch — later removed in Session 9 (category-only architecture)
 - `autoStart: true` hardcoded in sessionSettings, `playerCount` set by host before launch
 
 **Version:** 0.3.0 — podium hardware integration complete, tag `phase-7-complete`

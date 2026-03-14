@@ -134,7 +134,7 @@ Auto-start: host sets `playerCount` before launch. Quiz starts automatically whe
 Category:  WAITING → STARTING → CATEGORY_SELECT → [4s CATEGORY_CHOSEN] → QUESTION → ANSWER_REVEAL → LEADERBOARD → (repeat) → ENDED
 ```
 
-Standard (non-category) quizzes are rejected at session creation.
+There is only one quiz format. Standard (non-category) quizzes no longer exist.
 
 ---
 
