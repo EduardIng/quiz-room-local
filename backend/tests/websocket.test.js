@@ -973,3 +973,98 @@ describe('QuizRoomManager — podiumRegistry і podium-button-press', () => {
     // Архітектура тестового файлу базується на мок-сокетах без HTTP сервера.
   });
 });
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: handleSubmitCategory
+// ─────────────────────────────────────────────
+
+// Конфіг для категорійних тестів: categoryChosenTime:0 → швидкий перехід (але || 4 в session, тому безпечніше)
+const CATEGORY_WS_CONFIG = {
+  quiz: {
+    ...DEFAULT_CONFIG.quiz,
+    categoryChosenTime: 0,
+    categorySelectTime: 999
+  }
+};
+
+describe('QuizRoomManager — handleSubmitCategory', () => {
+  function setupCategoryRoom() {
+    const { mockIo, roomEmits, createSocket } = createMocks();
+    const manager = new QuizRoomManager(mockIo, CATEGORY_WS_CONFIG);
+    const hostSocket = createSocket('host-cat');
+    let roomCode = null;
+
+    manager.handleCreateQuiz(hostSocket, { quizData: QUIZ_DATA }, (r) => {
+      roomCode = r.roomCode;
+    });
+
+    return { manager, roomCode, hostSocket, mockIo, roomEmits, createSocket };
+  }
+
+  test('chooser може надіслати submitCategory і отримати success', () => {
+    const { manager, roomCode, createSocket } = setupCategoryRoom();
+    const playerSocket = createSocket('cat-player-1');
+    manager.handleJoinQuiz(playerSocket, { roomCode, nickname: 'Аліса' }, () => {});
+
+    // Форсуємо стан CATEGORY_SELECT вручну
+    const session = manager.sessions.get(roomCode);
+    session.gameState = 'CATEGORY_SELECT';
+    session.currentQuestionIndex = -1;
+    session.currentChooserSocketId = 'cat-player-1';
+    // Зупиняємо таймер авто-вибору категорії
+    session.categorySelectTimer = setTimeout(() => {}, 999999);
+
+    let response;
+    manager.handleSubmitCategory(playerSocket, { choiceIndex: 0 }, (r) => { response = r; });
+    clearTimeout(session.transitionTimer);
+
+    expect(response.success).toBe(true);
+  });
+
+  test('відхиляє відсутній choiceIndex', () => {
+    const { manager, roomCode, createSocket } = setupCategoryRoom();
+    const playerSocket = createSocket('cat-player-2');
+    manager.handleJoinQuiz(playerSocket, { roomCode, nickname: 'Богдан' }, () => {});
+
+    let response;
+    manager.handleSubmitCategory(playerSocket, {}, (r) => { response = r; });
+
+    expect(response.success).toBe(false);
+    expect(response.error).toMatch(/choiceIndex/i);
+  });
+
+  test('відхиляє choiceIndex не 0 або 1', () => {
+    const { manager, roomCode, createSocket } = setupCategoryRoom();
+    const playerSocket = createSocket('cat-player-3');
+    manager.handleJoinQuiz(playerSocket, { roomCode, nickname: 'Василь' }, () => {});
+
+    let response;
+    manager.handleSubmitCategory(playerSocket, { choiceIndex: 5 }, (r) => { response = r; });
+
+    expect(response.success).toBe(false);
+    expect(response.error).toMatch(/0 або 1/i);
+  });
+
+  test('відхиляє якщо гравець не в кімнаті', () => {
+    const { manager, createSocket } = setupCategoryRoom();
+    const unknownSocket = createSocket('unknown-cat');
+
+    let response;
+    manager.handleSubmitCategory(unknownSocket, { choiceIndex: 0 }, (r) => { response = r; });
+
+    expect(response.success).toBe(false);
+    expect(response.error).toMatch(/не знаходитесь/i);
+  });
+
+  test('відхиляє null data', () => {
+    const { manager, roomCode, createSocket } = setupCategoryRoom();
+    const playerSocket = createSocket('cat-player-4');
+    manager.handleJoinQuiz(playerSocket, { roomCode, nickname: 'Галина' }, () => {});
+
+    let response;
+    manager.handleSubmitCategory(playerSocket, null, (r) => { response = r; });
+
+    expect(response.success).toBe(false);
+    expect(response.error).toMatch(/choiceIndex/i);
+  });
+});
