@@ -840,13 +840,6 @@ const myLeaderboardPosition = leaderboard.findIndex(p => p.nickname === myNickna
             }
           </div>
 
-          {revealData.isCorrect && (
-            <div className="points-earned">
-              <div className="points-value">+{revealData.pointsEarned}</div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 4 }}>балів</div>
-            </div>
-          )}
-
           <div className="correct-answer-box">
             <div className="correct-answer-label">✓ Правильна відповідь</div>
             <div className="correct-answer-text">

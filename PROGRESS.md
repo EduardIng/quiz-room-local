@@ -341,6 +341,12 @@ Built `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` — a fully offline, single-file 4-
 
 ---
 
+### Session 10 — PlayerView Answer Reveal Cleanup (14 March 2026) ✅
+
+- `PlayerView.jsx`: removed duplicate `.points-earned` block ("+156 / балів") from answer reveal screen; the `.my-result` line ("+156 балів!") already conveys the same information — one counter is enough
+
+---
+
 ## How to Continue Development
 
 Say:
