@@ -1068,3 +1068,57 @@ describe('QuizRoomManager — handleSubmitCategory', () => {
     expect(response.error).toMatch(/choiceIndex/i);
   });
 });
+
+describe('QuizRoomManager — submit-answer rate limiting', () => {
+  test('відхиляє після 10 submit-answer подій за 30с', () => {
+    const { manager, roomCode, createSocket } = setupRoomWithQuiz();
+    const playerSocket = createSocket('rl-player');
+    manager.handleJoinQuiz(playerSocket, { roomCode, nickname: 'RatePlayer' }, () => {});
+
+    const session = manager.sessions.get(roomCode);
+    session.quizData.questions = [{ question: 'Q?', answers: ['A','B','C','D'], correctAnswer: 0 }];
+
+    // Надсилаємо 10 відповідей — rate limiter рахує кожну спробу
+    for (let i = 0; i < 10; i++) {
+      session.currentAnswers.clear();
+      session.gameState = 'QUESTION';
+      session.currentQuestionIndex = 0;
+      session.questionStartTime = Date.now();
+      manager.handleSubmitAnswer(playerSocket, { answerId: 0 }, () => {});
+      clearTimeout(session.questionTimer);
+      clearTimeout(session.transitionTimer);
+    }
+
+    // 11-та спроба має бути заблокована rate limiter-ом
+    session.currentAnswers.clear();
+    session.gameState = 'QUESTION';
+    let response;
+    manager.handleSubmitAnswer(playerSocket, { answerId: 0 }, (r) => { response = r; });
+
+    expect(response.success).toBe(false);
+    expect(response.error).toMatch(/забагато запитів/i);
+  });
+});
+
+describe('QuizRoomManager — submit-answer while paused', () => {
+  test('відповідь приймається під час паузи (session не перевіряє isPaused)', () => {
+    const { manager, roomCode, createSocket } = setupRoomWithQuiz();
+    const playerSocket = createSocket('pause-player');
+    manager.handleJoinQuiz(playerSocket, { roomCode, nickname: 'PausePlayer' }, () => {});
+
+    const session = manager.sessions.get(roomCode);
+    session.gameState = 'QUESTION';
+    session.isPaused = true;
+    session.currentQuestionIndex = 0;
+    session.questionStartTime = Date.now() - 5000;
+    session.quizData.questions = [{ question: 'Q?', answers: ['A','B','C','D'], correctAnswer: 1 }];
+
+    let response;
+    manager.handleSubmitAnswer(playerSocket, { answerId: 1 }, (r) => { response = r; });
+
+    // submitAnswer in session does not check isPaused — answer is accepted
+    expect(response.success).toBe(true);
+    // Clean up timers triggered by endQuestion (waitForAllPlayers=true, 1 player)
+    clearTimeout(session.transitionTimer);
+  });
+});
