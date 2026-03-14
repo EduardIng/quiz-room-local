@@ -1005,3 +1005,238 @@ describe('AutoQuizSession — Category Mode', () => {
     expect(broadcasts.find(m => m.type === 'NEW_QUESTION')).toBeDefined();
   }, 6000);
 });
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: Category Mode — startCategorySelect / submitCategory
+// ─────────────────────────────────────────────
+
+const CATEGORY_QUIZ_3R = {
+  title: 'Категорійний квіз',
+  categoryMode: true,
+  rounds: [
+    {
+      options: [
+        { category: 'Географія', question: 'Столиця Франції?', answers: ['Берлін','Лондон','Париж','Рим'], correctAnswer: 2 },
+        { category: 'Наука',     question: 'H2O — це?',        answers: ['Вода','Кисень','Залізо','Вуглець'], correctAnswer: 0 }
+      ]
+    },
+    {
+      options: [
+        { category: 'Спорт', question: 'Скільки гравців у хокейній команді на льоду?', answers: ['4','5','6','7'], correctAnswer: 2 },
+        { category: 'Кіно',  question: 'Режисер «Titanic»?', answers: ['Спілберг','Кемерон','Нолан','Скорсезе'], correctAnswer: 1 }
+      ]
+    },
+    {
+      options: [
+        { category: 'Музика', question: 'Скільки нот?', answers: ['5','6','7','8'], correctAnswer: 2 },
+        { category: 'Техніка', question: 'CPU — це?', answers: ['Відеокарта','Процесор','Диск','Мережа'], correctAnswer: 1 }
+      ]
+    }
+  ]
+};
+
+const CATEGORY_SETTINGS = {
+  questionTime: 30,
+  answerRevealTime: 1,
+  leaderboardTime: 1,
+  categoryChosenTime: 0,   // 0 = instant transition for tests
+  autoStart: false,
+  waitForAllPlayers: true,
+  minPlayers: 1,
+  maxPlayers: 8
+};
+
+function createCategorySession() {
+  const { mockIo, broadcasts } = createMockIO();
+  const session = new AutoQuizSession(CATEGORY_QUIZ_3R, CATEGORY_SETTINGS);
+  session.init(mockIo, 'CAT01');
+  return { session, mockIo, broadcasts };
+}
+
+describe('AutoQuizSession — Category Mode: startCategorySelect', () => {
+  afterEach(() => jest.useRealTimers());
+
+  test('стан переходить у CATEGORY_SELECT', () => {
+    const { session } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
+
+    session.startCategorySelect();
+
+    expect(session.gameState).toBe('CATEGORY_SELECT');
+    clearTimeout(session.categorySelectTimer);
+  });
+
+  test('broadcast CATEGORY_SELECT містить options і chooserNickname', () => {
+    const { session, broadcasts } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
+
+    session.startCategorySelect();
+
+    const evt = broadcasts.find(b => b.data.type === 'CATEGORY_SELECT');
+    expect(evt).toBeDefined();
+    expect(evt.data.chooserNickname).toBe('Аліса');
+    expect(evt.data.options).toHaveLength(2);
+    expect(evt.data.options[0].category).toBe('Географія');
+    expect(evt.data.options[1].category).toBe('Наука');
+    clearTimeout(session.categorySelectTimer);
+  });
+
+  test('з кількома гравцями chooser обирається по черзі', () => {
+    jest.useFakeTimers();
+    const { session, broadcasts } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+    session.addPlayer('s2', 'Богдан');
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
+
+    // Round 1 — chooser: Аліса (index 0)
+    session.startCategorySelect();
+    const evt1 = broadcasts.filter(b => b.data.type === 'CATEGORY_SELECT').at(-1);
+    expect(evt1.data.chooserNickname).toBe('Аліса');
+    jest.clearAllTimers();
+
+    // Simulate choosing and advancing to next round (categoryChosenTime=0 → instant)
+    session._resolveCategory(0, 0, false);
+    jest.clearAllTimers(); // clear the 0ms transitionTimer before it fires nextQuestion
+
+    // Manually advance to round 2 category select
+    session.currentQuestionIndex = 0; // finished Q1
+    session.gameState = 'LEADERBOARD';
+    session.startCategorySelect();
+    const evt2 = broadcasts.filter(b => b.data.type === 'CATEGORY_SELECT').at(-1);
+    expect(evt2.data.chooserNickname).toBe('Богдан');
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  test('якщо немає гравців — endQuiz() викликається', () => {
+    const { session, broadcasts } = createCategorySession();
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
+
+    session.startCategorySelect();
+
+    const evt = broadcasts.find(b => b.data.type === 'QUIZ_ENDED');
+    expect(evt).toBeDefined();
+    expect(session.gameState).toBe('ENDED');
+  });
+});
+
+describe('AutoQuizSession — Category Mode: submitCategory', () => {
+  afterEach(() => jest.useRealTimers());
+
+  test('chooser може обрати категорію', () => {
+    const { session, broadcasts } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
+    session.startCategorySelect();
+
+    const result = session.submitCategory('s1', 0);
+
+    expect(result.success).toBe(true);
+    const chosenEvt = broadcasts.find(b => b.data.type === 'CATEGORY_CHOSEN');
+    expect(chosenEvt).toBeDefined();
+    expect(chosenEvt.data.choiceIndex).toBe(0);
+    expect(chosenEvt.data.category).toBe('Географія');
+    expect(chosenEvt.data.wasTimeout).toBe(false);
+    clearTimeout(session.transitionTimer);
+  });
+
+  test('не-chooser не може обрати категорію', () => {
+    const { session } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+    session.addPlayer('s2', 'Богдан');
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
+    session.startCategorySelect();
+
+    // s2 is not the chooser (s1 is)
+    const result = session.submitCategory('s2', 0);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/черга/i);
+    clearTimeout(session.categorySelectTimer);
+  });
+
+  test('submitCategory поза фазою CATEGORY_SELECT → помилка', () => {
+    const { session } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+    session.gameState = 'QUESTION';
+
+    const result = session.submitCategory('s1', 0);
+
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/не час/i);
+  });
+
+  test('таймер авто-вибору скасовується після ручного вибору', () => {
+    jest.useFakeTimers();
+    const { session } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
+    session.startCategorySelect();
+
+    session.submitCategory('s1', 1);
+    // categorySelectTimer should be null after submitCategory clears it
+    expect(session.categorySelectTimer).toBeNull();
+    jest.clearAllTimers();
+  });
+
+  test('_resolveCategory додає питання до quizData.questions', () => {
+    const { session } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
+    session.startCategorySelect();
+
+    session.submitCategory('s1', 1); // вибираємо 'Наука'
+    clearTimeout(session.transitionTimer);
+
+    expect(session.quizData.questions).toHaveLength(1);
+    expect(session.quizData.questions[0].category).toBe('Наука');
+    expect(session.quizData.questions[0].correctAnswer).toBe(0);
+  });
+});
+
+describe('AutoQuizSession — Category Mode: chooser disconnects during CATEGORY_SELECT', () => {
+  test('chooser відключається → авто-вибір випадкової категорії', () => {
+    const { session, broadcasts } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+    session.addPlayer('s2', 'Богдан');
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
+    session.startCategorySelect();
+
+    // Аліса — chooser, відключається
+    session.removePlayer('s1');
+
+    // Should auto-resolve
+    const chosenEvt = broadcasts.find(b => b.data.type === 'CATEGORY_CHOSEN');
+    expect(chosenEvt).toBeDefined();
+    expect(chosenEvt.data.wasTimeout).toBe(true);
+    clearTimeout(session.transitionTimer);
+  });
+});
+
+describe('AutoQuizSession — Category Mode: getState() in CATEGORY_SELECT', () => {
+  test('getState() в CATEGORY_SELECT містить isCategoryMode та gameState', () => {
+    const { session } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
+    session.startCategorySelect();
+
+    const state = session.getState();
+
+    expect(state.gameState).toBe('CATEGORY_SELECT');
+    expect(state.isCategoryMode).toBe(true);
+    expect(state.targetPlayerCount).toBe(1); // minPlayers default
+    clearTimeout(session.categorySelectTimer);
+  });
+});
