@@ -201,6 +201,8 @@ quiz-room-local/
 | DELETE | `/api/quizzes/:id` | Delete quiz file |
 | GET | `/api/stats` | Aggregated stats + sessions list |
 | GET | `/api/stats/session/:id` | Single session details |
+| GET | `/api/stats/session/:id/questions` | Per-question accuracy + answer distribution (added Session 6) |
+| GET | `/api/active-quizzes` | List of currently active quiz sessions |
 | GET | `/api/media/:filename` | Serve local media file |
 | GET | `/api/podium/status` | `{ nickname, phase }` — resolves requesting IP via podiumRegistry |
 
