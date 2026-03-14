@@ -411,7 +411,7 @@ pre code { color: #a5f3fc; }
           <td><span class="badge best">best</span> USB SSD 120 GB (USB 3.0)</td>
           <td>Samsung T7 120 GB or Kingston XS2000 (Amazon.de)</td>
           <td><span class="badge alt">CZ</span> Alza.cz — Samsung T7 / Kingston XS2000</td>
-          <td>Must be endurance / high-endurance class, not standard</td>
+          <td>Any USB 3.0 SSD — no special endurance class needed</td>
         </tr>
         <tr>
           <td><span class="badge best">best</span> Official Pi 5 PSU — 27W USB-C</td>
@@ -449,7 +449,7 @@ pre code { color: #a5f3fc; }
           <td><span class="badge alt">CZ</span> Botland.cz / GME.cz</td>
           <td>Any brand; 20–30 cm length</td>
         </tr>
-<tr>
+        <tr>
           <td><span class="badge best">best</span> Ethernet cable Cat 6, 1–3 m</td>
           <td>Any Cat 6 patch cable</td>
           <td><span class="badge alt">CZ</span> Alza.cz / Datart.cz</td>
@@ -695,9 +695,9 @@ pre code { color: #a5f3fc; }
       </li>
     </ol>
 
-    <div class="callout info">
-      <div class="callout-title">ℹ️ Enable USB Boot in EEPROM (one-time per Pi)</div>
-      The Pi 5 boots from the SD slot by default. You must configure it to boot from USB first. SSH into the Pi (after first boot — see Step 4) and run: <code>sudo raspi-config</code> → <strong>Advanced Options → Boot Order → USB Boot</strong>. Reboot. Repeat on each physical Pi — EEPROM settings are not copied when cloning the SSD.
+    <div class="callout warn">
+      <div class="callout-title">⚠️ USB Boot Configuration (required — do this in Step 4b)</div>
+      By default, the Pi 5 boots from the SD slot. After your first boot and SSH access (Step 4), you must configure it to boot from USB via <code>sudo raspi-config</code> → <strong>Advanced Options → Boot Order → USB Boot</strong>. This must be done on each physical Pi individually — EEPROM settings are not copied when cloning the SSD.
     </div>
 
     <div class="callout danger">
@@ -1201,7 +1201,7 @@ python3 /home/pi/quiz-room-local/pi-setup/gpio-service.py</code></pre>
           <div class="step-title">Create image from USB SSD</div>
           <div class="step-desc">
             <pre><code class="cmd">sudo dd if=/dev/rdisk4 of=~/podium-base.img bs=4m status=progress</code></pre>
-            Replace <code>rdisk4</code> with your actual disk number (use <code>rdisk</code> not <code>disk</code> for faster reads on macOS). Takes ~10 minutes. The file will be ~120 GB.
+            Replace <code>rdisk4</code> with your actual disk number (use <code>rdisk</code> not <code>disk</code> for faster reads on macOS). The file will be ~120 GB (dd images the full device). Takes ~5 minutes at USB 3.0 speeds; allow ~50 minutes if your Mac has only USB 2.0 ports. Ensure your Mac has 130+ GB of free disk space before imaging.
           </div>
         </div>
       </li>
@@ -1502,8 +1502,7 @@ sudo reboot</code></pre>
           <div class="pro">Much more durable — no SD corruption risk</div>
           <div class="pro">Handles hard power cuts safely</div>
           <div class="pro">Recommended for permanent production deployment</div>
-          <div class="con">Requires one-time EEPROM bootloader config on each Pi</div>
-          <div class="con">Different cloning procedure</div>
+          <div class="con">EEPROM boot order must be set on each Pi individually after cloning</div>
         </div>
       </div>
       <div class="compare-card">
