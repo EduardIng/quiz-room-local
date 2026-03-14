@@ -347,6 +347,38 @@ Built `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` — a fully offline, single-file 4-
 
 ---
 
+---
+
+### Session 11 — Extensive Test Coverage (14 March 2026) ✅
+
+**Goal:** Fill backend test gaps and establish frontend Vitest suite.
+
+**Production bug fixed:**
+- `quiz-session-auto.js`: `categoryChosenTime || 4` → `categoryChosenTime !== undefined ? ... : 4` — fixes falsy coercion where `0` was treated as `4`
+
+**Backend additions (session.test.js):**
+- Category mode: `startCategorySelect`, `submitCategory`, `_resolveCategory` — 10 new tests
+- Chooser disconnect auto-resolve during CATEGORY_SELECT — 1 test
+- `getState()` in CATEGORY_SELECT — 1 test
+- `autoStart` trigger via `addPlayer` — 3 tests
+- Full category game flow (1 round, 2-round chooser rotation) — 2 tests
+- All fake-timer patterns with proper cleanup; `clearSessionTimers` extended to include `categorySelectTimer`
+
+**Backend additions (websocket.test.js):**
+- `handleSubmitCategory` — 5 tests
+- Rate limiting (>10 submit-answer/30s) — 1 test
+- `submit-answer` while paused — 1 test
+
+**Frontend new (Vitest + RTL):**
+- Setup: `vitest.config.js`, `setup.js` with AudioContext + socket.io-client + localStorage + fetch mocks
+- PlayerView: 8 tests (initial render, join flow, 6 quiz-update event types)
+- HostView: 5 tests (quiz library load, empty state, fetch error)
+- ProjectorView: 5 tests (PLAYER_JOINED, NEW_QUESTION, ANSWER_COUNT, SHOW_LEADERBOARD)
+
+**Tests:** 212 backend passing (1 skipped) + 18 frontend passing
+
+---
+
 ## How to Continue Development
 
 Say:

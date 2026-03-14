@@ -29,8 +29,8 @@ class AutoQuizSession {
     this.playerJoinOrder = [];
     this.currentChooserSocketId = null;
     this.categorySelectTimer = null;
-    this.categorySelectTime = settings.categorySelectTime || 15;
-    this.categoryChosenTime = settings.categoryChosenTime || 4;
+    this.categorySelectTime = settings.categorySelectTime !== undefined ? settings.categorySelectTime : 15;
+    this.categoryChosenTime = settings.categoryChosenTime !== undefined ? settings.categoryChosenTime : 4;
 
     // Дані квізу: назва, питання
     // Якщо shuffle увімкнено — перемішуємо копію масиву питань (не змінюємо оригінал)
