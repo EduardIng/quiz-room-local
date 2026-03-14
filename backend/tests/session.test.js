@@ -1247,3 +1247,178 @@ describe('AutoQuizSession — Category Mode: getState() in CATEGORY_SELECT', () 
     clearTimeout(session.categorySelectTimer);
   });
 });
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: AutoStart тригер
+// ─────────────────────────────────────────────
+
+describe('AutoQuizSession — autoStart trigger via addPlayer', () => {
+  afterEach(() => jest.useRealTimers());
+
+  test('autoStart запускає квіз коли players.size >= playerCount', () => {
+    jest.useFakeTimers();
+    const { session, broadcasts } = createCategorySession();
+    // Override settings: autoStart=true, playerCount=2
+    session.settings.autoStart = true;
+    session.playerCount = 2;
+
+    session.addPlayer('s1', 'Аліса');
+    expect(session.gameState).toBe('WAITING'); // 1 player, not yet
+
+    session.addPlayer('s2', 'Богдан');
+    // autoStart fires after 500ms setTimeout in addPlayer
+    jest.advanceTimersByTime(600);
+
+    expect(session.gameState).toBe('STARTING');
+    const startEvt = broadcasts.find(b => b.data.type === 'QUIZ_STARTING');
+    expect(startEvt).toBeDefined();
+    jest.clearAllTimers();
+  });
+
+  test('autoStart НЕ запускає квіз якщо players < playerCount', () => {
+    jest.useFakeTimers();
+    const { session } = createCategorySession();
+    session.settings.autoStart = true;
+    session.playerCount = 3;
+
+    session.addPlayer('s1', 'Аліса');
+    session.addPlayer('s2', 'Богдан');
+    jest.advanceTimersByTime(1000);
+
+    expect(session.gameState).toBe('WAITING');
+    jest.clearAllTimers();
+  });
+
+  test('autoStart вимкнено — гра не стартує автоматично', () => {
+    jest.useFakeTimers();
+    const { session } = createCategorySession();
+    session.settings.autoStart = false;
+    session.playerCount = 1;
+
+    session.addPlayer('s1', 'Аліса');
+    jest.advanceTimersByTime(1000);
+
+    expect(session.gameState).toBe('WAITING');
+    jest.clearAllTimers();
+  });
+});
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: Повний цикл категорійної гри
+// ─────────────────────────────────────────────
+
+describe('AutoQuizSession — Full category game flow (1 round)', () => {
+  afterEach(() => jest.useRealTimers());
+
+  test('повний цикл: WAITING → CATEGORY_SELECT → QUESTION → ANSWER_REVEAL → LEADERBOARD → ENDED', () => {
+    jest.useFakeTimers();
+
+    // Квіз з одним раундом для перевірки повного циклу
+    const oneRoundQuiz = {
+      title: 'Один раунд',
+      categoryMode: true,
+      rounds: [
+        {
+          options: [
+            { category: 'Географія', question: 'Столиця Франції?', answers: ['Берлін','Лондон','Париж','Рим'], correctAnswer: 2 },
+            { category: 'Наука',     question: 'H2O — це?',        answers: ['Вода','Кисень','Залізо','Вуглець'], correctAnswer: 0 }
+          ]
+        }
+      ]
+    };
+    const { mockIo, broadcasts } = createMockIO();
+    const session = new AutoQuizSession(oneRoundQuiz, CATEGORY_SETTINGS);
+    session.init(mockIo, 'FLOW01');
+    session.addPlayer('s1', 'Петро');
+
+    // startQuiz → STARTING
+    session.startQuiz();
+    expect(session.gameState).toBe('STARTING');
+
+    // 3s countdown → startCategorySelect → CATEGORY_SELECT
+    jest.advanceTimersByTime(3100);
+    expect(session.gameState).toBe('CATEGORY_SELECT');
+
+    // Гравець вибирає категорію 0 (Географія, correctAnswer=2)
+    session.submitCategory('s1', 0);
+    // categoryChosenTime = 0 але || 4 робить його 4s; чекаємо 4001ms
+    jest.advanceTimersByTime(4100);
+    expect(session.gameState).toBe('QUESTION');
+
+    // Подаємо правильну відповідь (2 = Париж)
+    session.submitAnswer('s1', 2, Date.now());
+    // waitForAllPlayers=true, 1 гравець → endQuestion негайно
+    expect(session.gameState).toBe('ANSWER_REVEAL');
+
+    // answerRevealTime=1s → LEADERBOARD
+    jest.advanceTimersByTime(1100);
+    expect(session.gameState).toBe('LEADERBOARD');
+
+    // leaderboardTime=1s → ENDED (останній раунд)
+    jest.advanceTimersByTime(1100);
+    expect(session.gameState).toBe('ENDED');
+
+    const endEvt = broadcasts.find(b => b.data.type === 'QUIZ_ENDED');
+    expect(endEvt).toBeDefined();
+    expect(endEvt.data.finalLeaderboard[0].nickname).toBe('Петро');
+    // Правильна відповідь → score > 0
+    expect(endEvt.data.finalLeaderboard[0].score).toBeGreaterThan(0);
+
+    jest.clearAllTimers();
+  });
+
+  test('два гравці: chooser ротується між раундами', () => {
+    jest.useFakeTimers();
+
+    // Квіз з двома раундами для перевірки ротації chooser
+    const twoRoundQuiz = {
+      title: 'Два раунди',
+      categoryMode: true,
+      rounds: [
+        {
+          options: [
+            { category: 'Р1-А', question: 'Q1?', answers: ['A','B','C','D'], correctAnswer: 0 },
+            { category: 'Р1-Б', question: 'Q2?', answers: ['A','B','C','D'], correctAnswer: 1 }
+          ]
+        },
+        {
+          options: [
+            { category: 'Р2-А', question: 'Q3?', answers: ['A','B','C','D'], correctAnswer: 2 },
+            { category: 'Р2-Б', question: 'Q4?', answers: ['A','B','C','D'], correctAnswer: 3 }
+          ]
+        }
+      ]
+    };
+    const { mockIo, broadcasts } = createMockIO();
+    const session = new AutoQuizSession(twoRoundQuiz, CATEGORY_SETTINGS);
+    session.init(mockIo, 'ROT01');
+    session.addPlayer('s1', 'Аліса');
+    session.addPlayer('s2', 'Богдан');
+
+    session.startQuiz();
+    jest.advanceTimersByTime(3100); // → CATEGORY_SELECT раунд 1
+
+    // Раунд 1: Аліса — chooser
+    let catEvts = broadcasts.filter(b => b.data.type === 'CATEGORY_SELECT');
+    expect(catEvts.at(-1).data.chooserNickname).toBe('Аліса');
+
+    session.submitCategory('s1', 0); // Аліса вибирає Р1-А
+    jest.advanceTimersByTime(4100); // → QUESTION
+    expect(session.gameState).toBe('QUESTION');
+
+    // Обидва гравці відповідають
+    session.submitAnswer('s1', 0, Date.now());
+    session.submitAnswer('s2', 0, Date.now());
+    // waitForAllPlayers → endQuestion негайно → ANSWER_REVEAL
+    expect(session.gameState).toBe('ANSWER_REVEAL');
+
+    jest.advanceTimersByTime(1100); // → LEADERBOARD
+    jest.advanceTimersByTime(1100); // → CATEGORY_SELECT раунд 2
+
+    // Раунд 2: Богдан — chooser
+    catEvts = broadcasts.filter(b => b.data.type === 'CATEGORY_SELECT');
+    expect(catEvts.at(-1).data.chooserNickname).toBe('Богдан');
+
+    jest.clearAllTimers();
+  });
+});
