@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Podium Assembly Manual — Quiz Room Local</title>
+<style>
+/* === RESET & BASE === */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #0f1117;
+  color: #e2e8f0;
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* === TOP NAV === */
+.top-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: #1a1f2e;
+  border-bottom: 2px solid #22c55e;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  height: 56px;
+  gap: 4px;
+}
+.nav-logo {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #22c55e;
+  letter-spacing: 0.05em;
+  margin-right: 16px;
+  white-space: nowrap;
+}
+.nav-tabs {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  overflow-x: auto;
+}
+.nav-tab {
+  padding: 6px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  border: 1.5px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.nav-tab:hover { color: #94a3b8; background: #1e293b; }
+.nav-tab.active {
+  color: #f8fafc;
+  background: #1e293b;
+  border-color: #334155;
+}
+.nav-tab.active.p1 { border-color: #3b82f6; color: #3b82f6; }
+.nav-tab.active.p2 { border-color: #22c55e; color: #22c55e; }
+.nav-tab.active.p3 { border-color: #f59e0b; color: #f59e0b; }
+.nav-tab.active.p4 { border-color: #8b5cf6; color: #8b5cf6; }
+
+.nav-prev-next {
+  display: flex;
+  gap: 6px;
+  margin-left: 8px;
+}
+.nav-btn {
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 5px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.nav-btn:hover { color: #e2e8f0; border-color: #475569; }
+.nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+/* === PAGE WRAPPER === */
+.page-content { display: none; padding: 80px 0 60px; }
+.page-content.active { display: block; }
+.page-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* === PAGE HEADER === */
+.page-header {
+  margin-bottom: 36px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #1e293b;
+}
+.page-number {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.page-number.p1 { color: #3b82f6; }
+.page-number.p2 { color: #22c55e; }
+.page-number.p3 { color: #f59e0b; }
+.page-number.p4 { color: #8b5cf6; }
+.page-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #f8fafc;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+.page-subtitle { font-size: 1rem; color: #64748b; }
+
+/* === SECTIONS === */
+.section { margin-bottom: 44px; }
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-subtitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #94a3b8;
+  margin: 16px 0 8px;
+}
+p { margin-bottom: 10px; color: #cbd5e1; }
+
+/* === CALLOUT BOXES === */
+.callout {
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 14px 0;
+  border-left: 4px solid;
+  font-size: 0.9rem;
+}
+.callout.info  { background: #0f2040; border-color: #3b82f6; }
+.callout.warn  { background: #1c1200; border-color: #f59e0b; }
+.callout.tip   { background: #0a1f0a; border-color: #22c55e; }
+.callout.danger{ background: #1f0a0a; border-color: #ef4444; }
+.callout-title { font-weight: 700; margin-bottom: 4px; }
+.callout.info  .callout-title { color: #3b82f6; }
+.callout.warn  .callout-title { color: #f59e0b; }
+.callout.tip   .callout-title { color: #22c55e; }
+.callout.danger .callout-title { color: #ef4444; }
+
+/* === TABLES === */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin: 12px 0;
+}
+thead th {
+  background: #1e293b;
+  color: #94a3b8;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 2px solid #334155;
+}
+tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #1e293b;
+  color: #cbd5e1;
+  vertical-align: top;
+}
+tbody tr:hover td { background: #141820; }
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.badge.best { background: #052e0f; color: #22c55e; border: 1px solid #166534; }
+.badge.alt  { background: #1e1a05; color: #f59e0b; border: 1px solid #854d0e; }
+.badge.opt  { background: #0f0f20; color: #8b5cf6; border: 1px solid #4c1d95; }
+
+/* === CODE BLOCKS === */
+pre {
+  background: #0d1117;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 0.82rem;
+  overflow-x: auto;
+  margin: 12px 0;
+  line-height: 1.5;
+}
+code { font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace; }
+pre code { color: #a5f3fc; }
+.cmd { color: #86efac; }
+.comment { color: #475569; font-style: italic; }
+.highlight { color: #fbbf24; }
+
+/* === STEPS (numbered list) === */
+.steps { counter-reset: step; list-style: none; margin: 0; padding: 0; }
+.steps li {
+  counter-increment: step;
+  display: flex;
+  gap: 14px;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+.steps li::before {
+  content: counter(step);
+  min-width: 28px; height: 28px;
+  background: #1e293b;
+  border: 2px solid #334155;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #94a3b8;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.steps li .step-body { flex: 1; }
+.steps li .step-title { font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+.steps li .step-desc  { font-size: 0.88rem; color: #94a3b8; }
+
+/* === CHECKLIST === */
+.checklist { list-style: none; padding: 0; margin: 8px 0; }
+.checklist li {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid #1a2030;
+  font-size: 0.9rem;
+  color: #cbd5e1;
+}
+.checklist li::before {
+  content: '☐';
+  color: #334155;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* === SVG DIAGRAM WRAPPER === */
+.diagram {
+  background: #0d1117;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 20px;
+  margin: 16px 0;
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-caption {
+  text-align: center;
+  font-size: 0.78rem;
+  color: #475569;
+  margin-top: -8px;
+  margin-bottom: 16px;
+}
+
+/* === PAGE FOOTER === */
+.page-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 48px;
+  padding-top: 20px;
+  border-top: 1px solid #1e293b;
+}
+.footer-btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid #334155;
+  background: #1e293b;
+  color: #94a3b8;
+  transition: all 0.15s;
+}
+.footer-btn:hover { color: #e2e8f0; border-color: #475569; }
+.footer-btn.primary {
+  background: #1a3a1a;
+  border-color: #22c55e;
+  color: #22c55e;
+}
+.footer-btn.primary:hover { background: #1f4a1f; }
+.footer-btn:disabled { opacity: 0.3; cursor: default; }
+.footer-page-label { font-size: 0.78rem; color: #475569; }
+
+/* === COMPARISON CARDS (Page 4) === */
+.compare-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin: 14px 0;
+}
+.compare-card {
+  background: #111827;
+  border: 2px solid #1e293b;
+  border-radius: 10px;
+  padding: 14px;
+}
+.compare-card.recommended {
+  border-color: #22c55e;
+  box-shadow: 0 0 20px rgba(34,197,94,0.12);
+}
+.compare-card-title {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #f1f5f9;
+  margin-bottom: 4px;
+}
+.compare-card-subtitle {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin-bottom: 10px;
+}
+.recommended-badge {
+  display: inline-block;
+  background: #052e0f;
+  color: #22c55e;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid #166534;
+  margin-bottom: 8px;
+}
+.pros-cons { display: flex; flex-direction: column; gap: 4px; }
+.pro, .con {
+  font-size: 0.78rem;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.pro { color: #86efac; }
+.con { color: #fca5a5; }
+.pro::before { content: '✓'; flex-shrink: 0; }
+.con::before { content: '✗'; flex-shrink: 0; }
+
+/* === TROUBLESHOOT TABLE === */
+.trouble-table td:first-child { color: #fbbf24; font-weight: 600; min-width: 200px; }
+.trouble-table td:last-child  { color: #86efac; }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="top-nav">
+  <div class="nav-logo">📦 Podium Manual</div>
+  <div class="nav-tabs">
+    <button class="nav-tab p1 active" onclick="showPage(1)">1 · Hardware Assembly</button>
+    <button class="nav-tab p2" onclick="showPage(2)">2 · Software &amp; Go-Live</button>
+    <button class="nav-tab p3" onclick="showPage(3)">3 · Troubleshooting</button>
+    <button class="nav-tab p4" onclick="showPage(4)">4 · Why These Components?</button>
+  </div>
+  <div class="nav-prev-next">
+    <button class="nav-btn" id="btn-prev" onclick="prevPage()" disabled>← Prev</button>
+    <button class="nav-btn" id="btn-next" onclick="nextPage()">Next →</button>
+  </div>
+</nav>
+
+<!-- PAGES -->
+<div id="page-1" class="page-content active"></div>
+<div id="page-2" class="page-content"></div>
+<div id="page-3" class="page-content"></div>
+<div id="page-4" class="page-content"></div>
+
+<script>
+let currentPage = 1;
+const TOTAL = 4;
+const PAGE_COLORS = { 1: 'p1', 2: 'p2', 3: 'p3', 4: 'p4' };
+
+function showPage(n) {
+  document.querySelectorAll('.page-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-' + n).classList.add('active');
+  document.querySelectorAll('.nav-tab')[n - 1].classList.add('active', PAGE_COLORS[n]);
+  currentPage = n;
+  document.getElementById('btn-prev').disabled = (n === 1);
+  document.getElementById('btn-next').disabled = (n === TOTAL);
+  window.scrollTo(0, 0);
+}
+function prevPage() { if (currentPage > 1) showPage(currentPage - 1); }
+function nextPage() { if (currentPage < TOTAL) showPage(currentPage + 1); }
+</script>
+</body>
+</html>
