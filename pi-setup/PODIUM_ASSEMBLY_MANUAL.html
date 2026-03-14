@@ -408,9 +408,9 @@ pre code { color: #a5f3fc; }
           <td>Do not get 2 GB — 4 GB minimum</td>
         </tr>
         <tr>
-          <td><span class="badge best">best</span> microSD card 32 GB (endurance)</td>
-          <td>SanDisk Max Endurance 32 GB (Amazon.de)</td>
-          <td><span class="badge alt">CZ</span> Alza.cz — SanDisk Max Endurance</td>
+          <td><span class="badge best">best</span> USB SSD 120 GB (USB 3.0)</td>
+          <td>Samsung T7 120 GB or Kingston XS2000 (Amazon.de)</td>
+          <td><span class="badge alt">CZ</span> Alza.cz — Samsung T7 / Kingston XS2000</td>
           <td>Must be endurance / high-endurance class, not standard</td>
         </tr>
         <tr>
@@ -449,13 +449,7 @@ pre code { color: #a5f3fc; }
           <td><span class="badge alt">CZ</span> Botland.cz / GME.cz</td>
           <td>Any brand; 20–30 cm length</td>
         </tr>
-        <tr>
-          <td><span class="badge best">best</span> microSD card reader (USB-A or USB-C)</td>
-          <td>Anker or uni card reader</td>
-          <td><span class="badge alt">CZ</span> Alza.cz</td>
-          <td>Needed to flash SD from Mac</td>
-        </tr>
-        <tr>
+<tr>
           <td><span class="badge best">best</span> Ethernet cable Cat 6, 1–3 m</td>
           <td>Any Cat 6 patch cable</td>
           <td><span class="badge alt">CZ</span> Alza.cz / Datart.cz</td>
@@ -580,7 +574,7 @@ pre code { color: #a5f3fc; }
   </div>
 
   <div class="section">
-    <h2 class="section-title">🍓 Raspberry Pi 5 — Board Overview &amp; SD Setup</h2>
+    <h2 class="section-title">🍓 Raspberry Pi 5 — Board Overview &amp; SSD Setup</h2>
     <p>The Pi 5 is the brain of the podium. Before connecting anything, familiarise yourself with its ports.</p>
 
     <div class="diagram">
@@ -637,7 +631,7 @@ pre code { color: #a5f3fc; }
 
         <!-- microSD slot (bottom edge) -->
         <rect x="170" y="227" width="40" height="10" rx="2" fill="#374151" stroke="#6b7280" stroke-width="1.5"/>
-        <text x="190" y="250" text-anchor="middle" fill="#6b7280" font-size="10">microSD slot</text>
+        <text x="190" y="250" text-anchor="middle" fill="#6b7280" font-size="10">microSD slot (unused)</text>
         <text x="190" y="262" text-anchor="middle" fill="#475569" font-size="9">(underside of board)</text>
 
         <!-- BCM chip -->
@@ -647,9 +641,9 @@ pre code { color: #a5f3fc; }
         <text x="225" y="162" text-anchor="middle" fill="#166534" font-size="8">2.4 GHz · 4-core</text>
       </svg>
     </div>
-    <p class="diagram-caption">Raspberry Pi 5 port layout — ports on left and right edges, GPIO header at top, microSD on underside</p>
+    <p class="diagram-caption">Raspberry Pi 5 port layout — ports on left and right edges, GPIO header at top, microSD slot on underside (unused — boot from USB SSD)</p>
 
-    <h3 class="section-subtitle">Flashing the SD card (on your Mac)</h3>
+    <h3 class="section-subtitle">Flashing the USB SSD (on your Mac)</h3>
     <ol class="steps">
       <li>
         <div class="step-body">
@@ -659,8 +653,8 @@ pre code { color: #a5f3fc; }
       </li>
       <li>
         <div class="step-body">
-          <div class="step-title">Insert microSD card into your Mac</div>
-          <div class="step-desc">Use the USB card reader from the shopping list. The card will appear in Finder as a drive.</div>
+          <div class="step-title">Connect USB SSD to your Mac via USB</div>
+          <div class="step-desc">Plug the USB SSD directly into your Mac. It will appear in Finder as a drive.</div>
         </div>
       </li>
       <li>
@@ -683,23 +677,28 @@ pre code { color: #a5f3fc; }
       </li>
       <li>
         <div class="step-body">
-          <div class="step-title">Choose Storage → select your microSD card</div>
-          <div class="step-desc">Double-check it is the SD card and not your Mac's internal drive.</div>
+          <div class="step-title">Choose Storage → select your USB SSD</div>
+          <div class="step-desc">Double-check it is the USB SSD and not your Mac's internal drive.</div>
         </div>
       </li>
       <li>
         <div class="step-body">
           <div class="step-title">Click Write and wait ~5 minutes</div>
-          <div class="step-desc">Imager will flash and verify automatically. Eject the card when done.</div>
+          <div class="step-desc">Imager will flash and verify automatically. Eject the SSD when done.</div>
         </div>
       </li>
       <li>
         <div class="step-body">
-          <div class="step-title">Insert microSD into Pi</div>
-          <div class="step-desc">The SD slot is on the underside of the Pi board. Push until it clicks.</div>
+          <div class="step-title">Connect USB SSD to Pi's USB 3.0 port (blue port)</div>
+          <div class="step-desc">Plug the USB SSD into one of the blue USB 3.0 ports on the Pi.</div>
         </div>
       </li>
     </ol>
+
+    <div class="callout info">
+      <div class="callout-title">ℹ️ Enable USB Boot in EEPROM (one-time per Pi)</div>
+      The Pi 5 boots from the SD slot by default. You must configure it to boot from USB first. SSH into the Pi (after first boot — see Step 4) and run: <code>sudo raspi-config</code> → <strong>Advanced Options → Boot Order → USB Boot</strong>. Reboot. Repeat on each physical Pi — EEPROM settings are not copied when cloning the SSD.
+    </div>
 
     <div class="callout danger">
       <div class="callout-title">🚫 Do not power on the Pi yet</div>
@@ -973,7 +972,7 @@ pre code { color: #a5f3fc; }
 
     <h3 class="section-subtitle">Pre-power checklist</h3>
     <ul class="checklist">
-      <li>microSD card inserted in Pi (underside slot)</li>
+      <li>USB SSD connected to Pi USB 3.0 port (blue port)</li>
       <li>micro-HDMI 0 cable connected Pi → Monitor 1</li>
       <li>micro-HDMI 1 cable connected Pi → Monitor 2</li>
       <li>USB cable connected Pi → Monitor 1 (touch)</li>
@@ -1177,32 +1176,32 @@ python3 /home/pi/quiz-room-local/pi-setup/gpio-service.py</code></pre>
 
   <div class="section">
     <h2 class="section-title">📋 Cloning for Podiums 2–8</h2>
-    <p>Once podium 1 works perfectly, clone its SD card image to a file on your Mac, then flash that image onto each subsequent podium's SD card. Saves repeating the full install process 7 times.</p>
+    <p>Once podium 1 works perfectly, clone its USB SSD image to a file on your Mac, then flash that image onto each subsequent podium's USB SSD. Saves repeating the full install process 7 times.</p>
     <ol class="steps">
       <li>
         <div class="step-body">
           <div class="step-title">Shut down podium 1 cleanly</div>
           <div class="step-desc">
             <pre><code class="cmd">sudo shutdown -h now</code></pre>
-            Wait for the Pi to fully power off (green LED stops). Remove the SD card.
+            Wait for the Pi to fully power off (green LED stops). Unplug USB SSD from Pi, connect it to your Mac.
           </div>
         </div>
       </li>
       <li>
         <div class="step-body">
-          <div class="step-title">Insert SD card into your Mac and find its disk number</div>
+          <div class="step-title">Connect USB SSD to your Mac and find its disk number</div>
           <div class="step-desc">
             <pre><code class="cmd">diskutil list</code></pre>
-            Look for a disk ~32 GB in size. It will be something like <code>/dev/disk4</code>. Do NOT confuse it with your Mac's internal drive.
+            Look for a disk ~120 GB (or your SSD size). It will be something like <code>/dev/disk4</code>. Do NOT confuse it with your Mac's internal drive.
           </div>
         </div>
       </li>
       <li>
         <div class="step-body">
-          <div class="step-title">Create image from SD card</div>
+          <div class="step-title">Create image from USB SSD</div>
           <div class="step-desc">
             <pre><code class="cmd">sudo dd if=/dev/rdisk4 of=~/podium-base.img bs=4m status=progress</code></pre>
-            Replace <code>rdisk4</code> with your actual disk number (use <code>rdisk</code> not <code>disk</code> for faster reads on macOS). Takes ~10 minutes. The file will be ~32 GB.
+            Replace <code>rdisk4</code> with your actual disk number (use <code>rdisk</code> not <code>disk</code> for faster reads on macOS). Takes ~10 minutes. The file will be ~120 GB.
           </div>
         </div>
       </li>
@@ -1210,8 +1209,9 @@ python3 /home/pi/quiz-room-local/pi-setup/gpio-service.py</code></pre>
         <div class="step-body">
           <div class="step-title">For each additional podium (2–8): flash the image</div>
           <div class="step-desc">
-            Insert new SD card, find its disk number with <code>diskutil list</code>, then:
+            Connect new USB SSD to your Mac, find its disk number with <code>diskutil list</code>, then:
             <pre><code class="cmd">sudo dd if=~/podium-base.img of=/dev/rdisk4 bs=4m status=progress</code></pre>
+            USB 3.0 SSD cloning is ~3× faster than SD card imaging. EEPROM settings are not copied — run the USB boot config on each new Pi.
           </div>
         </div>
       </li>
@@ -1229,7 +1229,7 @@ sudo reboot</code></pre>
     </ol>
     <div class="callout warn">
       <div class="callout-title">⚠️ dd is silent and permanent</div>
-      The <code>dd</code> command overwrites the destination disk with no confirmation. Triple-check you have the correct disk number (<code>/dev/rdiskN</code>) before pressing Enter. Writing to the wrong disk can erase your Mac's internal drive.
+      The <code>dd</code> command overwrites the destination USB SSD with no confirmation. Triple-check you have the correct disk number (<code>/dev/rdiskN</code>) before pressing Enter. Writing to the wrong disk can erase your Mac's internal drive.
     </div>
   </div>
 
@@ -1282,7 +1282,7 @@ sudo reboot</code></pre>
         <tr><td><code>ping podium-1.local</code> times out</td><td>mDNS not resolving</td><td>Use router admin panel to find Pi's IP directly. SSH by IP: <code>ssh pi@192.168.X.X</code>. Or install avahi: <code>sudo apt install avahi-daemon</code>.</td></tr>
         <tr><td>npm start fails on server</td><td>Frontend not built</td><td>Run <code>cd frontend &amp;&amp; npm run build</code> on the server machine to see the error message.</td></tr>
         <tr><td>Quiz auto-start never triggers</td><td>playerCount mismatch</td><td>In Host panel, playerCount must equal the exact number of players who have joined. Rejoin if needed.</td></tr>
-        <tr><td>SSH: connection refused</td><td>Pi still booting</td><td>Wait 60 s and retry. If persistent after 3 minutes, re-flash SD card.</td></tr>
+        <tr><td>SSH: connection refused</td><td>Pi still booting</td><td>Wait 60 s and retry. If persistent after 3 minutes, re-flash USB SSD via Raspberry Pi Imager.</td></tr>
       </tbody>
     </table>
   </div>
@@ -1292,9 +1292,9 @@ sudo reboot</code></pre>
     <table class="trouble-table">
       <thead><tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr></thead>
       <tbody>
-        <tr><td>Pi won't boot (no LED activity)</td><td>Bad PSU or bad SD card</td><td>Try the official 27W USB-C PSU. Re-flash SD card from scratch using Raspberry Pi Imager.</td></tr>
+        <tr><td>Pi won't boot (no LED activity)</td><td>Bad PSU or bad USB SSD connection</td><td>Try the official 27W USB-C PSU. Re-flash USB SSD via Raspberry Pi Imager.</td></tr>
         <tr><td>Pi crashes or reboots randomly</td><td>Underpowered supply</td><td>Must use the official 27W PSU. Third-party 3A chargers are insufficient for Pi 5 under full load.</td></tr>
-        <tr><td>SD card corrupted after power cut</td><td>Unclean shutdown</td><td>Always run <code>sudo shutdown -h now</code> before unplugging. For permanent install, set filesystem to read-only.</td></tr>
+        <tr><td>Pi fails to boot after power cut</td><td>(rare with SSD — check USB connection)</td><td>Re-seat USB SSD; re-flash only if filesystem is corrupted.</td></tr>
         <tr><td>Pi gets hot to touch</td><td>Poor ventilation inside stand</td><td>Ensure the Pi has airflow. Add the official active cooler (€5, clips on without tools).</td></tr>
       </tbody>
     </table>
@@ -1373,7 +1373,7 @@ sudo reboot</code></pre>
     </div>
     <div class="callout tip">
       <div class="callout-title">✅ Verdict: Raspberry Pi 5 (4 GB)</div>
-      Best performance-per-euro for a dual-display GPIO kiosk. The Pi 4 works but runs hotter and slower — acceptable for 1–2 podiums, but across 8 the difference is noticeable in quiz load times and touch responsiveness. The Pi 5's PCIe interface makes SD card reads ~3× faster.
+      Best performance-per-euro for a dual-display GPIO kiosk. The Pi 4 works but runs hotter and slower — acceptable for 1–2 podiums, but across 8 the difference is noticeable in quiz load times and touch responsiveness. Both Pi 4 and Pi 5 support USB SSD boot. Pi 5's USB 3.0 delivers full SSD throughput; Pi 4's USB 2.0 limits SSD to ~40 MB/s — still faster than any SD card, but Pi 5 is preferred for large deployments.
     </div>
   </div>
 
@@ -1494,8 +1494,20 @@ sudo reboot</code></pre>
     <h2 class="section-title">💾 Storage</h2>
     <div class="compare-grid">
       <div class="compare-card recommended">
-        <div class="recommended-badge">✓ RECOMMENDED (for initial build)</div>
-        <div class="compare-card-title">microSD — Endurance Class 32 GB</div>
+        <div class="recommended-badge">✓ RECOMMENDED</div>
+        <div class="compare-card-title">USB SSD 120 GB (USB 3.0)</div>
+        <div class="compare-card-subtitle">~€30–50 · Samsung T7, Kingston XS2000</div>
+        <div class="pros-cons">
+          <div class="pro">~3× faster boot and file access</div>
+          <div class="pro">Much more durable — no SD corruption risk</div>
+          <div class="pro">Handles hard power cuts safely</div>
+          <div class="pro">Recommended for permanent production deployment</div>
+          <div class="con">Requires one-time EEPROM bootloader config on each Pi</div>
+          <div class="con">Different cloning procedure</div>
+        </div>
+      </div>
+      <div class="compare-card">
+        <div class="compare-card-title">microSD — Endurance Class 32 GB (budget fallback)</div>
         <div class="compare-card-subtitle">~€12–18 · SanDisk Max Endurance, Samsung Pro Endurance</div>
         <div class="pros-cons">
           <div class="pro">Simple setup — Raspberry Pi Imager writes directly</div>
@@ -1503,18 +1515,7 @@ sudo reboot</code></pre>
           <div class="pro">Endurance-class handles continuous read/write for years</div>
           <div class="con">~3× slower than SSD for boot and file access</div>
           <div class="con">Power-cut corruption risk (use clean shutdown)</div>
-        </div>
-      </div>
-      <div class="compare-card">
-        <div class="compare-card-title">USB SSD Boot (Advanced)</div>
-        <div class="compare-card-subtitle">~€30–50 · Samsung T7, Kingston XS2000</div>
-        <div class="pros-cons">
-          <div class="pro">~3× faster boot and file access</div>
-          <div class="pro">Much more durable — no SD corruption risk</div>
-          <div class="pro">Recommended for permanent production deployment</div>
-          <div class="con">Requires one-time EEPROM bootloader config on each Pi</div>
-          <div class="con">Different cloning procedure</div>
-          <div class="con">Adds complexity to initial setup — do SD first, upgrade later</div>
+          <div class="con">Risk of filesystem corruption on hard power cut</div>
         </div>
       </div>
     </div>
