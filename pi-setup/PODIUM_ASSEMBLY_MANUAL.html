@@ -1329,7 +1329,7 @@ sudo reboot</code></pre>
         <div class="pros-cons">
           <div class="pro">Native dual micro-HDMI outputs</div>
           <div class="pro">BCM2712 A76 cores — 2.4 GHz, ~40% faster than Pi 4</div>
-          <div class="pro">PCIe interface → SD reads ~3× faster</div>
+          <div class="pro">USB 3.0 → full SSD throughput (~400 MB/s)</div>
           <div class="pro">4 GB handles browser + GPIO service comfortably</div>
           <div class="pro">Same 40-pin GPIO pinout — wiring identical</div>
           <div class="con">Slightly harder to find (use rpilocator.com)</div>
@@ -1343,7 +1343,7 @@ sudo reboot</code></pre>
           <div class="pro">Cheaper, easier to find</div>
           <div class="pro">Same GPIO pinout — software runs unchanged</div>
           <div class="con">Older A72 CPU — 30–40% slower under load</div>
-          <div class="con">No PCIe — SD access notably slower</div>
+          <div class="con">USB 2.0 limits SSD to ~40 MB/s — slower than Pi 5 but faster than any SD card</div>
           <div class="con">Thermal throttling common without active cooling</div>
           <div class="con">Noticeable at scale across 8 podiums</div>
         </div>
@@ -1514,7 +1514,6 @@ sudo reboot</code></pre>
           <div class="pro">Easy cloning via dd</div>
           <div class="pro">Endurance-class handles continuous read/write for years</div>
           <div class="con">~3× slower than SSD for boot and file access</div>
-          <div class="con">Power-cut corruption risk (use clean shutdown)</div>
           <div class="con">Risk of filesystem corruption on hard power cut</div>
         </div>
       </div>
