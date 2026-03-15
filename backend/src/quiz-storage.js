@@ -109,6 +109,27 @@ function loadQuizById(quizId) {
 }
 
 /**
+ * Перевіряє що жодна категорія не повторюється у двох поспіль раундах
+ *
+ * Правило: пара категорій раунду N не може мати спільних категорій з парою раунду N+1.
+ * Обидві опції кожного раунду враховуються, незалежно від того, яку з них обрав гравець.
+ *
+ * @param {Array} rounds - масив раундів з quiz.rounds
+ * @returns {{ valid: boolean, round?: number, category?: string }}
+ */
+function validateNoCategoryRepeat(rounds) {
+  for (let i = 1; i < rounds.length; i++) {
+    const prevCategories = new Set(rounds[i - 1].options.map(o => o.category));
+    for (const opt of rounds[i].options) {
+      if (prevCategories.has(opt.category)) {
+        return { valid: false, round: i, category: opt.category };
+      }
+    }
+  }
+  return { valid: true };
+}
+
+/**
  * Перетворює назву квізу у безпечну назву файлу
  *
  * Наприклад: "Мій Квіз #1!" → "mii-kviz-1"
@@ -139,6 +160,16 @@ function titleToFilename(title) {
 function saveQuiz(quizData) {
   if (!isValidQuiz(quizData)) {
     throw new Error('Невалідний квіз: відсутній title або питання/раунди');
+  }
+
+  // Перевірка правила: жодна категорія не повторюється у двох поспіль раундах
+  if (quizData.rounds && Array.isArray(quizData.rounds)) {
+    const repeatCheck = validateNoCategoryRepeat(quizData.rounds);
+    if (!repeatCheck.valid) {
+      throw new Error(
+        `Раунд ${repeatCheck.round + 1}: категорія "${repeatCheck.category}" вже була у попередньому раунді`
+      );
+    }
   }
 
   // Переконуємось що директорія існує
@@ -192,4 +223,4 @@ function deleteQuiz(quizId) {
   return true;
 }
 
-module.exports = { loadAllQuizzes, loadQuizById, saveQuiz, deleteQuiz };
+module.exports = { loadAllQuizzes, loadQuizById, saveQuiz, deleteQuiz, validateNoCategoryRepeat };

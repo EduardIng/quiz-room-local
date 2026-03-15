@@ -224,6 +224,110 @@ describe('deleteQuiz', () => {
 });
 
 // ---------------------------------------------------------------------------
+// validateNoCategoryRepeat
+// ---------------------------------------------------------------------------
+
+describe('validateNoCategoryRepeat', () => {
+  test('повертає valid для раундів без спільних категорій', () => {
+    const { validateNoCategoryRepeat } = getStorage();
+    const rounds = [
+      { options: [{ category: 'Історія' }, { category: 'Наука' }] },
+      { options: [{ category: 'Географія' }, { category: 'Логотипи' }] },
+    ];
+    expect(validateNoCategoryRepeat(rounds)).toEqual({ valid: true });
+  });
+
+  test('повертає invalid коли перша категорія раунду N+1 збігається з раундом N', () => {
+    const { validateNoCategoryRepeat } = getStorage();
+    const rounds = [
+      { options: [{ category: 'Логотипи' }, { category: 'Загальні' }] },
+      { options: [{ category: 'Логотипи' }, { category: 'Наука' }] },
+    ];
+    const result = validateNoCategoryRepeat(rounds);
+    expect(result.valid).toBe(false);
+    expect(result.round).toBe(1);
+    expect(result.category).toBe('Логотипи');
+  });
+
+  test('повертає invalid коли друга категорія раунду N+1 збігається з раундом N', () => {
+    const { validateNoCategoryRepeat } = getStorage();
+    const rounds = [
+      { options: [{ category: 'Логотипи' }, { category: 'Загальні' }] },
+      { options: [{ category: 'Наука' }, { category: 'Загальні' }] },
+    ];
+    const result = validateNoCategoryRepeat(rounds);
+    expect(result.valid).toBe(false);
+    expect(result.round).toBe(1);
+    expect(result.category).toBe('Загальні');
+  });
+
+  test('повертає valid для одного раунду', () => {
+    const { validateNoCategoryRepeat } = getStorage();
+    const rounds = [
+      { options: [{ category: 'Логотипи' }, { category: 'Загальні' }] },
+    ];
+    expect(validateNoCategoryRepeat(rounds)).toEqual({ valid: true });
+  });
+
+  test('повертає invalid для порушення посередині масиву', () => {
+    const { validateNoCategoryRepeat } = getStorage();
+    const rounds = [
+      { options: [{ category: 'A' }, { category: 'B' }] },
+      { options: [{ category: 'C' }, { category: 'D' }] },
+      { options: [{ category: 'D' }, { category: 'E' }] }, // D повторюється з раунду 1
+    ];
+    const result = validateNoCategoryRepeat(rounds);
+    expect(result.valid).toBe(false);
+    expect(result.round).toBe(2);
+    expect(result.category).toBe('D');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// saveQuiz — no-repeat category enforcement
+// ---------------------------------------------------------------------------
+
+describe('saveQuiz — категорії не повторюються', () => {
+  test('кидає помилку якщо категорія повторюється у двох поспіль раундах', () => {
+    const { saveQuiz } = getStorage();
+    const quiz = {
+      title: 'Bad Category Quiz',
+      categoryMode: true,
+      rounds: [
+        { options: [
+          { category: 'Логотипи', question: 'Q?', answers: ['A', 'B', 'C', 'D'], correctAnswer: 0 },
+          { category: 'Загальні', question: 'Q?', answers: ['A', 'B', 'C', 'D'], correctAnswer: 0 },
+        ]},
+        { options: [
+          { category: 'Логотипи', question: 'Q?', answers: ['A', 'B', 'C', 'D'], correctAnswer: 0 },
+          { category: 'Наука', question: 'Q?', answers: ['A', 'B', 'C', 'D'], correctAnswer: 0 },
+        ]},
+      ],
+    };
+    expect(() => saveQuiz(quiz)).toThrow(/Раунд 2.*Логотипи/);
+  });
+
+  test('зберігає квіз якщо категорії не повторюються', () => {
+    const { saveQuiz } = getStorage();
+    const quiz = {
+      title: 'Good Category Quiz',
+      categoryMode: true,
+      rounds: [
+        { options: [
+          { category: 'Логотипи', question: 'Q?', answers: ['A', 'B', 'C', 'D'], correctAnswer: 0 },
+          { category: 'Загальні', question: 'Q?', answers: ['A', 'B', 'C', 'D'], correctAnswer: 0 },
+        ]},
+        { options: [
+          { category: 'Наука', question: 'Q?', answers: ['A', 'B', 'C', 'D'], correctAnswer: 0 },
+          { category: 'Історія', question: 'Q?', answers: ['A', 'B', 'C', 'D'], correctAnswer: 0 },
+        ]},
+      ],
+    };
+    expect(() => saveQuiz(quiz)).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // loadQuizById
 // ---------------------------------------------------------------------------
 
