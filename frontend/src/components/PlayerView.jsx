@@ -740,7 +740,7 @@ const myLeaderboardPosition = leaderboard.findIndex(p => p.nickname === myNickna
           {question.image && (
             <div className="question-image-wrap">
               <img
-                src={question.image}
+                src={question.image.startsWith('http') || question.image.startsWith('/') ? question.image : `/api/media/${question.image}`}
                 alt="Question"
                 className="question-image"
                 onError={e => { e.target.style.display = 'none'; }}

@@ -490,6 +490,16 @@ export default function ProjectorView() {
             <span className="proj-answer-count">{answeredCount}/{totalPlayers || '?'} відповіли</span>
           </div>
           <Timebar timeLimit={timeLimit} timeRemaining={timeLeft} />
+          {question.image && (
+            <div className="proj-question-image-wrap">
+              <img
+                src={question.image.startsWith('http') || question.image.startsWith('/') ? question.image : `/api/media/${question.image}`}
+                alt="Question"
+                className="proj-question-image"
+                onError={e => { e.target.style.display = 'none'; }}
+              />
+            </div>
+          )}
           <div className="proj-question-text">{question.text}</div>
           <div className="proj-answer-grid">
             {question.answers.map(ans => (
@@ -506,6 +516,16 @@ export default function ProjectorView() {
       {gameState === 'ANSWER_REVEAL' && question && (
         <div className="proj-screen proj-reveal">
           <div className="proj-reveal-label">Правильна відповідь</div>
+          {question.image && (
+            <div className="proj-question-image-wrap">
+              <img
+                src={question.image.startsWith('http') || question.image.startsWith('/') ? question.image : `/api/media/${question.image}`}
+                alt="Question"
+                className="proj-question-image"
+                onError={e => { e.target.style.display = 'none'; }}
+              />
+            </div>
+          )}
           <div className="proj-answer-grid reveal">
             {question.answers.map(ans => (
               <div

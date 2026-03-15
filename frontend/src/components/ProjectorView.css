@@ -437,3 +437,16 @@
   color: #22d3ee;
   animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+.proj-question-image-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.proj-question-image {
+  max-height: 280px;
+  max-width: 100%;
+  border-radius: 12px;
+  object-fit: contain;
+}
