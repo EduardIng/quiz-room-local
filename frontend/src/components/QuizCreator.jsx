@@ -506,18 +506,15 @@ export default function QuizCreator() {
   }, [showLibrary]);
 
   /**
-   * Зберігає поточний квіз у бібліотеку (папка quizzes/ на сервері)
+   * Базова логіка збереження — приймає rounds явно, без залежності від поточного стану.
+   * silent=true: не показує тост успіху, не оновлює бібліотеку (для авто-збереження).
    */
-  const handleSaveToLibrary = useCallback(async () => {
-    setImportError('');
-    setSaveSuccess('');
-    const repeatError = getCategoryRepeatError(rounds);
-    if (repeatError) { setImportError(repeatError); return; }
+  const doSaveToLibrary = useCallback(async (roundsToSave, { silent = false } = {}) => {
     const quizData = {
       ...(currentQuizId ? { id: currentQuizId } : {}),
       title: title.trim() || 'Мій квіз',
       categoryMode: true,
-      rounds: rounds.map(r => ({
+      rounds: roundsToSave.map(r => ({
         options: r.options.map(opt => ({
           category: opt.category.trim(),
           question: opt.question.trim(),
@@ -529,6 +526,7 @@ export default function QuizCreator() {
         }))
       }))
     };
+    if (!quizData.title || !quizData.rounds.length) return;
     try {
       const res = await fetch('/api/quizzes/save', {
         method: 'POST',
@@ -538,22 +536,34 @@ export default function QuizCreator() {
       const data = await res.json();
       if (data.success) {
         setCurrentQuizId(data.id);
-        setSaveSuccess(`✓ Збережено: "${quizData.title}"`);
-        setShowHostLink(true); // показуємо посилання на Host Panel
-        // Оновлюємо бібліотеку якщо вона відкрита
-        if (showLibrary) {
-          const libRes = await fetch('/api/quizzes');
-          const libData = await libRes.json();
-          setLibraryQuizzes(libData.quizzes || []);
+        if (!silent) {
+          setSaveSuccess(`✓ Збережено: "${quizData.title}"`);
+          setShowHostLink(true);
+          if (showLibrary) {
+            const libRes = await fetch('/api/quizzes');
+            const libData = await libRes.json();
+            setLibraryQuizzes(libData.quizzes || []);
+          }
+          setTimeout(() => { setSaveSuccess(''); setShowHostLink(false); }, 5000);
         }
-        setTimeout(() => { setSaveSuccess(''); setShowHostLink(false); }, 5000);
-      } else {
+      } else if (!silent) {
         setImportError(data.error || 'Could not save quiz');
       }
     } catch {
-      setImportError('Could not save quiz to library');
+      if (!silent) setImportError('Could not save quiz to library');
     }
-  }, [title, rounds, showLibrary, currentQuizId]);
+  }, [currentQuizId, title, showLibrary]);
+
+  /**
+   * Зберігає поточний квіз у бібліотеку (папка quizzes/ на сервері)
+   */
+  const handleSaveToLibrary = useCallback(async () => {
+    setImportError('');
+    setSaveSuccess('');
+    const repeatError = getCategoryRepeatError(rounds);
+    if (repeatError) { setImportError(repeatError); return; }
+    await doSaveToLibrary(rounds);
+  }, [rounds, doSaveToLibrary]);
 
   /**
    * Видаляє квіз з бібліотеки (з підтвердженням)
@@ -617,6 +627,17 @@ export default function QuizCreator() {
       const data = await res.json();
       if (data.success) {
         updateRoundOption(roundIdx, optIdx, 'image', data.filename);
+        // Будуємо новий rounds inline (не чекаємо на setState) і зберігаємо тихо
+        const updatedRounds = rounds.map((r, ri) => {
+          if (ri !== roundIdx) return r;
+          return {
+            ...r,
+            options: r.options.map((opt, oi) =>
+              oi === optIdx ? { ...opt, image: data.filename } : opt
+            )
+          };
+        });
+        await doSaveToLibrary(updatedRounds, { silent: true });
       } else {
         setImportError(data.error || 'Помилка завантаження зображення');
       }
@@ -625,7 +646,7 @@ export default function QuizCreator() {
     } finally {
       setUploadingImage(null);
     }
-  }, [updateRoundOption]);
+  }, [updateRoundOption, rounds, doSaveToLibrary]);
 
   // ─────────────────────────────────────────────
   // РЕНДЕР
