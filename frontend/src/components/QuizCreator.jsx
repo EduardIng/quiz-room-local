@@ -73,6 +73,9 @@ export default function QuizCreator() {
   const [isPaused, setIsPaused] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
 
+  // null = не завантажується; { roundIdx, optIdx } = завантаження для цього слоту
+  const [uploadingImage, setUploadingImage] = useState(null);
+
   // Drag-to-reorder refs and state
   const dragIndexRef = useRef(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -589,6 +592,35 @@ export default function QuizCreator() {
     setImportError('');
   }, []);
 
+  /**
+   * Завантажує зображення на сервер та записує filename в стан опції.
+   * Викликається при onChange файлового інпуту в редакторі раунду.
+   */
+  const handleImageUpload = useCallback(async (e, roundIdx, optIdx) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = ''; // дозволяє повторно завантажити той самий файл
+
+    setUploadingImage({ roundIdx, optIdx });
+    setImportError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch('/api/media/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success) {
+        updateRoundOption(roundIdx, optIdx, 'image', data.filename);
+      } else {
+        setImportError(data.error || 'Помилка завантаження зображення');
+      }
+    } catch {
+      setImportError('Не вдалося завантажити зображення');
+    } finally {
+      setUploadingImage(null);
+    }
+  }, [updateRoundOption]);
+
   // ─────────────────────────────────────────────
   // РЕНДЕР
   // ─────────────────────────────────────────────
@@ -831,6 +863,42 @@ export default function QuizCreator() {
                         ))}
                       </div>
                       <p className="field-hint">{t('answerHint')}</p>
+                    </div>
+
+                    {/* Зображення для питання */}
+                    <div className="field-group">
+                      <label className="field-label">
+                        {lang === 'uk' ? 'Зображення' : 'Image'}
+                      </label>
+                      {opt.image ? (
+                        <div className="image-preview-wrap">
+                          <img
+                            src={opt.image.startsWith('http') || opt.image.startsWith('/') ? opt.image : `/api/media/${opt.image}`}
+                            alt="preview"
+                            className="image-preview"
+                            onError={e => { e.target.style.display = 'none'; }}
+                          />
+                          <div className="image-preview-name">{opt.image}</div>
+                          <button
+                            className="image-remove-btn"
+                            onClick={() => updateRoundOption(activeRound, optIdx, 'image', '')}
+                            title={lang === 'uk' ? 'Видалити зображення' : 'Remove image'}
+                          >✕</button>
+                        </div>
+                      ) : (
+                        <label className={`image-upload-btn${uploadingImage?.roundIdx === activeRound && uploadingImage?.optIdx === optIdx ? ' uploading' : ''}`}>
+                          {uploadingImage?.roundIdx === activeRound && uploadingImage?.optIdx === optIdx
+                            ? (lang === 'uk' ? 'Завантаження...' : 'Uploading...')
+                            : (lang === 'uk' ? '📎 Прикріпити зображення' : '📎 Attach image')}
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/gif,image/webp"
+                            style={{ display: 'none' }}
+                            onChange={e => handleImageUpload(e, activeRound, optIdx)}
+                            disabled={!!uploadingImage}
+                          />
+                        </label>
+                      )}
                     </div>
                   </div>
                 ))}
