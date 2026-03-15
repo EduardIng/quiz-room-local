@@ -328,6 +328,41 @@ describe('saveQuiz — категорії не повторюються', () => 
 });
 
 // ---------------------------------------------------------------------------
+// saveQuiz — upsert
+// ---------------------------------------------------------------------------
+
+describe('saveQuiz — upsert', () => {
+  it('overwrites existing file when id matches', () => {
+    const { saveQuiz } = getStorage();
+    const q1 = { title: 'Upsert Quiz', categoryMode: true, rounds: [{ options: [
+      { category: 'A', question: 'Q?', answers: ['a','b','c','d'], correctAnswer: 0 },
+      { category: 'B', question: 'Q2?', answers: ['a','b','c','d'], correctAnswer: 1 }
+    ]}]};
+    const r1 = saveQuiz(q1);
+    // Save again with same id — should overwrite, not create -2
+    const q2 = { ...q1, title: 'Upsert Quiz Updated', id: r1.id };
+    const r2 = saveQuiz(q2);
+    expect(r2.id).toBe(r1.id);
+    expect(r2.filename).toBe(r1.filename);
+    const files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.json'));
+    expect(files).toHaveLength(1);
+    const saved = JSON.parse(fs.readFileSync(path.join(tmpDir, r2.filename), 'utf8'));
+    expect(saved.title).toBe('Upsert Quiz Updated');
+  });
+
+  it('creates new file when id not provided', () => {
+    const { saveQuiz } = getStorage();
+    const q = { title: 'No ID Quiz', categoryMode: true, rounds: [{ options: [
+      { category: 'A', question: 'Q?', answers: ['a','b','c','d'], correctAnswer: 0 },
+      { category: 'B', question: 'Q2?', answers: ['a','b','c','d'], correctAnswer: 1 }
+    ]}]};
+    const r1 = saveQuiz(q);
+    const r2 = saveQuiz(q); // no id — should make second file
+    expect(r2.id).not.toBe(r1.id);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // loadQuizById
 // ---------------------------------------------------------------------------
 
