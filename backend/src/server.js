@@ -19,6 +19,7 @@ const os = require('os');
 const express = require('express');
 const { Server: SocketIOServer } = require('socket.io');
 const cors = require('cors');
+const multer = require('multer');
 const { loadConfig, log } = require('./utils');
 const QuizRoomManager = require('./websocket-handler-auto');
 const db = require('./db');
@@ -231,6 +232,48 @@ class QuizServer {
       res.json({
         nickname: player ? player.nickname : null,
         phase: session.gameState,
+      });
+    });
+
+    // API: завантаження медіафайлу (зображення) від ведучого
+    // Приймає multipart/form-data з полем `image`
+    // Зберігає в media/ з унікальним іменем (timestamp + розширення)
+    // Повертає { success, filename, url }
+    const uploadMediaDir = process.env.TEST_MEDIA_DIR ||
+      path.join(__dirname, '..', '..', 'media');
+
+    const multerStorage = multer.diskStorage({
+      destination: (_req, _file, cb) => cb(null, uploadMediaDir),
+      filename: (_req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+        cb(null, `${Date.now()}${ext}`);
+      }
+    });
+
+    const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/gif', 'image/webp']);
+
+    const upload = multer({
+      storage: multerStorage,
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5 МБ
+      fileFilter: (_req, file, cb) => {
+        if (ALLOWED_MIME.has(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(new Error('Недозволений тип файлу — тільки зображення (jpg, png, gif, webp)'));
+        }
+      }
+    });
+
+    this.app.post('/api/media/upload', (req, res) => {
+      upload.single('image')(req, res, (err) => {
+        if (err) {
+          return res.status(400).json({ success: false, error: err.message });
+        }
+        if (!req.file) {
+          return res.status(400).json({ success: false, error: 'Файл не отримано' });
+        }
+        const filename = path.basename(req.file.filename);
+        res.json({ success: true, filename, url: `/api/media/${filename}` });
       });
     });
 

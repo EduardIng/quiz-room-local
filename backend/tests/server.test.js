@@ -374,6 +374,75 @@ describe('GET /api/media/:filename', () => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /api/media/upload
+// ---------------------------------------------------------------------------
+
+describe('POST /api/media/upload', () => {
+  const testMediaDir = path.join(os.tmpdir(), `quiz-media-test-${Date.now()}`);
+
+  beforeAll(() => fs.mkdirSync(testMediaDir, { recursive: true }));
+  afterAll(() => fs.rmSync(testMediaDir, { recursive: true, force: true }));
+
+  beforeEach(() => {
+    process.env.TEST_MEDIA_DIR = testMediaDir;
+    for (const f of fs.readdirSync(testMediaDir)) {
+      fs.unlinkSync(path.join(testMediaDir, f));
+    }
+  });
+
+  afterEach(() => {
+    delete process.env.TEST_MEDIA_DIR;
+  });
+
+  test('uploads a valid JPEG and returns filename + url', async () => {
+    const jpegBytes = Buffer.from(
+      'ffd8ffe000104a46494600010100000100010000ffdb004300080606070605080707070909080a0c140d0c0b0b0c1912130f141d1a1f1e1d1a1c1c20242e2720222c231c1c2837292c30313434341f27393d38323c2e333432ffc0000b080001000101011100ffc4001f0000010501010101010100000000000000000102030405060708090a0bffda00080101000003f0007fffd9',
+      'hex'
+    );
+    const res = await request(app)
+      .post('/api/media/upload')
+      .attach('image', jpegBytes, { filename: 'test.jpg', contentType: 'image/jpeg' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.filename).toMatch(/\.jpg$/);
+    expect(res.body.url).toBe(`/api/media/${res.body.filename}`);
+  });
+
+  test('rejects non-image file type', async () => {
+    const res = await request(app)
+      .post('/api/media/upload')
+      .attach('image', Buffer.from('hello'), { filename: 'evil.exe', contentType: 'application/octet-stream' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toMatch(/тип/i);
+  });
+
+  test('rejects when no file attached', async () => {
+    const res = await request(app)
+      .post('/api/media/upload')
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+
+  test('uploads a PNG successfully', async () => {
+    const pngBytes = Buffer.from(
+      '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000a49444154789c6260000000020001e221bc330000000049454e44ae426082',
+      'hex'
+    );
+    const res = await request(app)
+      .post('/api/media/upload')
+      .attach('image', pngBytes, { filename: 'test.png', contentType: 'image/png' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.filename).toMatch(/\.png$/);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // GET /api/qr/:roomCode
 // ---------------------------------------------------------------------------
 
