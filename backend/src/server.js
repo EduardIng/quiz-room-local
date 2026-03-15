@@ -212,10 +212,24 @@ class QuizServer {
       res.json({ success: true, questionStats });
     });
 
-    // API: список квізів з диску (папка quizzes/)
-    this.app.get('/api/quizzes', (req, res) => {
+    // API: список квізів з бібліотеки + прапорці відсутніх зображень
+    // Кожен квіз отримує поле missingImages: string[] — список файлів, яких немає в media/
+    // Використовується HostView для попередження ведучого перед запуском квізу
+    this.app.get('/api/quizzes', (_req, res) => {
+      const currentMediaPath = getMediaPath();
       const quizzes = loadAllQuizzes();
-      res.json({ success: true, quizzes });
+      const annotated = quizzes.map(quiz => {
+        const missingImages = [];
+        for (const round of (quiz.rounds || [])) {
+          for (const opt of (round.options || [])) {
+            if (opt.image && !fs.existsSync(path.join(currentMediaPath, opt.image))) {
+              if (!missingImages.includes(opt.image)) missingImages.push(opt.image);
+            }
+          }
+        }
+        return { ...quiz, missingImages };
+      });
+      res.json({ success: true, quizzes: annotated });
     });
 
     // API: зберегти квіз у бібліотеку (папка quizzes/)

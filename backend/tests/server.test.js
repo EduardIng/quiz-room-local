@@ -130,6 +130,66 @@ describe('GET /api/quizzes', () => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /api/quizzes — missingImages
+// ---------------------------------------------------------------------------
+
+describe('GET /api/quizzes — missingImages', () => {
+  let missingImgMediaDir;
+  beforeAll(() => {
+    missingImgMediaDir = fs.mkdtempSync(path.join(os.tmpdir(), 'quiz-missing-img-'));
+    process.env.TEST_MEDIA_DIR = missingImgMediaDir;
+  });
+  afterAll(() => {
+    fs.rmSync(missingImgMediaDir, { recursive: true, force: true });
+    delete process.env.TEST_MEDIA_DIR;
+  });
+
+  it('includes missingImages array on each quiz', async () => {
+    await request(app)
+      .post('/api/quizzes/save')
+      .send({
+        title: 'Missing Image Quiz',
+        categoryMode: true,
+        rounds: [{ options: [
+          { category: 'A', question: 'Q?', answers: ['a','b','c','d'], correctAnswer: 0, image: 'nonexistent.jpg' },
+          { category: 'B', question: 'Q2?', answers: ['a','b','c','d'], correctAnswer: 1 }
+        ]}]
+      });
+    const res = await request(app).get('/api/quizzes');
+    const quiz = res.body.quizzes.find(q => q.title === 'Missing Image Quiz');
+    expect(quiz).toBeDefined();
+    expect(Array.isArray(quiz.missingImages)).toBe(true);
+    expect(quiz.missingImages).toContain('nonexistent.jpg');
+  });
+
+  it('missingImages is empty when referenced file exists', async () => {
+    const imgFile = 'existing.png';
+    fs.writeFileSync(path.join(missingImgMediaDir, imgFile), 'fake-data');
+    await request(app)
+      .post('/api/quizzes/save')
+      .send({
+        title: 'Good Image Quiz',
+        categoryMode: true,
+        rounds: [{ options: [
+          { category: 'A', question: 'Q?', answers: ['a','b','c','d'], correctAnswer: 0, image: imgFile },
+          { category: 'B', question: 'Q2?', answers: ['a','b','c','d'], correctAnswer: 1 }
+        ]}]
+      });
+    const res = await request(app).get('/api/quizzes');
+    const quiz = res.body.quizzes.find(q => q.title === 'Good Image Quiz');
+    expect(quiz).toBeDefined();
+    expect(quiz.missingImages).toHaveLength(0);
+  });
+
+  it('quizzes without images have empty missingImages', async () => {
+    const res = await request(app).get('/api/quizzes');
+    for (const quiz of res.body.quizzes) {
+      expect(Array.isArray(quiz.missingImages)).toBe(true);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
 // POST /api/quizzes/save
 // ---------------------------------------------------------------------------
 
