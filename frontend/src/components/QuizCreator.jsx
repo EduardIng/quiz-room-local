@@ -87,6 +87,8 @@ export default function QuizCreator() {
   const [showHostLink, setShowHostLink] = useState(false); // показуємо посилання на Host Panel після збереження
   const [libraryQuizzes, setLibraryQuizzes] = useState(null); // null = not loaded
   const [showLibrary, setShowLibrary] = useState(false);
+  // ID квізу що зараз редагується (null = новий квіз)
+  const [currentQuizId, setCurrentQuizId] = useState(null);
 
   // ─────────────────────────────────────────────
   // УПРАВЛІННЯ ПИТАННЯМИ
@@ -461,6 +463,7 @@ export default function QuizCreator() {
           return;
         }
         setTitle(quiz.title);
+        setCurrentQuizId(null); // імпорт з файлу — новий квіз без ID
         if (Array.isArray(quiz.rounds) && quiz.rounds.length > 0) {
           setRounds(quiz.rounds.map(r => ({
             options: (r.options || []).map(opt => ({
@@ -511,6 +514,7 @@ export default function QuizCreator() {
     const repeatError = getCategoryRepeatError(rounds);
     if (repeatError) { setImportError(repeatError); return; }
     const quizData = {
+      ...(currentQuizId ? { id: currentQuizId } : {}),
       title: title.trim() || 'Мій квіз',
       categoryMode: true,
       rounds: rounds.map(r => ({
@@ -533,6 +537,7 @@ export default function QuizCreator() {
       });
       const data = await res.json();
       if (data.success) {
+        setCurrentQuizId(data.id);
         setSaveSuccess(`✓ Збережено: "${quizData.title}"`);
         setShowHostLink(true); // показуємо посилання на Host Panel
         // Оновлюємо бібліотеку якщо вона відкрита
@@ -574,6 +579,7 @@ export default function QuizCreator() {
    */
   const handleSelectLibraryQuiz = useCallback((quiz) => {
     setTitle(quiz.title);
+    setCurrentQuizId(quiz.id || null);
     if (Array.isArray(quiz.rounds) && quiz.rounds.length > 0) {
       setRounds(quiz.rounds.map(r => ({
         options: (r.options || []).map(opt => ({
