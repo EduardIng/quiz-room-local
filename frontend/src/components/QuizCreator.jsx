@@ -32,6 +32,22 @@ const EMPTY_QUESTION = () => ({
 const EMPTY_OPTION = () => ({ category: '', question: '', answers: ['', '', '', ''], correctAnswer: 0, timeLimit: '', image: '', audio: '' });
 const EMPTY_ROUND  = () => ({ options: [EMPTY_OPTION(), EMPTY_OPTION()] });
 
+/**
+ * Повертає рядок помилки якщо є повторення категорій між сусідніми раундами, інакше null
+ * Дублює логіку серверної validateNoCategoryRepeat для живого показу в редакторі
+ */
+function getCategoryRepeatError(rounds) {
+  for (let i = 1; i < rounds.length; i++) {
+    const prevCats = new Set((rounds[i - 1].options || []).map(o => o.category).filter(Boolean));
+    for (const opt of (rounds[i].options || [])) {
+      if (opt.category && prevCats.has(opt.category)) {
+        return `Раунд ${i + 1}: категорія "${opt.category}" вже була у раунді ${i}`;
+      }
+    }
+  }
+  return null;
+}
+
 export default function QuizCreator() {
   const [t, lang, setLang] = useLang();
 
@@ -229,6 +245,10 @@ export default function QuizCreator() {
         }
       });
     });
+
+    // Перевірка правила: жодна категорія не повторюється у двох поспіль раундах
+    const repeatError = getCategoryRepeatError(rounds);
+    if (repeatError) errors.push(repeatError);
 
     return errors;
   }, [title, rounds]);
@@ -485,6 +505,8 @@ export default function QuizCreator() {
   const handleSaveToLibrary = useCallback(async () => {
     setImportError('');
     setSaveSuccess('');
+    const repeatError = getCategoryRepeatError(rounds);
+    if (repeatError) { setImportError(repeatError); return; }
     const quizData = {
       title: title.trim() || 'Мій квіз',
       categoryMode: true,
@@ -815,6 +837,13 @@ export default function QuizCreator() {
               </div>
             </div>
           ) : null}
+
+          {/* Попередження про повторення категорій (живе) */}
+          {getCategoryRepeatError(rounds) && (
+            <div className="category-repeat-warning">
+              ⚠️ {getCategoryRepeatError(rounds)}
+            </div>
+          )}
 
           {/* Помилка */}
           {error && <div className="creator-error">{error}</div>}

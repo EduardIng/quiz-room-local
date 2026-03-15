@@ -370,6 +370,16 @@
   font-size: 0.9rem;
 }
 
+.category-repeat-warning {
+  background: rgba(230, 126, 34, 0.12);
+  border: 1px solid rgba(230, 126, 34, 0.4);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  color: #e67e22;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
 .creator-save-success {
   background: rgba(46, 213, 115, 0.12);
   border: 1px solid rgba(46, 213, 115, 0.3);
