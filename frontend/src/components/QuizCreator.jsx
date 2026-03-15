@@ -553,7 +553,7 @@ export default function QuizCreator() {
     } catch {
       setImportError('Could not save quiz to library');
     }
-  }, [title, rounds, showLibrary]);
+  }, [title, rounds, showLibrary, currentQuizId]);
 
   /**
    * Видаляє квіз з бібліотеки (з підтвердженням)
