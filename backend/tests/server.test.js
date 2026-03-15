@@ -374,6 +374,49 @@ describe('GET /api/media/:filename', () => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /api/media
+// ---------------------------------------------------------------------------
+
+describe('GET /api/media', () => {
+  const tmpMediaDir = fs.mkdtempSync(path.join(os.tmpdir(), 'quiz-media-list-'));
+
+  beforeAll(() => {
+    process.env.TEST_MEDIA_DIR = tmpMediaDir;
+  });
+
+  afterAll(() => {
+    fs.rmSync(tmpMediaDir, { recursive: true, force: true });
+    delete process.env.TEST_MEDIA_DIR;
+  });
+
+  beforeEach(() => {
+    // Очищаємо папку між тестами
+    for (const f of fs.readdirSync(tmpMediaDir)) {
+      fs.unlinkSync(path.join(tmpMediaDir, f));
+    }
+  });
+
+  it('returns empty file list when media dir is empty', async () => {
+    const res = await request(app).get('/api/media');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('files');
+    expect(Array.isArray(res.body.files)).toBe(true);
+    expect(res.body.files).toHaveLength(0);
+  });
+
+  it('returns image files with filename, url, size', async () => {
+    const testFile = path.join(tmpMediaDir, 'test-img.png');
+    fs.writeFileSync(testFile, 'fake-png-data');
+    const res = await request(app).get('/api/media');
+    const file = res.body.files.find(f => f.filename === 'test-img.png');
+    expect(file).toBeDefined();
+    expect(file.url).toBe('/api/media/test-img.png');
+    expect(typeof file.size).toBe('number');
+    fs.unlinkSync(testFile);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // POST /api/media/upload
 // ---------------------------------------------------------------------------
 

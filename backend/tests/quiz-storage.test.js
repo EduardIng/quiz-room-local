@@ -392,3 +392,26 @@ describe('loadQuizById', () => {
     expect(loadQuizById('non-existent')).toBeNull();
   });
 });
+
+// ---------------------------------------------------------------------------
+// listReferencedMedia
+// ---------------------------------------------------------------------------
+
+describe('listReferencedMedia', () => {
+  it('returns empty set when no quizzes', () => {
+    const { listReferencedMedia } = getStorage();
+    const refs = listReferencedMedia();
+    expect(refs.size).toBe(0);
+  });
+
+  it('returns all image references from quizzes', () => {
+    const { saveQuiz, listReferencedMedia } = getStorage();
+    saveQuiz({ title: 'Media Quiz', categoryMode: true, rounds: [{ options: [
+      { category: 'A', question: 'Q?', answers: ['a','b','c','d'], correctAnswer: 0, image: 'apple.jpg' },
+      { category: 'B', question: 'Q2?', answers: ['a','b','c','d'], correctAnswer: 1, image: 'banana.png' }
+    ]}]});
+    const refs = listReferencedMedia();
+    expect(refs.has('apple.jpg')).toBe(true);
+    expect(refs.has('banana.png')).toBe(true);
+  });
+});

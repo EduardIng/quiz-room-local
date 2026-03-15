@@ -15,6 +15,7 @@
 
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 const os = require('os');
 const express = require('express');
 const { Server: SocketIOServer } = require('socket.io');
@@ -123,8 +124,33 @@ class QuizServer {
 
     // API: роздача локальних медіафайлів (зображення, аудіо для офлайн квізів)
     // Захищено від path traversal через path.basename()
-    const mediaPath = path.join(__dirname, '..', '..', 'media');
+    // defaultMediaPath використовується лише у production; тести перевизначають через TEST_MEDIA_DIR
+    const defaultMediaPath = path.join(__dirname, '..', '..', 'media');
+    const getMediaPath = () => process.env.TEST_MEDIA_DIR || defaultMediaPath;
+
+    // API: список медіафайлів у папці media/ (зображення)
+    // GET /api/media — повертає масив об'єктів { filename, url, size }
+    // ВАЖЛИВО: цей маршрут має бути до GET /api/media/:filename,
+    //          інакше Express сприйме "media" як параметр :filename
+    this.app.get('/api/media', (_req, res) => {
+      try {
+        const mediaPath = getMediaPath();
+        if (!fs.existsSync(mediaPath)) return res.json({ files: [] });
+        const files = fs.readdirSync(mediaPath)
+          .filter(f => /\.(jpe?g|png|gif|webp)$/i.test(f))
+          .map(f => ({
+            filename: f,
+            url: `/api/media/${f}`,
+            size: fs.statSync(path.join(mediaPath, f)).size
+          }));
+        res.json({ files });
+      } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+      }
+    });
+
     this.app.get('/api/media/:filename', (req, res) => {
+      const mediaPath = getMediaPath();
       const filename = path.basename(req.params.filename);
       const filePath = path.join(mediaPath, filename);
       res.sendFile(filePath, (err) => {
@@ -239,11 +265,8 @@ class QuizServer {
     // Приймає multipart/form-data з полем `image`
     // Зберігає в media/ з унікальним іменем (timestamp + розширення)
     // Повертає { success, filename, url }
-    const uploadMediaDir = process.env.TEST_MEDIA_DIR ||
-      path.join(__dirname, '..', '..', 'media');
-
     const multerStorage = multer.diskStorage({
-      destination: (_req, _file, cb) => cb(null, uploadMediaDir),
+      destination: (_req, _file, cb) => cb(null, getMediaPath()),
       filename: (_req, file, cb) => {
         const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
         cb(null, `${Date.now()}${ext}`);

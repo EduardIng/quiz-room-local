@@ -84,6 +84,31 @@ function loadAllQuizzes() {
 }
 
 /**
+ * Повертає Set усіх filename, на які посилаються квізи (поле image/audio у питаннях)
+ * Використовується для пошуку сиріт у media/
+ *
+ * @returns {Set<string>}
+ */
+function listReferencedMedia() {
+  const refs = new Set();
+  if (!fs.existsSync(QUIZZES_DIR)) return refs;
+  const files = fs.readdirSync(QUIZZES_DIR).filter(f => f.endsWith('.json') && f !== 'README.json');
+  for (const filename of files) {
+    try {
+      const quiz = JSON.parse(fs.readFileSync(path.join(QUIZZES_DIR, filename), 'utf8'));
+      const rounds = quiz.rounds || [];
+      for (const round of rounds) {
+        for (const opt of (round.options || [])) {
+          if (opt.image) refs.add(opt.image);
+          if (opt.audio) refs.add(opt.audio);
+        }
+      }
+    } catch (_) {}
+  }
+  return refs;
+}
+
+/**
  * Завантажує один квіз за назвою файлу або id
  *
  * @param {string} quizId - ID квізу (назва файлу без .json)
@@ -235,4 +260,4 @@ function deleteQuiz(quizId) {
   return true;
 }
 
-module.exports = { loadAllQuizzes, loadQuizById, saveQuiz, deleteQuiz, validateNoCategoryRepeat };
+module.exports = { loadAllQuizzes, loadQuizById, saveQuiz, deleteQuiz, validateNoCategoryRepeat, listReferencedMedia };
