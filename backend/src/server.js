@@ -307,17 +307,22 @@ class QuizServer {
         // Шукаємо серед існуючих файлів — чи є вже такий самий вміст
         let duplicate = null;
         try {
-          for (const existing of fs.readdirSync(currentMediaPath)) {
-            if (existing === req.file.filename) continue;
+          const existingFiles = fs.readdirSync(currentMediaPath)
+            .filter(f => /\.(jpe?g|png|gif|webp)$/i.test(f) && f !== req.file.filename);
+          for (const existing of existingFiles) {
             const existingPath = path.join(currentMediaPath, existing);
             try {
               const existingHash = crypto.createHash('md5')
                 .update(fs.readFileSync(existingPath))
                 .digest('hex');
               if (existingHash === newHash) { duplicate = existing; break; }
-            } catch (_) {}
+            } catch (innerErr) {
+              log('Media', `Не вдалося прочитати ${existing} для порівняння: ${innerErr?.message || innerErr}`);
+            }
           }
-        } catch (_) {}
+        } catch (outerErr) {
+          log('Media', `Помилка сканування дублікатів: ${outerErr?.message || outerErr}`);
+        }
 
         if (duplicate) {
           // Видаляємо щойно завантажений — повертаємо існуючий
