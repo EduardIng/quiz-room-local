@@ -424,6 +424,20 @@
   border-color: #4caf50;
 }
 
+/* Попередження про відсутні зображення у квізі */
+.quiz-missing-media-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  background: #f59e0b;
+  color: #1a1a1a;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: middle;
+  cursor: help;
+}
+
 /* ────────────────────────────────────────────
    Прогрес підключення гравців (після запуску)
    ──────────────────────────────────────────── */

@@ -425,6 +425,14 @@ export default function HostView() {
               <div className="host-quiz-name">
                 {quiz.title || quiz.id}
               </div>
+              {quiz.missingImages?.length > 0 && (
+                <span
+                  className="quiz-missing-media-badge"
+                  title={`Missing images: ${quiz.missingImages.join(', ')}`}
+                >
+                  ⚠️ {quiz.missingImages.length} missing image{quiz.missingImages.length > 1 ? 's' : ''}
+                </span>
+              )}
               <div className="host-quiz-meta">
                 {quizSize(quiz)}
                 {quiz.categoryMode && (
