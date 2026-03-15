@@ -17,6 +17,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const crypto = require('crypto');
 const express = require('express');
 const { Server: SocketIOServer } = require('socket.io');
 const cors = require('cors');
@@ -295,6 +296,35 @@ class QuizServer {
         if (!req.file) {
           return res.status(400).json({ success: false, error: 'Файл не отримано' });
         }
+
+        // Обчислюємо MD5 нового файлу для перевірки дублікатів
+        const currentMediaPath = getMediaPath();
+        const newFilePath = req.file.path;
+        const newHash = crypto.createHash('md5')
+          .update(fs.readFileSync(newFilePath))
+          .digest('hex');
+
+        // Шукаємо серед існуючих файлів — чи є вже такий самий вміст
+        let duplicate = null;
+        try {
+          for (const existing of fs.readdirSync(currentMediaPath)) {
+            if (existing === req.file.filename) continue;
+            const existingPath = path.join(currentMediaPath, existing);
+            try {
+              const existingHash = crypto.createHash('md5')
+                .update(fs.readFileSync(existingPath))
+                .digest('hex');
+              if (existingHash === newHash) { duplicate = existing; break; }
+            } catch (_) {}
+          }
+        } catch (_) {}
+
+        if (duplicate) {
+          // Видаляємо щойно завантажений — повертаємо існуючий
+          try { fs.unlinkSync(newFilePath); } catch (_) {}
+          return res.json({ success: true, filename: duplicate, url: `/api/media/${duplicate}` });
+        }
+
         const filename = path.basename(req.file.filename);
         res.json({ success: true, filename, url: `/api/media/${filename}` });
       });

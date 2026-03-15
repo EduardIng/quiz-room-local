@@ -486,6 +486,63 @@ describe('POST /api/media/upload', () => {
 });
 
 // ---------------------------------------------------------------------------
+// POST /api/media/upload — deduplication
+// ---------------------------------------------------------------------------
+
+describe('POST /api/media/upload — deduplication', () => {
+  let localMediaDir;
+  beforeAll(() => {
+    localMediaDir = fs.mkdtempSync(path.join(os.tmpdir(), 'quiz-dedup-'));
+    process.env.TEST_MEDIA_DIR = localMediaDir;
+  });
+  afterAll(() => {
+    fs.rmSync(localMediaDir, { recursive: true, force: true });
+    delete process.env.TEST_MEDIA_DIR;
+  });
+  beforeEach(() => {
+    // Очищаємо директорію перед кожним тестом
+    for (const f of fs.readdirSync(localMediaDir)) {
+      fs.unlinkSync(path.join(localMediaDir, f));
+    }
+  });
+
+  it('creates one file on first upload', async () => {
+    const buf = Buffer.from('fake-image-data-dedup-test');
+    const res = await request(app)
+      .post('/api/media/upload')
+      .attach('image', buf, { filename: 'test.png', contentType: 'image/png' });
+    expect(res.body.success).toBe(true);
+    expect(fs.readdirSync(localMediaDir)).toHaveLength(1);
+  });
+
+  it('returns existing filename when uploading identical file twice', async () => {
+    const buf = Buffer.from('fake-image-data-identical');
+    const res1 = await request(app)
+      .post('/api/media/upload')
+      .attach('image', buf, { filename: 'a.png', contentType: 'image/png' });
+    expect(res1.body.success).toBe(true);
+
+    const res2 = await request(app)
+      .post('/api/media/upload')
+      .attach('image', buf, { filename: 'b.png', contentType: 'image/png' });
+    expect(res2.body.success).toBe(true);
+    expect(res2.body.filename).toBe(res1.body.filename);
+    expect(fs.readdirSync(localMediaDir)).toHaveLength(1);
+  });
+
+  it('creates new file when content differs', async () => {
+    const res1 = await request(app)
+      .post('/api/media/upload')
+      .attach('image', Buffer.from('image-data-A'), { filename: 'a.png', contentType: 'image/png' });
+    const res2 = await request(app)
+      .post('/api/media/upload')
+      .attach('image', Buffer.from('image-data-B'), { filename: 'b.png', contentType: 'image/png' });
+    expect(res1.body.filename).not.toBe(res2.body.filename);
+    expect(fs.readdirSync(localMediaDir)).toHaveLength(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // GET /api/qr/:roomCode
 // ---------------------------------------------------------------------------
 
