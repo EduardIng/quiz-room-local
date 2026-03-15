@@ -24,7 +24,7 @@ Each decision includes: date, problem, options considered, chosen solution, reas
 - C: Vue.js - similar to React but lighter
 
 **Chosen:** React (Option A)
-**Reasoning:** Component reusability for PlayerView, AdminPanel. Strong ecosystem for future features. Team familiarity assumption.
+**Reasoning:** Component reusability for PlayerView, HostView, ProjectorView. Strong ecosystem for future features. Team familiarity assumption.
 
 ---
 ## Decision 003 - 2026-03-05
@@ -46,7 +46,7 @@ Each decision includes: date, problem, options considered, chosen solution, reas
 - B: Client-side (`qrcode` in browser bundle) — no server round-trip, larger bundle
 
 **Chosen:** Server-side (Option A)
-**Reasoning:** QR codes are displayed in AdminPanel and QuizCreator. Generating them server-side keeps the browser bundle small and lets `<img src="/api/qr/:roomCode">` work in any context (including non-React pages). The server already knows the correct LAN IP, which the client cannot determine reliably.
+**Reasoning:** Generating QR codes server-side keeps the browser bundle small and lets `<img src="/api/qr/:roomCode">` work in any context. The server already knows the correct LAN IP, which the client cannot determine reliably.
 
 ---
 
@@ -139,6 +139,17 @@ Each decision includes: date, problem, options considered, chosen solution, reas
 
 ---
 
+## Decision 014 - 2026-03-15
+**Problem:** Allow quiz images to work offline without requiring an external CDN or manual file placement
+**Options:**
+- A: URL reference only — host pastes an external image URL into the quiz editor
+- B: Browser-based file upload — Quiz Creator uploads the file to the server's `media/` folder via `POST /api/media/upload`; stores filename in the quiz JSON
+
+**Chosen:** Browser upload (Option B)
+**Reasoning:** Decision 008 chose URL reference because file upload added infrastructure. However, the LAN-only / offline requirement means external URLs cannot be trusted — if a venue has no internet, the image will not load. Uploading through the browser (multer, 5 MB limit, MIME whitelist) keeps the file local and the upload experience is equivalent to attaching an image in any CMS. The `media/` folder already existed for manual file placement; this adds only the upload endpoint and a `<input type="file">` in the creator. Decision 008 remains correct for audio (rare, typically served externally) — this decision covers images only.
+
+---
+
 ## Decision 013 - 2026-03-12
 **Problem:** Category mode — optional vs. mandatory
 **Options:**
@@ -147,5 +158,7 @@ Each decision includes: date, problem, options considered, chosen solution, reas
 
 **Chosen:** Mandatory (Option B)
 **Reasoning:** The podium hardware game flow assumes category selection happens between every question. The PlayerView, ProjectorView, and game pacing are all designed around this flow. Allowing standard quizzes would skip the CATEGORY_SELECT phase and produce a disjointed player experience (e.g. buttons sitting idle, timebar appearing without context). Enforcing category mode at the server level makes the constraint explicit and prevents subtle bugs.
+
+**Update (Session 9, 14 March 2026):** The server-side `categoryMode: true` rejection check was later removed because all standard-format quizzes were deleted from the library and the QuizCreator was simplified to always produce category format. The constraint is now enforced at the editor level rather than the server level.
 
 ---

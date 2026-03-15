@@ -35,9 +35,9 @@ Callback format:
 
 Creates a new quiz room. Called by the quiz host.
 
-> **Note (v0.3.0):** Category mode is **mandatory**. Standard-mode quizzes (without `categoryMode: true`) are rejected with an error. The standard mode example below is kept for reference only.
+> **Note:** All quizzes use category mode. The standard mode example below is kept for historical reference only — the server no longer enforces `categoryMode: true` (enforcement was removed in v0.3.1 when standard quizzes were deleted from the quiz library entirely).
 
-**Standard mode (rejected in v0.3.0 — use category mode):**
+**Standard mode (historical reference — no longer used):**
 ```javascript
 socket.emit('create-quiz', {
   quizData: {
@@ -494,7 +494,7 @@ If the chooser does not submit within `timeLimit` seconds, the server auto-selec
 }
 ```
 
-The question follows ~1 second later as a `NEW_QUESTION` event.
+The question follows after `categoryChosenTime` seconds (default: 4, configurable in `config.json`) as a `NEW_QUESTION` event.
 
 ---
 
@@ -575,6 +575,34 @@ Serves a media file from the `media/` directory. Used for offline-capable image 
 
 ---
 
+### `POST /api/media/upload`
+
+Uploads an image file to the `media/` directory. Used by the Quiz Creator to attach images to questions offline.
+
+**Request:** `multipart/form-data` with field `image` containing the file.
+
+**Accepted MIME types:** `image/jpeg`, `image/png`, `image/gif`, `image/webp`
+
+**Size limit:** 5 MB
+
+**Response (success):**
+```json
+{
+  "success": true,
+  "filename": "1741200000000.jpg",
+  "url": "/api/media/1741200000000.jpg"
+}
+```
+
+**Response (error):**
+```json
+{ "success": false, "error": "File too large" }
+```
+
+The `filename` returned is a timestamp-based name (e.g. `1741200000000.jpg`). Store it in the quiz option's `image` field; the frontend prepends `/api/media/` when rendering if the value does not already start with `http` or `/`.
+
+---
+
 ### `GET /api/quizzes`
 
 List all quiz files found in the `quizzes/` directory. Used by the QuizCreator "Load from library" feature.
@@ -621,7 +649,8 @@ The `id` is derived from the title (lowercased, spaces replaced with hyphens). I
 
 **Validation errors:**
 - Missing or empty `title`
-- Missing or empty `questions` array
+- Missing or empty `rounds` array
+- Consecutive rounds share a category name (no-repeat rule)
 
 ---
 
@@ -767,19 +796,7 @@ Generates a QR code PNG image that encodes the player join URL for the given roo
 
 ## State Machine
 
-### Standard mode
-
-```
-WAITING
-  └─→ STARTING         (autoStart + minPlayers reached, or host sends 'start')
-        └─→ QUESTION         (after 3-second countdown)
-              └─→ ANSWER_REVEAL   (timer expired OR all answered)
-                    └─→ LEADERBOARD    (after answerRevealTime)
-                          ├─→ QUESTION       (if more questions remain)
-                          └─→ ENDED          (if last question)
-```
-
-### Category mode
+### Category mode (only mode)
 
 ```
 WAITING

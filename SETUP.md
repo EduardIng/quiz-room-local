@@ -112,16 +112,30 @@ Example quiz file (`quizzes/geography.json`):
 ```json
 {
   "title": "World Geography",
-  "questions": [
+  "categoryMode": true,
+  "rounds": [
     {
-      "question": "What is the capital of Japan?",
-      "answers": ["Beijing", "Seoul", "Tokyo", "Bangkok"],
-      "correctAnswer": 2,
-      "timeLimit": 20
+      "options": [
+        {
+          "category": "Geography",
+          "question": "What is the capital of Japan?",
+          "answers": ["Beijing", "Seoul", "Tokyo", "Bangkok"],
+          "correctAnswer": 2,
+          "timeLimit": 20
+        },
+        {
+          "category": "Science",
+          "question": "What planet is closest to the Sun?",
+          "answers": ["Venus", "Earth", "Mercury", "Mars"],
+          "correctAnswer": 2
+        }
+      ]
     }
   ]
 }
 ```
+
+**No-repeat rule:** the category names in any two consecutive rounds must be completely different.
 
 ---
 
@@ -152,7 +166,11 @@ Reference them in quiz JSON:
 
 ```bash
 npm test
-# 186 passing, 1 skipped
+# 223 backend passing (1 skipped)
+
+# Frontend tests (Vitest)
+cd frontend && npm test
+# 18 passing
 ```
 
 ---

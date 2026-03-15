@@ -26,7 +26,7 @@ How to run quiz sessions from start to finish with kiosk tablet podiums.
 |-----|-------------|---------|
 | `http://server:8080/#/` | Player tablets | Kiosk join screen (nickname only) |
 | `http://server:8080/#/host` | Host device | Select quiz, set player count, launch, control game |
-| `http://server:8080/#/create` | Quiz author | Create and save quizzes (must enable category mode) |
+| `http://server:8080/#/create` | Quiz author | Create and save quizzes (always category mode) |
 | `http://server:8080/#/screen` | Projector/TV | Read-only big-screen display (auto-discovers room) |
 | `http://server:8080/#/side` | Podium side monitor | Shows player nickname on HDMI-2 (Raspberry Pi podiums) |
 | `http://server:8080/#/stats` | Admin | View completed session history |
@@ -62,8 +62,6 @@ Click **🚀 Launch Quiz**. Tablets on the LAN detect the new game within 3 seco
 
 The host panel shows connected players in real time. When the expected player count is reached, the quiz **starts automatically** — no manual action needed.
 
-> All quizzes must use category mode. Non-category quizzes are rejected at launch.
-
 ---
 
 ## Creating Quizzes
@@ -80,7 +78,7 @@ http://server:8080/#/create
 - Add questions with the **+ Add question** button
 - For each question: enter text, fill in 4 answers, click the letter button to mark the correct one
 - Optionally set a per-question timer (overrides the global setting)
-- Optionally add an **image URL** — shown above the question text
+- Optionally add an **image** — click **📎 Add Image** to upload a file from your computer (JPEG/PNG/GIF/WebP, max 5 MB); the file is saved to `media/` and referenced automatically. A thumbnail preview appears; click **✕** to remove it.
 - Optionally add an **audio URL** — auto-plays when the question starts
 
 ### Save to library
@@ -100,10 +98,11 @@ Category mode replaces the standard linear question list with **rounds**. Each r
 
 ### Building a category mode quiz
 
-In the Quiz Creator, enable **Category mode**. The editor switches to a round-based view:
+The Quiz Creator always uses category mode — there is no toggle. The editor uses a round-based view:
 
 - Each round has **two options**, each with a category name and a full question
 - Add rounds with **+ Add round**
+- **No-repeat rule:** the two categories in any round must be different from both categories in the previous round. The editor shows an orange warning and blocks saving if this rule is violated.
 
 ### During the game
 
@@ -220,5 +219,5 @@ Every page has a **UK / EN** button to switch between Ukrainian and English. Pre
 - **Use Pause** if something interrupts mid-question — the timer freezes exactly where it left off
 - **Use Skip** to jump over a broken question or speed up the show
 - **Check `#/stats` after each night** — full session history saved automatically
-- **For image questions**, use direct image URLs or place files in `media/` and reference as `/api/media/filename.jpg`
+- **For image questions**, use the **📎 Add Image** button in the Quiz Creator to upload locally, or place files in `media/` manually and reference as `/api/media/filename.jpg`
 - **Run on wired ethernet** for the server — Wi-Fi is fine for tablets

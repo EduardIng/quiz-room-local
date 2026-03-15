@@ -2,7 +2,7 @@
 
 > Local-kiosk quiz system for venues — tablets connect automatically, no room codes needed
 
-[![Tests](https://img.shields.io/badge/tests-186%20passed-brightgreen)](backend/tests/)
+[![Tests](https://img.shields.io/badge/tests-230%20passed-brightgreen)](backend/tests/)
 [![Version](https://img.shields.io/badge/version-0.3.0-blue)](package.json)
 [![Fork of](https://img.shields.io/badge/fork%20of-quiz--room--auto%20v1.3.0-purple)](https://github.com/EduardIng/quiz-room-auto)
 
@@ -22,7 +22,7 @@
 4. Players enter their nickname — the quiz **auto-starts** when the expected player count is reached (no manual Start needed)
 5. After the game ends, tablets return to "Waiting for host..." ready for the next round
 
-> **Note:** All quizzes must use category mode (`categoryMode: true`). Non-category quizzes are rejected at launch.
+> **Note:** All quizzes use category mode. The quiz editor always produces category-format quizzes.
 
 ---
 
@@ -101,18 +101,32 @@ Standard JSON — place files in `quizzes/`, they appear in the host library aut
 ```json
 {
   "title": "Friday Quiz Night",
-  "questions": [
+  "categoryMode": true,
+  "rounds": [
     {
-      "question": "What is the capital of France?",
-      "answers": ["London", "Paris", "Berlin", "Rome"],
-      "correctAnswer": 1,
-      "timeLimit": 20
+      "options": [
+        {
+          "category": "Geography",
+          "question": "What is the capital of France?",
+          "answers": ["London", "Paris", "Berlin", "Rome"],
+          "correctAnswer": 1,
+          "timeLimit": 20
+        },
+        {
+          "category": "History",
+          "question": "In what year did WW2 end?",
+          "answers": ["1943", "1944", "1945", "1946"],
+          "correctAnswer": 2
+        }
+      ]
     }
   ]
 }
 ```
 
-For local media files (offline venues), place images/audio in `media/` and reference them as `/api/media/filename.jpg`.
+**No-repeat rule:** consecutive rounds cannot share any category name. Round 2 must offer two categories that neither appeared in round 1.
+
+For local media files (offline venues), place images/audio in `media/` and reference them as `/api/media/filename.jpg`. To upload an image from the Quiz Creator, use the **📎 Add Image** button on any round option — it uploads the file and stores the filename automatically.
 
 ---
 
@@ -122,6 +136,10 @@ For local media files (offline venues), place images/audio in `media/` and refer
 |------|---------|
 | `SETUP.md` | Installation + server configuration |
 | `KIOSK_SETUP.md` | Tablet kiosk setup guide (Chrome flags, autostart) |
+| `USAGE.md` | Full host + player usage guide |
+| `API.md` | Full WebSocket + HTTP API reference |
+| `DECISIONS.md` | Architecture decision log |
+| `KNOWN_ISSUES.md` | Known issues and workarounds |
+| `GLOSSARY.md` | Technical glossary (Ukrainian) |
 | `PROGRESS.md` | Development journal, phase tracker |
 | `CLAUDE.md` | Instructions for AI-assisted development |
-| `API.md` | Full WebSocket + HTTP API reference |

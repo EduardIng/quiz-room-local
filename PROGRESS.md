@@ -1,7 +1,7 @@
 # PROGRESS.md — Quiz Room Local (Kiosk Edition)
 
 > Read this file fully before continuing development.
-> Last updated: 14 March 2026 (Session 11 — Extensive test coverage + autoStart timer fix)
+> Last updated: 15 March 2026 (Session 14 — Documentation audit)
 
 ---
 
@@ -194,7 +194,7 @@ Physical quiz podium system: Raspberry Pi 5 per seat, GPIO buttons, dual HDMI, c
 | `frontend/src/components/SideMonitor.jsx` | Created ✅ | Phase 7 |
 | `frontend/src/components/SideMonitor.css` | Created ✅ | Phase 7 |
 | `frontend/src/components/StatsPanel.jsx` | Keep as-is | — |
-| `frontend/src/components/QuizCreator.jsx` | Modified ✅ | v0.2.1 |
+| `frontend/src/components/QuizCreator.jsx` | Modified ✅ | v0.2.1, Session 13 |
 | `frontend/src/components/AdminPanel.jsx` | Deleted ✅ | Phase 3 |
 | `frontend/src/main.jsx` | Updated ✅ | Phase 3, 7 |
 | `frontend/src/utils/i18n.js` | Updated ✅ | Phase 2 |
@@ -205,38 +205,6 @@ Physical quiz podium system: Raspberry Pi 5 per seat, GPIO buttons, dual HDMI, c
 | `config.json` | Done ✅ | Phase 0, 7 |
 | `package.json` | Done ✅ | Phase 0 |
 | `CLAUDE.md` | Done ✅ | Phase 0 |
-
----
-
-## WebSocket Events Reference
-
-### Client → Server
-| Event | Data | Notes |
-|-------|------|-------|
-| `create-quiz` | `{ quizData, settings, playerCount }` | Sets currentActiveRoom; playerCount for auto-start |
-| `join-quiz` | `{ nickname, roomCode? }` | roomCode optional in kiosk |
-| `submit-answer` | `{ answerId: 0-3 }` | |
-| `submit-category` | `{ choiceIndex: 0-1 }` | |
-| `get-game-state` | `{ roomCode }` | |
-| `watch-room` | `{ roomCode }` | |
-| `host-control` | `{ roomCode, action }` | |
-| `podium-button-press` | `{ buttonIndex: 0-3 }` | From GPIO service only — submits answer on behalf of player |
-
-### Server → Client
-Same as quiz-room-auto + `NO_ACTIVE_ROOM` (new in kiosk fork). `ANSWER_COUNT` event now used by ProjectorView live counter.
-
----
-
-## Routes
-
-| URL | Component | Who uses it |
-|-----|-----------|-------------|
-| `#/` | PlayerView | Tablets (kiosk podiums) |
-| `#/host` | HostView | Host device |
-| `#/create` | QuizCreator | Quiz editor |
-| `#/stats` | StatsPanel | Admin |
-| `#/screen` | ProjectorView | Central stand big screens |
-| `#/side` | SideMonitor | Podium side monitor (HDMI-2) |
 
 ---
 
@@ -376,6 +344,61 @@ Built `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` — a fully offline, single-file 4-
 - ProjectorView: 5 tests (PLAYER_JOINED, NEW_QUESTION, ANSWER_COUNT, SHOW_LEADERBOARD)
 
 **Tests:** 212 backend passing (1 skipped) + 18 frontend passing
+
+---
+
+### Session 12 — Documentation Audit + Launcher Buttons (14 March 2026) ✅
+
+**launcher.html:** Added two new cards:
+- Статистика (📊) — links to `#/stats` (yellow theme)
+- Збірка подіуму (🔧) — links to `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` (red theme, relative file path)
+
+**Documentation inaccuracies fixed:**
+- `README.md`: test badge updated 186 → 230; removed stale "non-category quizzes rejected" note; docs table expanded to list all 9 doc files
+- `API.md`: removed "standard quizzes rejected" note (enforcement removed Session 9); fixed CATEGORY_CHOSEN delay (~1s → `categoryChosenTime` default 4s); removed Standard mode state machine (category mode is the only mode)
+- `SETUP.md`: test count updated 186 → 212 backend + 18 frontend
+- `KNOWN_ISSUES.md` KI-005: `#/admin` replaced with `#/host` (AdminPanel deleted Phase 3)
+- `GLOSSARY.md`: Category Mode entry — removed "rejected by server"; Projector View entry — removed QR code reference
+- `USAGE.md`: "enable Category mode" toggle wording removed (no toggle exists post-Session 9)
+- `DECISIONS.md`: Decision 002/004 — removed AdminPanel references; Decision 013 — added update note about Session 9 removing server-side enforcement
+- `pi-setup/PODIUM_MANUAL.md`: removed hardcoded `/Users/einhorn/` path
+
+**Redundancy reduced:**
+- `PROGRESS.md`: removed duplicate WebSocket Events Reference and Routes tables (fully covered in `API.md` and `USAGE.md`)
+
+---
+
+### Session 13 — No-Repeat Category Rule + Image Upload (15 March 2026) ✅
+
+**No-repeat category validation:**
+- `quiz-storage.js`: Added `validateNoCategoryRepeat(rounds)` — iterates rounds, rejects if any category in round N appears in round N+1. Exported and called in `saveQuiz()` before writing to disk.
+- `QuizCreator.jsx`: Added `getCategoryRepeatError(rounds)` client-side mirror; orange warning banner; `validate()` and `handleSaveToLibrary` both block on violations.
+- `quizzes/first-try.json`: Reordered 30 rounds using DFS backtracking solver to satisfy the no-repeat rule.
+- Tests: 7 new tests in `quiz-storage.test.js` (validateNoCategoryRepeat + saveQuiz enforcement).
+
+**Browser image upload (Option B):**
+- `backend/src/server.js`: Added `POST /api/media/upload` via multer — diskStorage to `media/`, timestamp filenames, MIME whitelist (jpeg/png/gif/webp), 5 MB limit.
+- `package.json`: Added `multer` v2.1.1 dependency.
+- `frontend/src/components/QuizCreator.jsx`: Added `handleImageUpload` callback (FormData upload), image picker `<label>` with hidden `<input type="file">`, thumbnail preview with ✕ remove button, `uploadingImage` loading state.
+- `frontend/src/components/QuizCreator.css`: Added `.image-upload-btn`, `.image-preview-wrap`, `.image-preview`, `.image-preview-name`, `.image-remove-btn`, `.category-repeat-warning`.
+- `frontend/src/components/PlayerView.jsx`: Fixed `question.image` rendering — prepends `/api/media/` when value is a bare filename.
+- `frontend/src/components/ProjectorView.jsx`: Added question image block in QUESTION and ANSWER_REVEAL phases.
+- `frontend/src/components/ProjectorView.css`: Added `.proj-question-image-wrap` and `.proj-question-image`.
+- Tests: 4 new tests in `server.test.js` for `POST /api/media/upload` (valid JPEG, non-image rejection, no-file rejection, PNG upload). Uses `process.env.TEST_MEDIA_DIR` for isolation.
+
+**Tests:** 223 backend passing (1 skipped) — up from 212 in Session 11.
+
+---
+
+### Session 14 — Documentation Audit (15 March 2026) ✅
+
+- `API.md`: Added `POST /api/media/upload` endpoint; corrected `POST /api/quizzes/save` validation errors (questions → rounds, added no-repeat rule)
+- `README.md`: Updated quiz format example from standard to category mode; added no-repeat rule note; updated image upload tip
+- `SETUP.md`: Updated test count 212 → 223; updated quiz format example to category mode
+- `USAGE.md`: Removed stale "Non-category quizzes are rejected at launch" note; updated image workflow to describe browser upload; added no-repeat rule note in Category Mode section; updated Tips
+- `DECISIONS.md`: Added Decision 014 (browser image upload rationale)
+- `GLOSSARY.md`: Added "Category Repeat Validation" entry
+- `PROGRESS.md`: Added Sessions 13–14, updated timestamp
 
 ---
 
