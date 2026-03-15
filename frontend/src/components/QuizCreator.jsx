@@ -366,7 +366,6 @@ export default function QuizCreator() {
     setTitle('');
     setQuestions([EMPTY_QUESTION()]);
     setActiveQuestion(0);
-    setCategoryMode(false);
     setRounds([EMPTY_ROUND()]);
     setActiveRound(0);
     setError('');
@@ -672,7 +671,7 @@ export default function QuizCreator() {
   /**
    * Вибирає файл з медіа пікера — оновлює стан і авто-зберігає квіз
    */
-  const pickMediaFile = useCallback((filename) => {
+  const pickMediaFile = useCallback(async (filename) => {
     if (!mediaPicker) return;
     const { roundIdx, optIdx } = mediaPicker;
     updateRoundOption(roundIdx, optIdx, 'image', filename);
@@ -682,8 +681,12 @@ export default function QuizCreator() {
         oi === optIdx ? { ...opt, image: filename } : opt
       )};
     });
-    doSaveToLibrary(updatedRounds, { silent: true });
-    setMediaPicker(null);
+    setMediaPicker(null); // Закриваємо одразу — не чекаємо на збереження
+    try {
+      await doSaveToLibrary(updatedRounds, { silent: true });
+    } catch (err) {
+      setImportError('Не вдалося зберегти квіз після вибору зображення');
+    }
   }, [mediaPicker, rounds, updateRoundOption, doSaveToLibrary]);
 
   // ─────────────────────────────────────────────
