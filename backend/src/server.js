@@ -25,7 +25,7 @@ const multer = require('multer');
 const { loadConfig, log } = require('./utils');
 const QuizRoomManager = require('./websocket-handler-auto');
 const db = require('./db');
-const { loadAllQuizzes, saveQuiz, deleteQuiz } = require('./quiz-storage');
+const { loadAllQuizzes, saveQuiz, deleteQuiz, listReferencedMedia } = require('./quiz-storage');
 const qrcode = require('qrcode');
 
 class QuizServer {
@@ -146,6 +146,32 @@ class QuizServer {
           }));
         res.json({ files });
       } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+      }
+    });
+
+    // API: видалення медіафайлів-сиріт (не згадуються в жодному квізі)
+    // ВАЖЛИВО: цей маршрут має бути до GET /api/media/:filename,
+    //          інакше Express сприйме "orphans" як параметр :filename
+    this.app.delete('/api/media/orphans', (_req, res) => {
+      try {
+        const currentMediaPath = getMediaPath();
+        if (!fs.existsSync(currentMediaPath)) return res.json({ success: true, deleted: [] });
+        const refs = listReferencedMedia();
+        const deleted = [];
+        for (const file of fs.readdirSync(currentMediaPath)) {
+          if (/\.(jpe?g|png|gif|webp)$/i.test(file) && !refs.has(file)) {
+            try {
+              fs.unlinkSync(path.join(currentMediaPath, file));
+              deleted.push(file);
+            } catch (unlinkErr) {
+              log('Media', `Не вдалося видалити сироту ${file}: ${unlinkErr?.message || unlinkErr}`);
+            }
+          }
+        }
+        res.json({ success: true, deleted });
+      } catch (err) {
+        log('Media', `Помилка очищення сиріт: ${err?.message || err}`);
         res.status(500).json({ success: false, error: err.message });
       }
     });

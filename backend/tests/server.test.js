@@ -543,6 +543,60 @@ describe('POST /api/media/upload — deduplication', () => {
 });
 
 // ---------------------------------------------------------------------------
+// DELETE /api/media/orphans
+// ---------------------------------------------------------------------------
+
+describe('DELETE /api/media/orphans', () => {
+  let orphanMediaDir;
+  beforeAll(() => {
+    orphanMediaDir = fs.mkdtempSync(path.join(os.tmpdir(), 'quiz-orphans-'));
+    process.env.TEST_MEDIA_DIR = orphanMediaDir;
+  });
+  afterAll(() => {
+    fs.rmSync(orphanMediaDir, { recursive: true, force: true });
+    delete process.env.TEST_MEDIA_DIR;
+  });
+  beforeEach(() => {
+    for (const f of fs.readdirSync(orphanMediaDir)) {
+      fs.unlinkSync(path.join(orphanMediaDir, f));
+    }
+  });
+
+  it('deletes unreferenced image files', async () => {
+    fs.writeFileSync(path.join(orphanMediaDir, 'orphan.png'), 'fake');
+    const res = await request(app).delete('/api/media/orphans');
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.deleted).toContain('orphan.png');
+    expect(fs.existsSync(path.join(orphanMediaDir, 'orphan.png'))).toBe(false);
+  });
+
+  it('keeps referenced image files', async () => {
+    const keepFile = 'keep-me.png';
+    fs.writeFileSync(path.join(orphanMediaDir, keepFile), 'fake-keep');
+    // Save a quiz that references this file
+    await request(app)
+      .post('/api/quizzes/save')
+      .send({
+        title: 'Orphan Ref Quiz',
+        categoryMode: true,
+        rounds: [{ options: [
+          { category: 'A', question: 'Q?', answers: ['a','b','c','d'], correctAnswer: 0, image: keepFile },
+          { category: 'B', question: 'Q2?', answers: ['a','b','c','d'], correctAnswer: 1 }
+        ]}]
+      });
+    const res = await request(app).delete('/api/media/orphans');
+    expect(res.body.deleted).not.toContain(keepFile);
+    expect(fs.existsSync(path.join(orphanMediaDir, keepFile))).toBe(true);
+  });
+
+  it('returns empty deleted array when no orphans exist', async () => {
+    const res = await request(app).delete('/api/media/orphans');
+    expect(res.body.deleted).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // GET /api/qr/:roomCode
 // ---------------------------------------------------------------------------
 
