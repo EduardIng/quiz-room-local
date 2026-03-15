@@ -76,6 +76,10 @@ export default function QuizCreator() {
   // null = не завантажується; { roundIdx, optIdx } = завантаження для цього слоту
   const [uploadingImage, setUploadingImage] = useState(null);
 
+  // Пікер медіа: { roundIdx, optIdx } коли відкрито, null коли закрито
+  const [mediaPicker, setMediaPicker] = useState(null);
+  const [mediaFiles, setMediaFiles] = useState([]);
+
   // Drag-to-reorder refs and state
   const dragIndexRef = useRef(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -649,6 +653,39 @@ export default function QuizCreator() {
     }
   }, [updateRoundOption, rounds, doSaveToLibrary]);
 
+  /**
+   * Відкриває пікер медіа для заданого слоту — завантажує список файлів з /api/media
+   */
+  const openMediaPicker = useCallback(async (roundIdx, optIdx) => {
+    try {
+      const res = await fetch('/api/media');
+      const data = await res.json();
+      setMediaFiles(data.files || []);
+      setMediaPicker({ roundIdx, optIdx });
+    } catch {
+      setImportError('Could not load media library');
+    }
+  }, []);
+
+  const closeMediaPicker = useCallback(() => setMediaPicker(null), []);
+
+  /**
+   * Вибирає файл з медіа пікера — оновлює стан і авто-зберігає квіз
+   */
+  const pickMediaFile = useCallback((filename) => {
+    if (!mediaPicker) return;
+    const { roundIdx, optIdx } = mediaPicker;
+    updateRoundOption(roundIdx, optIdx, 'image', filename);
+    const updatedRounds = rounds.map((r, ri) => {
+      if (ri !== roundIdx) return r;
+      return { ...r, options: r.options.map((opt, oi) =>
+        oi === optIdx ? { ...opt, image: filename } : opt
+      )};
+    });
+    doSaveToLibrary(updatedRounds, { silent: true });
+    setMediaPicker(null);
+  }, [mediaPicker, rounds, updateRoundOption, doSaveToLibrary]);
+
   // ─────────────────────────────────────────────
   // РЕНДЕР
   // ─────────────────────────────────────────────
@@ -914,18 +951,27 @@ export default function QuizCreator() {
                           >✕</button>
                         </div>
                       ) : (
-                        <label className={`image-upload-btn${uploadingImage?.roundIdx === activeRound && uploadingImage?.optIdx === optIdx ? ' uploading' : ''}`}>
-                          {uploadingImage?.roundIdx === activeRound && uploadingImage?.optIdx === optIdx
-                            ? (lang === 'uk' ? 'Завантаження...' : 'Uploading...')
-                            : (lang === 'uk' ? '📎 Прикріпити зображення' : '📎 Attach image')}
-                          <input
-                            type="file"
-                            accept="image/jpeg,image/png,image/gif,image/webp"
-                            style={{ display: 'none' }}
-                            onChange={e => handleImageUpload(e, activeRound, optIdx)}
-                            disabled={!!uploadingImage}
-                          />
-                        </label>
+                        <div className="image-upload-group">
+                          <label className={`image-upload-btn${uploadingImage?.roundIdx === activeRound && uploadingImage?.optIdx === optIdx ? ' uploading' : ''}`}>
+                            {uploadingImage?.roundIdx === activeRound && uploadingImage?.optIdx === optIdx
+                              ? (lang === 'uk' ? 'Завантаження...' : 'Uploading...')
+                              : (lang === 'uk' ? '📎 Завантажити нове' : '📎 Upload new')}
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/gif,image/webp"
+                              style={{ display: 'none' }}
+                              onChange={e => handleImageUpload(e, activeRound, optIdx)}
+                              disabled={!!uploadingImage}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            className="image-pick-btn"
+                            onClick={() => openMediaPicker(activeRound, optIdx)}
+                          >
+                            {lang === 'uk' ? '🖼 З бібліотеки' : '🖼 From library'}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1024,6 +1070,37 @@ export default function QuizCreator() {
           </div>
         </main>
       </div>
+
+      {mediaPicker && (
+        <div className="media-picker-overlay" onClick={closeMediaPicker}>
+          <div className="media-picker-modal" onClick={e => e.stopPropagation()}>
+            <div className="media-picker-header">
+              <span>{lang === 'uk' ? 'Оберіть зображення' : 'Pick an image'}</span>
+              <button className="media-picker-close" onClick={closeMediaPicker}>✕</button>
+            </div>
+            {mediaFiles.length === 0 ? (
+              <p className="media-picker-empty">
+                {lang === 'uk' ? 'Бібліотека медіа порожня' : 'Media library is empty'}
+              </p>
+            ) : (
+              <div className="media-picker-grid">
+                {mediaFiles.map(f => (
+                  <button
+                    key={f.filename}
+                    type="button"
+                    className="media-picker-thumb"
+                    onClick={() => pickMediaFile(f.filename)}
+                    title={f.filename}
+                  >
+                    <img src={f.url} alt={f.filename} onError={e => { e.target.style.display='none'; }} />
+                    <span className="media-picker-name">{f.filename}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
