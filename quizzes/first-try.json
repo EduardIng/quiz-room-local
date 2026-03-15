@@ -13,8 +13,7 @@
             "Huawei",
             "Microsoft"
           ],
-          "correctAnswer": 1,
-          "image": "logo_apple.jpg"
+          "correctAnswer": 1
         },
         {
           "category": "Загальні знання",
@@ -51,8 +50,7 @@
             "This Is Fine",
             "Surprised Pikachu"
           ],
-          "correctAnswer": 2,
-          "image": "this_is_fine.jpg"
+          "correctAnswer": 2
         }
       ]
     },
@@ -93,8 +91,7 @@
             "Starbucks",
             "Tim Hortons"
           ],
-          "correctAnswer": 2,
-          "image": "logo_starbucks.jpg"
+          "correctAnswer": 2
         },
         {
           "category": "Інтернет-культура і меми",
@@ -105,8 +102,7 @@
             "Bad Luck Brian",
             "Side Eyeing Chloe"
           ],
-          "correctAnswer": 0,
-          "image": "distracted_boyfriend.jpg"
+          "correctAnswer": 0
         }
       ]
     },
@@ -147,8 +143,7 @@
             "Two Buttons",
             "Is This a Pigeon?"
           ],
-          "correctAnswer": 1,
-          "image": "drake_hotline_bling.jpg"
+          "correctAnswer": 1
         },
         {
           "category": "Наука і природа",
@@ -174,8 +169,7 @@
             "Deezer",
             "Tidal"
           ],
-          "correctAnswer": 0,
-          "image": "logo_spotify.jpg"
+          "correctAnswer": 0
         },
         {
           "category": "Історія",
@@ -201,8 +195,7 @@
             "Keyboard Cat",
             "Nyan Cat"
           ],
-          "correctAnswer": 1,
-          "image": "woman_yelling_at_cat.jpg"
+          "correctAnswer": 1
         },
         {
           "category": "Географія",
@@ -239,8 +232,7 @@
             "Airbnb",
             "Kayak"
           ],
-          "correctAnswer": 2,
-          "image": "logo_airbnb.jpg"
+          "correctAnswer": 2
         }
       ]
     },
@@ -307,8 +299,7 @@
             "Triumph",
             "Trabant — не дотягнув"
           ],
-          "correctAnswer": 1,
-          "image": "logo_tesla.jpg"
+          "correctAnswer": 1
         },
         {
           "category": "Інтернет-культура і меми",
@@ -319,8 +310,7 @@
             "Detective Pikachu",
             "Pikachu Running"
           ],
-          "correctAnswer": 0,
-          "image": "surprised_pikachu.jpg"
+          "correctAnswer": 0
         }
       ]
     },
@@ -361,8 +351,7 @@
             "Hide the Pain Harold",
             "Scumbag Steve"
           ],
-          "correctAnswer": 2,
-          "image": "hide_the_pain_harold.jpg"
+          "correctAnswer": 2
         },
         {
           "category": "Історія",
@@ -399,8 +388,7 @@
             "Mozilla Firefox",
             "Brave"
           ],
-          "correctAnswer": 2,
-          "image": "logo_firefox.jpg"
+          "correctAnswer": 2
         }
       ]
     },
@@ -441,8 +429,7 @@
             "Is This a Pigeon?",
             "One Does Not Simply"
           ],
-          "correctAnswer": 2,
-          "image": "is_this_a_pigeon.jpg"
+          "correctAnswer": 2
         },
         {
           "category": "Наука і природа",
@@ -494,8 +481,7 @@
             "Kappa",
             "Fred Perry"
           ],
-          "correctAnswer": 1,
-          "image": "logo_lacoste.jpg"
+          "correctAnswer": 1
         },
         {
           "category": "Наука і природа",
@@ -521,8 +507,7 @@
             "Philosoraptor",
             "Conspiracy Keanu"
           ],
-          "correctAnswer": 0,
-          "image": "roll_safe.jpg"
+          "correctAnswer": 0
         },
         {
           "category": "Загальні знання",
@@ -559,8 +544,7 @@
             "NASA",
             "Roscosmos"
           ],
-          "correctAnswer": 2,
-          "image": "logo_nasa.jpg"
+          "correctAnswer": 2
         }
       ]
     },
@@ -612,8 +596,7 @@
             "Big Brain Time",
             "Mind Blown"
           ],
-          "correctAnswer": 1,
-          "image": "expanding_brain.jpg"
+          "correctAnswer": 1
         }
       ]
     },
@@ -665,8 +648,7 @@
             "TikTok",
             "Triller"
           ],
-          "correctAnswer": 2,
-          "image": "logo_tiktok.jpg"
+          "correctAnswer": 2
         }
       ]
     },
@@ -692,8 +674,7 @@
             "Unpopular Opinion",
             "Facts Don't Care"
           ],
-          "correctAnswer": 0,
-          "image": "change_my_mind.jpg"
+          "correctAnswer": 0
         }
       ]
     },
@@ -734,8 +715,7 @@
             "American Express",
             "PayPal"
           ],
-          "correctAnswer": 1,
-          "image": "logo_mastercard.jpg"
+          "correctAnswer": 1
         },
         {
           "category": "Загальні знання",
