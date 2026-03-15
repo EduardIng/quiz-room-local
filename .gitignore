@@ -39,3 +39,6 @@ data/
 
 # Internal planning artifacts (Claude Code)
 docs/superpowers/
+
+# Git worktrees
+.worktrees/
