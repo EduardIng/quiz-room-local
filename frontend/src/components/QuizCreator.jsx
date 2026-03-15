@@ -510,9 +510,11 @@ export default function QuizCreator() {
    * silent=true: не показує тост успіху, не оновлює бібліотеку (для авто-збереження).
    */
   const doSaveToLibrary = useCallback(async (roundsToSave, { silent = false } = {}) => {
+    // Не зберігаємо якщо назва порожня або раундів немає
+    if (!title.trim() || !roundsToSave.length) return;
     const quizData = {
       ...(currentQuizId ? { id: currentQuizId } : {}),
-      title: title.trim() || 'Мій квіз',
+      title: title.trim(),
       categoryMode: true,
       rounds: roundsToSave.map(r => ({
         options: r.options.map(opt => ({
@@ -526,7 +528,6 @@ export default function QuizCreator() {
         }))
       }))
     };
-    if (!quizData.title || !quizData.rounds.length) return;
     try {
       const res = await fetch('/api/quizzes/save', {
         method: 'POST',
