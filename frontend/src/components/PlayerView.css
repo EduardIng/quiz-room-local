@@ -648,7 +648,8 @@
   justify-content: center;
   margin-bottom: 12px;
   border-radius: var(--radius-md);
-  background: rgba(0,0,0,0.3);
+  background: #f0f2f5;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .question-image {
@@ -656,6 +657,7 @@
   max-height: 220px;
   object-fit: contain;
   border-radius: var(--radius-md);
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.35));
 }
 
 /* ── Audio bar ── */
