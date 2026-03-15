@@ -332,7 +332,7 @@ describe('saveQuiz — категорії не повторюються', () => 
 // ---------------------------------------------------------------------------
 
 describe('saveQuiz — upsert', () => {
-  it('overwrites existing file when id matches', () => {
+  it('перезаписує існуючий файл коли id збігається', () => {
     const { saveQuiz } = getStorage();
     const q1 = { title: 'Upsert Quiz', categoryMode: true, rounds: [{ options: [
       { category: 'A', question: 'Q?', answers: ['a','b','c','d'], correctAnswer: 0 },
@@ -350,7 +350,7 @@ describe('saveQuiz — upsert', () => {
     expect(saved.title).toBe('Upsert Quiz Updated');
   });
 
-  it('creates new file when id not provided', () => {
+  it('створює новий файл коли id не передано', () => {
     const { saveQuiz } = getStorage();
     const q = { title: 'No ID Quiz', categoryMode: true, rounds: [{ options: [
       { category: 'A', question: 'Q?', answers: ['a','b','c','d'], correctAnswer: 0 },
@@ -359,6 +359,18 @@ describe('saveQuiz — upsert', () => {
     const r1 = saveQuiz(q);
     const r2 = saveQuiz(q); // no id — should make second file
     expect(r2.id).not.toBe(r1.id);
+  });
+
+  it('створює новий файл коли id передано але файл не існує', () => {
+    const { saveQuiz } = getStorage();
+    const q = { title: 'Стале ID', id: 'non-existent-id', categoryMode: true, rounds: [{ options: [
+      { category: 'A', question: 'Q?', answers: ['a','b','c','d'], correctAnswer: 0 },
+      { category: 'B', question: 'Q2?', answers: ['a','b','c','d'], correctAnswer: 1 }
+    ]}]};
+    const r = saveQuiz(q);
+    // id не збігається з існуючим файлом — має створитись новий
+    expect(r.filename).not.toBe('non-existent-id.json');
+    expect(fs.existsSync(path.join(tmpDir, r.filename))).toBe(true);
   });
 });
 

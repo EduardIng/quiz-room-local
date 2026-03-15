@@ -150,7 +150,10 @@ function titleToFilename(title) {
 /**
  * Зберігає квіз на диск у директорію quizzes/
  *
- * Якщо файл з такою назвою вже існує — додає суфікс -2, -3, тощо.
+ * Поведінка upsert:
+ * - Якщо quizData.id передано І відповідний файл існує — перезаписує існуючий файл (upsert).
+ * - В усіх інших випадках (id відсутній або файл не знайдено) — генерує нову назву файлу
+ *   на основі title з суфіксом -2, -3, ... щоб уникнути колізій.
  * Повертає id збереженого квізу.
  *
  * @param {Object} quizData - Дані квізу (title + questions або rounds)
@@ -183,7 +186,7 @@ function saveQuiz(quizData) {
     const candidateName = `${path.basename(quizData.id)}.json`;
     if (fs.existsSync(path.join(QUIZZES_DIR, candidateName))) {
       filename = candidateName;
-      id = quizData.id;
+      id = path.basename(quizData.id);
     }
   }
 
