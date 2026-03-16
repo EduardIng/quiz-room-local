@@ -1,7 +1,7 @@
 # PROGRESS.md — Quiz Room Local (Kiosk Edition)
 
 > Read this file fully before continuing development.
-> Last updated: 15 March 2026 (Session 14 — Documentation audit)
+> Last updated: 15 March 2026 (Session 15 — Media image integrity)
 
 ---
 
@@ -399,6 +399,37 @@ Built `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` — a fully offline, single-file 4-
 - `DECISIONS.md`: Added Decision 014 (browser image upload rationale)
 - `GLOSSARY.md`: Added "Category Repeat Validation" entry
 - `PROGRESS.md`: Added Sessions 13–14, updated timestamp
+
+---
+
+### Session 15 — Media Image Integrity (15 March 2026) ✅
+
+**Problem solved:** Images attached in QuizCreator were not persisted to quiz JSON (no auto-save), saves always created duplicate files instead of overwriting, and first-try.json had broken placeholder image references.
+
+**Backend (quiz-storage.js):**
+- `saveQuiz()` — upsert logic: if `quizData.id` is provided and the file exists, overwrite instead of generating a new filename with a counter suffix. Path traversal protection via `path.basename` on the incoming id.
+- `listReferencedMedia()` — new exported helper; returns `Set<string>` of all `image`/`audio` filenames referenced across all quiz JSON files. Used by the orphan cleanup endpoint.
+
+**Backend (server.js):**
+- `GET /api/media` — lists all image files (jpeg/png/gif/webp) in `media/` with `{ filename, url, size }`. Defined before `GET /api/media/:filename` to avoid Express routing conflict.
+- `POST /api/media/upload` — now hash-deduplicates: computes MD5 of uploaded file, scans existing files for a match; if found, deletes new upload and returns the existing filename. No duplicate files for repeat uploads.
+- `DELETE /api/media/orphans` — deletes image files in `media/` not referenced by any quiz. Returns `{ deleted: string[] }`.
+- `GET /api/quizzes` — each quiz now includes `missingImages: string[]` (filenames in `image` fields that don't exist in `media/`).
+
+**Frontend (QuizCreator.jsx):**
+- `currentQuizId` state — tracks the loaded quiz's id; set on library load, cleared on JSON import and reset. Included in save payloads so the backend upserts the correct file.
+- `doSaveToLibrary(roundsToSave, { silent })` — extracted helper that takes rounds explicitly (avoids stale-closure race). Used by both explicit save and auto-save paths.
+- Auto-save after image upload — `handleImageUpload` calls `doSaveToLibrary(updatedRounds, { silent: true })` immediately after upload, keeping JSON in sync without user action.
+- Media picker modal — "From library" button opens a modal grid of all files in `media/`. Selecting a thumbnail sets the image and auto-saves (no re-upload needed).
+
+**Frontend (HostView.jsx / HostView.css):**
+- Warning badge — `quiz.missingImages?.length > 0` renders an amber ⚠️ badge on the quiz list item; hovering shows the missing filenames as a tooltip.
+
+**Data fix:**
+- `quizzes/first-try.json` — removed all 20 broken placeholder image references (`logo_apple.jpg`, etc. — files that never existed in `media/`).
+
+**Tests:** 239 backend passing (1 skipped) — up from 223 in Session 13.
+New tests: upsert save (3 cases), listReferencedMedia (2), GET /api/media (2), upload deduplication (3), DELETE /api/media/orphans (3), GET /api/quizzes missingImages (3).
 
 ---
 

@@ -599,7 +599,37 @@ Uploads an image file to the `media/` directory. Used by the Quiz Creator to att
 { "success": false, "error": "File too large" }
 ```
 
-The `filename` returned is a timestamp-based name (e.g. `1741200000000.jpg`). Store it in the quiz option's `image` field; the frontend prepends `/api/media/` when rendering if the value does not already start with `http` or `/`.
+The `filename` returned is a timestamp-based name (e.g. `1741200000000.jpg`) unless an identical file already exists in `media/` — in that case the existing filename is returned instead (hash-based deduplication). Store it in the quiz option's `image` field; the frontend prepends `/api/media/` when rendering if the value does not already start with `http` or `/`.
+
+---
+
+### `GET /api/media`
+
+Lists all image files currently stored in the `media/` directory.
+
+**Response:**
+```json
+{
+  "files": [
+    { "filename": "1741200000000.jpg", "url": "/api/media/1741200000000.jpg", "size": 48320 }
+  ]
+}
+```
+
+Note: only `.jpg`/`.jpeg`/`.png`/`.gif`/`.webp` files are listed. Used by the media picker in QuizCreator.
+
+---
+
+### `DELETE /api/media/orphans`
+
+Deletes image files in `media/` that are not referenced by any quiz's `image` field. Safe to call periodically to clean up duplicate uploads.
+
+**Response:**
+```json
+{ "success": true, "deleted": ["1741200000000.jpg", "1741200001111.png"] }
+```
+
+Returns an empty `deleted` array if nothing was removed.
 
 ---
 

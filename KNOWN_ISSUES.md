@@ -86,12 +86,12 @@ Each issue: ID, status, description, workaround.
 
 ---
 
-## KI-008 🔴 External media URLs may be blocked by CORS
+## KI-008 🟢 External media URLs may be blocked by CORS
 
 **Affects:** `image` and `audio` fields — `PlayerView.jsx`
 
-**Description:** If an image or audio URL points to a server that sends `Access-Control-Allow-Origin: <specific domain>` that does not include the quiz server's origin, the browser may block the resource. This is enforced by the browser, not the quiz server.
+**Description:** If an image or audio URL points to a server that sends `Access-Control-Allow-Origin: <specific domain>` that does not include the quiz server's origin, the browser may block the resource.
 
-**Workaround:** Use URLs from public CDNs or image hosts that allow cross-origin access (e.g. Imgur, Wikimedia Commons, direct file paths on the same LAN server). Self-hosted files served from the same origin (`http://<server-ip>:8080/...`) are always allowed.
+**Resolution:** Session 15 added a full local media library (`media/` folder + `GET /api/media` endpoint + media picker in QuizCreator). All images should be uploaded to the local server and referenced by filename only — external URLs are no longer needed or recommended for offline kiosk operation.
 
 ---

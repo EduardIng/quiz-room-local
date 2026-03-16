@@ -166,7 +166,7 @@ Reference them in quiz JSON:
 
 ```bash
 npm test
-# 223 backend passing (1 skipped)
+# 239 backend passing (1 skipped)
 
 # Frontend tests (Vitest)
 cd frontend && npm test
