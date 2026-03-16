@@ -363,14 +363,17 @@ export default function QuizCreator() {
       socketRef.current = null;
     }
     setRoomCode(null);
+    setCurrentQuizId(null);
     setTitle('');
     setQuestions([EMPTY_QUESTION()]);
     setActiveQuestion(0);
     setRounds([EMPTY_ROUND()]);
     setActiveRound(0);
     setError('');
+    setSaveSuccess('');
     setIsPaused(false);
     setGameEnded(false);
+    setMediaPicker(null);
   }, []);
 
   // ─────────────────────────────────────────────
