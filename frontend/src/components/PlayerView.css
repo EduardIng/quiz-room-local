@@ -28,7 +28,9 @@
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  /* Pi 5 V3D HDMI pipeline спотворює CSS gradient до яскраво-синього;
+     суцільний колір рендериться коректно — використовуємо --color-bg. */
+  background: var(--color-bg);
 }
 
 /* Загальна картка (wrapper для контенту екрану) */
