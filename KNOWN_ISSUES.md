@@ -58,7 +58,7 @@ Each issue: ID, status, description, workaround.
 
 ## KI-005 ⚪ No authentication on admin/stats pages
 
-**Affects:** `#/admin`, `#/stats`, `#/create`
+**Affects:** `#/host`, `#/stats`, `#/create`
 
 **Description:** All pages are publicly accessible to anyone on the network. There is no login or API key protection.
 
@@ -93,5 +93,33 @@ Each issue: ID, status, description, workaround.
 **Description:** If an image or audio URL points to a server that sends `Access-Control-Allow-Origin: <specific domain>` that does not include the quiz server's origin, the browser may block the resource. This is enforced by the browser, not the quiz server.
 
 **Workaround:** Use URLs from public CDNs or image hosts that allow cross-origin access (e.g. Imgur, Wikimedia Commons, direct file paths on the same LAN server). Self-hosted files served from the same origin (`http://<server-ip>:8080/...`) are always allowed.
+
+---
+
+## KI-009 🔴 Pi 5 HDMI output renders colors with strong blue cast on `rpi1` monitor
+
+**Affects:** First podium (`rpi1` @ 10.0.1.37, Raspberry Pi 5, Raspberry Pi OS Trixie, monitor on HDMI-2 at 2560×1440) — visible on the PlayerView waiting screen and likely on every screen.
+
+**Description:** The physical HDMI output drives the entire `.player-view` background as a uniform bright blue (~`#1aa0ff` range), while the same Chromium tab's framebuffer captured via `scrot` shows the expected dark navy. Solid-color child elements like `.screen-card` (`#16213e`) render correctly inside the wrongly-coloured background — but only because the card's color happens to read as dark blue under the same cast. White text and the emoji do render legibly.
+
+This was first suspected to be a CSS-gradient bug (3-stop gradient mis-interpolating on `--use-angle=gles`) but persisted after replacing the gradient with a solid `var(--color-bg)` (`#1a1a2e`) and after adding `--disable-gpu` to the Chromium flags. Both rule out Chromium's compositor as the source. The corruption is downstream — almost certainly Pi 5 → V3D → HDMI pixel-format / colour-space / RGB-range mismatch on this monitor.
+
+**Status:** Deferred. Functional kiosk works; this is cosmetic. To be revisited under a colour-fidelity pass.
+
+**Likely fix directions (not yet tried):**
+- Force full-range RGB in `/boot/firmware/config.txt` (`hdmi_pixel_encoding=2` or the Trixie-equivalent `dtoverlay` option) — the monitor may be expecting full-range while the Pi sends limited.
+- Force a specific colour space (`hdmi_drive=2`, group/mode pinning).
+- Test the same Pi on a different monitor to confirm the cast is monitor-dependent.
+- Test the same monitor with a different HDMI source to confirm the monitor is healthy.
+
+---
+
+## KI-010 🟡 Chrome translate bar appears on kiosk despite `--disable-translate`
+
+**Affects:** All kiosk screens — Chromium 147 on `rpi1`.
+
+**Description:** The HTML root is `<html lang="uk">`. Chromium offers to translate the page and shows the "Ukrainian / English / ⋮ / ×" bar in the top-right corner of the kiosk window even though `--disable-translate --disable-features=TranslateUI` are both passed in `kiosk.sh`. Cosmetic only — does not block input, does not prevent kiosk interaction.
+
+**Workaround:** Ignore for now. If it becomes a problem, candidate flags to try: `--disable-features=Translate,TranslateUI`, or set Chrome policy via `/etc/chromium/policies/managed/notranslate.json` with `"TranslateEnabled": false`.
 
 ---

@@ -1,7 +1,7 @@
 # PROGRESS.md — Quiz Room Local (Kiosk Edition)
 
 > Read this file fully before continuing development.
-> Last updated: 15 March 2026 (Session 14 — Documentation audit)
+> Last updated: 16 May 2026 (Session 20 — First Pi 5 kiosk field test)
 
 ---
 
@@ -402,9 +402,214 @@ Built `pi-setup/PODIUM_ASSEMBLY_MANUAL.html` — a fully offline, single-file 4-
 
 ---
 
+### Session 15 — Quiz Editor Save/Load Fixes (16 March 2026) ✅
+
+**Problem 1 — Library duplicates on save:**
+`saveQuiz()` always generated a new filename if one existed (e.g. `first-try-2.json`, `first-try-3.json`). Every edit+save of the same quiz created a new library entry.
+
+**Problem 2 — Image lost after reload:**
+Image was saved in the new file, but users reloaded the old file (without the image) from the library.
+
+**Fixes:**
+- `backend/src/quiz-storage.js`: Extended `saveQuiz()` to overwrite in-place when `quizData.id` is provided and the corresponding file exists. (Infrastructure for future use.)
+- `frontend/src/components/QuizCreator.jsx`:
+  - Added `currentQuizId` state — set when loading a quiz from library.
+  - `handleSaveToLibrary` now **always checks title uniqueness** against the full library before saving. If a quiz with the same title already exists, save is blocked with error: "Квіз з такою назвою вже існує. Змініть назву перед збереженням."
+  - Save never passes `id` in the payload — every save creates a new file. Saving under the same name is prevented client-side, so duplicates can no longer be created.
+
+**Result:** To save an edited quiz, user must first rename it. This guarantees unique library entries and ensures images are always in the saved file.
+
+**Tests:** 223 backend passing (1 skipped) — unchanged.
+
+---
+
+### Session 16 — CLAUDE.md Audit + Codebase Hygiene (19 March 2026) ✅
+
+**Task:** Deep audit of entire project → produce `CLAUDE.new.md` as a rewritten project constitution, then implement all identified fixes.
+
+**CLAUDE.new.md created** — 353-line rewrite with: orientation header, autonomous mode rules, Superpowers tables, 7 ranked decision principles, green baseline, architecture mental models, reference pointers table (12 entries), 7 gotchas with reasoning, maintenance standing orders.
+
+**10 audit follow-up fixes implemented:**
+
+1. **QuizCreator setCategoryMode crash** — removed `setCategoryMode(false)` from `handleReset` (would crash since `categoryMode` state no longer exists)
+2. **Dead `#/admin` nav links** — changed to `#/host` in QuizCreator and StatsPanel
+3. **Orphaned `AdminPanel.css`** — deleted (no component imported it since AdminPanel.jsx was removed in Phase 3)
+4. **i18n dead keys** — removed ~30 AdminPanel keys from `uk` and `en` sections; kept `playerLink` (still used by QuizCreator)
+5. **`quizzes/README.md` outdated** — rewrote from obsolete standard-quiz format to current category-mode format
+6. **`frontend/package.json` wrong name** — `quiz-room-auto-frontend` → `quiz-room-local-frontend`
+7. **Timer leak in `_resolveCategory`** — stored setTimeout in `this.categoryResolveTimer`; added `clearTimeout` in `endQuiz()`
+8. **Missing rounds guard** — added `Array.isArray(data.quizData.rounds)` check in `websocket-handler-auto.js`
+9. **SERVER_URL standardisation** — added `SERVER_URL` pattern to SideMonitor and StatsPanel (was already in PlayerView, HostView, ProjectorView, QuizCreator)
+10. **StatsPanel hardcoded strings** — replaced 5 inline `lang === 'uk'` ternaries with `t()` calls; added keys to i18n
+
+**Additional fixes found during audit:**
+
+- **PlayerView double `quiz-update` listener** — merged into single handler by adding PLAYER_JOINED/PLAYER_LEFT cases to main switch
+- **ProjectorView stale closure** — `setTotalPlayers(data.total || totalPlayers)` → `setTotalPlayers(prev => data.total ?? prev)` (functional updater + nullish coalescing)
+- **Unused `React` imports** — removed from ProjectorView, PlayerView, HostView (React 18 JSX transform doesn't need it)
+- **ProjectorView unused `ANSWER_COLORS`** — removed dead constant
+- **Websocket handler misleading log** — changed `Питань: ${data.quizData.questions.length}` → `Раундів: ${data.quizData.rounds.length}`
+- **QuizCreator ~120 lines of dead code** — removed `EMPTY_QUESTION`, `questions`/`activeQuestion` state, 8 standard-mode functions, 4 drag handlers + refs, dead `currentQ` variable
+
+**Tests:** 223 backend + 18 frontend passing — unchanged.
+
+---
+
+### Session 17 — Comprehensive Audit Fix Round (20 March 2026) ✅
+
+**Task:** Full project audit → fix all identified issues. Continuation of Session 16 audit work.
+
+**Backend fixes:**
+1. **Rate limit memory leak** — `cleanupOldSessions()` now purges expired `answerRateLimit` entries (reused existing `now` variable; fixed duplicate `const now` declaration introduced by Session 16 agent)
+2. **State guard in `_resolveCategory`** — added early return if gameState is not `CATEGORY_SELECT`/`CATEGORY_CHOSEN`
+3. **AutoStart cancel on player leave** — `removePlayer()` clears `autoStartTimer` if player count drops below threshold
+4. **Leaderboard → ENDED guard** — `showLeaderboard()` returns early if already `ENDED`
+5. **Host disconnect broadcast** — `handleDisconnect()` emits `HOST_DISCONNECTED` to room when host socket disconnects mid-game
+
+**Frontend fixes:**
+6. **ProjectorView socket leak** — `connectToRoom()` disconnects previous socket before creating new one; QUIZ_ENDED handler cleans up old socket before polling
+7. **HostView socket leak** — `handleLaunch()` disconnects previous socket
+8. **QuizCreator socket leak** — `handleCreateRoom()` disconnects previous socket; removed ~120 lines dead code (EMPTY_QUESTION, drag handlers, standard-mode state); fixed relative API URLs to use `SERVER_URL`; added duplicate title check
+9. **PlayerView double listener** — merged duplicate `quiz-update` handler into single switch block
+10. **SideMonitor connected state** — `connected` state now set true/false in poll; `.disconnected` CSS class shows red border + "offline" indicator
+
+**Launcher & documentation fixes:**
+11. **launcher.html broken link** — `PODIUM_ASSEMBLY_MANUAL.html` → `PODIUM_MANUAL.md`
+12. **launcher.html hardcoded URLs** — changed all `http://localhost:8080/#/...` to relative `#/...` paths
+
+**Test improvements:**
+13. **Async timer leak fix** — `clearSessionTimers()` now includes `categoryResolveTimer`; all 6 category test blocks in `session.test.js` now have `jest.clearAllTimers()` in `afterEach`
+14. **Websocket test timer leak** — added global `beforeEach(useFakeTimers)` + `afterEach(clearAllTimers)` to prevent "Cannot log after tests are done" warnings; `clearAllTimers()` extended to include `categoryResolveTimer`
+15. **utils.test.js created** — 12 tests covering `loadConfig` (7: structure, types, clamp ranges), `timestamp` (2: format, value), `log` (2: format, categories)
+16. **Jest exit code fixed** — `npm test` now exits cleanly with code 0 (was code 1 due to async timer warnings)
+
+**Tests:** 234 backend passing (1 skipped), 18 frontend passing — up from 223 backend. Exit code 0 (clean).
+
+---
+
+### Session 18 — Comprehensive Audit + 59 Tests (20 March 2026) ✅
+
+**Task:** Ultra-thorough test audit — 3 parallel audit agents (backend source, frontend source, test coverage gaps), fix bugs, write new tests.
+
+**Backend bugs fixed (6):**
+1. **categoryMode defense-in-depth** — `handleCreateQuiz` sets `data.quizData.categoryMode = true` after rounds validation
+2. **Zombie session cleanup** — `cleanupOldSessions` now removes sessions >24h with 0 players (not just ENDED+empty)
+3. **Cleanup interval stored** — `this._cleanupInterval` reference for proper teardown
+4. **categoryChosenTime config** — added to settings merge from config defaults
+5. **JSON body size limit** — `express.json({ limit: '1mb' })` on server
+6. **Session ID validation** — `/api/stats/session/:id` and `:id/questions` reject non-positive-integer IDs
+
+**Code quality improvements:**
+- State machine and gameState comments updated for all 8 states
+- `utils.js` DEFAULT_CONFIG expanded with kiosk section and categoryChosenTime
+- Deep clone in `createSession` test helper (fixed shared QUIZ_DATA mutation bug)
+
+**Tests added: 59 new backend tests (234 → 293)**
+- session.test.js: +29 (edge cases, getState all phases, media, tiebreaker, shuffleArray, calculateAnswerStatistics)
+- websocket.test.js: +24 (categoryMode auto-set, zombie cleanup, host-control, watch-room, join-quiz, host disconnect)
+- server.test.js: +6 (session ID validation, JSON body size limit)
+
+**Tests:** 293 backend passing (1 skipped), 18 frontend passing.
+
+---
+
+### Session 19 — Second Comprehensive Test Audit (21 March 2026) ✅
+
+**Task:** Full re-audit with 3 parallel agents (backend source, frontend source, test coverage gaps). Fix verified bugs, write new tests, update all documentation.
+
+**Backend bugs fixed (7):**
+1. **State machine: `_resolveCategory` gameState** — now sets `this.gameState = 'CATEGORY_CHOSEN'` before broadcast (was staying in `CATEGORY_SELECT` during the categoryChosenTime delay, allowing stale submitCategory calls)
+2. **autoStartTimer race condition** — `clearTimeout(this.autoStartTimer)` before setting new one in `addPlayer()` (multiple simultaneous joins no longer create duplicate timers)
+3. **Division by zero in `_calculateAnswerStatistics`** — if `players.size === 0`, uses `totalAnswered` as fallback denominator instead of producing `Infinity`
+4. **`endQuiz` totalQuestions** — category mode now uses `this.rounds.length` (total rounds in quiz) instead of `this.quizData.questions.length` (only played questions)
+5. **`playerCount` validation** — `handleCreateQuiz` now clamps to `[1, maxPlayers]` with `parseInt` fallback (0, -1, "abc", 99 all handled)
+6. **Stale WAITING session cleanup** — `cleanupOldSessions` now removes WAITING sessions with 0 players older than 1 hour
+7. **`createdAt` timestamp** — added to session constructor for WAITING timeout tracking
+
+**Frontend bugs fixed (3):**
+8. **QuizCreator unmount cleanup** — added useEffect cleanup for socket disconnect + `saveTimerRef` clearTimeout on unmount (prevents setState on unmounted component)
+9. **QuizCreator save timer ref** — `saveTimerRef` stores timeout ID; cleared before setting new one and on unmount
+10. **StatsPanel locale** — `formatDate` now accepts `lang` parameter; uses `'uk-UA'` or `'en-US'` based on current language (was hardcoded `'uk-UA'`)
+
+**Defensive improvement:**
+- `getCurrentQuestion()` logs error if index out of bounds (early warning for state machine bugs)
+
+**New backend tests (17):**
+- `_resolveCategory` sets gameState to `CATEGORY_CHOSEN` (2 tests)
+- autoStartTimer cleared before new one (1 test)
+- `_calculateAnswerStatistics` safe with 0 players (2 tests)
+- `endQuiz` totalQuestions uses `rounds.length` (1 test)
+- `createdAt` timestamp on session (2 tests)
+- `playerCount` validation (5 tests: 0, -1, "abc", 99, valid 3)
+- Stale WAITING session cleanup (4 tests: old removed, young kept, with-players kept, currentActiveRoom cleared)
+
+**New frontend tests (20):**
+- QuizCreator.test.jsx (new file, 4 tests): render, unmount without socket, clearTimeout on unmount, disconnect on unmount after socket created
+- StatsPanel.test.jsx (new file, 9 tests): uk-UA locale, en-US locale, null/undefined timestamp, render with data, session count, title, top scorer, empty state
+- ProjectorView.test.jsx (+7 tests): CATEGORY_SELECT display, CATEGORY_CHOSEN display, wasTimeout variant, different categories, disconnect after watching, disconnect handler, unknown event type
+
+**Tests:** 310 backend (1 skipped) + 38 frontend = **348 total** (up from 311).
+
+**Documentation updated:**
+- README.md: test badge 252 → 348
+- SETUP.md: test counts updated (310 backend + 38 frontend)
+- PROGRESS.md: Sessions 18–19 added
+
+---
+
+### Session 20 — First Pi 5 Kiosk Field Test (16 May 2026) ✅ (cosmetic deferred)
+
+**Task:** Bring the first physical podium (`rpi1` @ 10.0.1.37, Raspberry Pi 5, Raspberry Pi OS Trixie, single HDMI monitor on HDMI-2) into a functionally-working kiosk state.
+
+**Symptom on first boot:**
+- Pi monitor showed bright-blue background with three small faint dots — no visible text, no emoji, no dark navy theme.
+- User's earlier CDP probing had confirmed CSS variables resolve correctly once the page loads, so the leading hypotheses were (a) Chromium loading state or (b) `--use-angle=gles` rendering bug.
+
+**Root-cause investigation (via SSH + CDP + scrot):**
+1. CSS/DOM is correct — `getComputedStyle` confirms `.screen-title` color `rgb(255,255,255)`, `.screen-card` bg `rgb(22,33,62)`, `.pulse-dots span` bg `rgb(155,109,255)` round, all expected.
+2. `scrot` framebuffer screenshots always show the dark-navy gradient + purple round dots + visible text — i.e. X server believes everything is fine.
+3. A physical photo of the monitor revealed the actual HDMI signal renders the entire `.player-view` background as a uniform bright blue, while the `.screen-card` (solid `#16213e`) shows correctly inside it.
+4. Replacing the CSS gradient with the solid `var(--color-bg)` (`#1a1a2e`) did **not** fix the bright-blue background — the monitor still shows bright blue even though the framebuffer is solid dark navy.
+
+**Conclusion:** the color shift is downstream of Chromium/X11 — it's in the Pi 5 → HDMI pipeline (RGB range / color-space / V3D output config) on this specific monitor. Filed as **KI-009**. Per user direction, deferred to a later "cosmetics" pass; focus stays on functional correctness for now.
+
+**Functional fixes shipped:**
+
+1. **`pi-setup/kiosk.sh` rewritten:**
+   - Uses absolute `/usr/bin/chromium` (the previous `chromium-browser` does not exist in the Pi OS Trixie chromium package — would silently fail if relied on).
+   - `export DISPLAY=${DISPLAY:-:0}` at top so the script works both from autostart and from manual `bash` invocation.
+   - Auto-detects connected HDMI output via `xrandr --query | awk` and sets it as `--primary`. Necessary because on `rpi1` the disconnected HDMI-1 was marked primary, which interfered with Chromium's window sizing.
+   - Auto-detects screen geometry from `xrandr` and passes explicit `--window-size=W,H --window-position=0,0` to Chromium. Necessary because there is no window manager running, so `--kiosk` alone leaves the window at default (~half-screen) size.
+   - Added `--disable-gpu` — overrides the wrapper-injected `--use-angle=gles --enable-gpu-rasterization`. Did not fix the color issue (which is below Chromium), but rules out one whole class of bugs and software rasterization is fast enough for this UI.
+   - Conditional SideMonitor launch (only if `:1` X display actually exists) — previously it spawned a doomed Chromium with no error visible to user.
+   - Conditional GPIO service launch (only if `gpio-service.py` is present). Fixed GPIO script path: `/home/pi/...` → `/home/admin/...` (matches the actual `admin` user on this Pi).
+2. **Installed `fonts-noto-color-emoji`** on `rpi1` — the 🎮 logo and any future emoji now render. Previously showed as tofu boxes.
+3. **`frontend/src/components/PlayerView.css`:** `.player-view` background changed from `linear-gradient(...)` to `var(--color-bg)`. Frontend rebuilt (`index-df6598d3.css`) and deployed. (Cosmetic fix that didn't resolve KI-009, kept anyway as it removes a needless gradient.)
+
+**Current state of `rpi1`:**
+- Kiosk auto-starts on boot (TTY1 login → `.bash_profile` → `startx /home/admin/quiz-room-local/pi-setup/kiosk.sh`).
+- Chromium fills the full 2560×1440 screen.
+- Page loads, polls `/api/current-room` every 3s, gamepad emoji + Ukrainian title + subtitle + pulse-dots visible in the centred screen-card.
+- Server reachable on `http://10.0.1.37:8080`.
+- **Functional kiosk piece works end-to-end** (waiting screen → host creates room → tablet should transition to join screen — full play-through not yet validated this session).
+
+**Known open issues from this session (logged in KNOWN_ISSUES.md):**
+- **KI-009 🔴** — Pi 5 HDMI → this monitor renders all colors with a strong blue cast (deferred).
+- **KI-010 🟡** — Chrome translate bar still appears on the kiosk page despite `--disable-translate --disable-features=TranslateUI` (visual nit).
+
+**Not validated this session:**
+- Player nickname-entry → join flow on the touchscreen.
+- Full game playthrough (questions, category select, leaderboard, reveal).
+- GPIO button → `podium-button-press` round-trip (no buttons wired on this Pi).
+- SideMonitor (single-display Pi; not applicable here).
+
+**Tests:** no code paths changed that touch tested logic; backend/frontend test counts unchanged from Session 19.
+
+---
+
 ## How to Continue Development
 
 Say:
 > "Read CLAUDE.md and PROGRESS.md and continue. Here's what I want: [task]"
 
-All phases complete. Project is v0.3.0 — production-ready for physical podium deployment.
+All software phases complete. v0.3.0 functional kiosk verified on first Pi 5 podium (`rpi1`) as of Session 20. Pending: full game-flow validation on the physical podium, then KI-009 cosmetic colour pass.
