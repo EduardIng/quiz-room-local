@@ -20,6 +20,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import './PlayerView.css';
 import Timebar from './Timebar.jsx';
+import OnScreenKeyboard from './OnScreenKeyboard';
 import { playCorrect, playWrong, playTimeout, playTick, playCountdown, playFinish } from '../utils/sound.js';
 
 // ─────────────────────────────────────────────
@@ -639,6 +640,12 @@ const myLeaderboardPosition = leaderboard.findIndex(p => p.nickname === myNickna
           >
             {isJoining ? 'Підключення...' : '🚀 Приєднатись'}
           </button>
+
+          <OnScreenKeyboard
+            value={nickname}
+            onChange={setNickname}
+            onEnter={() => !isJoining && handleJoin()}
+          />
         </div>
       )}
 
