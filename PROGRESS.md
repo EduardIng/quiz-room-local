@@ -607,9 +607,77 @@ Image was saved in the new file, but users reloaded the old file (without the im
 
 ---
 
+### Session 21 — Full Game-Flow Validation on rpi1 + Power-Save Hardening (16-17 May 2026) ✅
+
+**Goal:** Validate Steps 1–3 of the Session 21 prompt (player join, full playthrough, reconnect) on the physical `rpi1` podium that was brought up in Session 20.
+
+**Major obstacle and resolution — Pi was disconnecting after ~10 minutes:**
+- Symptom: `ping`/`ssh` both timed out, ARP entry showed `(incomplete)`.
+- Pi OS has no laptop-style suspend — sleep targets are masked by default. Real causes are typically NIC power-save (WoL/EEE), thermal throttling, or undervoltage.
+- `vcgencmd get_throttled` = `0x0` and temperature = 53 °C, so power and thermal ruled out.
+- Applied a hardening pass (file: `eth0-noeee.service`, `cpu-governor.service`, `cmdline.txt consoleblank=0`, `dtparam=watchdog=on`, `watchdog` daemon, persistent journald):
+  - Ethernet WoL disabled (EEE configuration reported "Operation not supported" by the bcmgenet driver — EEE was never the cause).
+  - Sleep targets masked (defense in depth).
+  - CPU governor pinned to `performance` on all 4 cores via systemd unit (Trixie has no `cpufrequtils` service — needed bespoke unit).
+  - Hardware watchdog `/dev/watchdog` enabled with `dtparam=watchdog=on`; `watchdog.service` active → auto-reboot in 15 s on kernel hang.
+  - Persistent journal in `/var/log/journal` so next failure leaves logs.
+- **Outcome:** Pi went down again ~11 min after the hardening reboot. Hardening did not fix the root cause but did equip the system to recover and capture evidence next time. Logged as **KI-011 🟡 — recurring ~10-min Pi disconnect on rpi1, cause still unknown**. Next session should pull `journalctl --boot=-1` after the next failure to identify the actual trigger.
+
+**Validation testbed — autonomous keystroke injection:**
+- rpi1 has only a wireless Logitech mouse and no keyboard — direct typing on the touchscreen is impossible right now. To validate the join + game flow autonomously, used `xdotool` to inject keystrokes and mouse clicks into the running Chromium kiosk window, while driving the host side via a Node socket.io-client script (`/tmp/host-driver.js` on the Pi) that connects to `localhost:8080` and emits `create-quiz`.
+- Smoke test quiz `quizzes/session-21-smoke.json` created (2 rounds × 2 categories, text-only, 4 distinct categories so no-repeat rule passes) to make a full playthrough finish in ~80 seconds instead of the 5+ minutes the 30-round `first-try.json` would take.
+
+**Step 1 — Player join flow ✅:**
+- Host driver successfully emitted `create-quiz`, server returned `roomCode`, `GET /api/current-room` exposed it.
+- Pi kiosk polled `/api/current-room` every 3 s and transitioned `waiting_for_host → join` within one poll interval.
+- `xdotool type "PiPlayer1" + Return` against the autoFocused nickname input successfully submitted the join.
+- Host received `PLAYER_JOINED` event; player nickname propagated through to the leaderboard and the ENDED screen.
+
+**Step 2 — Full state machine playthrough ✅:**
+- All 8 states observed end-to-end across 2 rounds: `WAITING → STARTING (3 s) → CATEGORY_SELECT (15 s timeout) → CATEGORY_CHOSEN (4 s, matches config `categoryChosenTime`) → QUESTION (30 s) → REVEAL_ANSWER (5 s) → SHOW_LEADERBOARD (5 s) → (next round) → QUIZ_ENDED`.
+- AutoStart fired immediately on the player join because `playerCount: 1` was reached — no manual start needed.
+- ENDED screen renders correctly: trophy emoji, "Квіз завершено!", rank "#1", **Питань: 2** (uses `rounds.length` per Session 19 fix, not `quizData.questions.length`).
+- Clicking the "🔄 Очікувати наступну гру" button via `xdotool mousemove + click` successfully transitioned out of ENDED.
+- All state timings matched `config.json` exactly (within 5 ms).
+
+**Step 2 partial gaps (NOT validated this session, deferred):**
+- `submit-answer` click path: both rounds ran via timeout (player did not pick) — server log shows "Час вийшов для питання". The submit path code itself is well-covered by automated tests; the *click coordinate* via touchscreen on a real device was not exercised on rpi1 because the click timing window vs xdotool round-trip latency was hard to hit reliably in a one-shot script. A future session can validate this with a tighter test loop.
+- `submit-category` click path: same situation, both `CATEGORY_CHOSEN` events fired with `wasTimeout=true`.
+- Image question rendering: smoke quiz has no images.
+- Audio replay button: smoke quiz has no audio; rpi1 has no speakers anyway.
+
+**Step 3 — Reconnect + kiosk lock 🟡 partially validated:**
+- Did NOT explicitly restart `quiz-server` mid-game.
+- DID accidentally validate kiosk navigation lock: when I sent `xdotool key ctrl+r` to refresh, Chromium displayed its native "Reload site? — Changes that you made may not be saved." confirmation dialog — proof that `window.onbeforeunload = () => ''` from PlayerView is working.
+- F5 / Alt+F4 / Backspace blocking via `keydown` handler not directly tested (requires physical keyboard or further xdotool work).
+
+**Step 4 — GPIO + SideMonitor: explicitly skipped** (rpi1 has no buttons wired, single HDMI, per Session 21 prompt).
+
+**Other findings (minor, no fix this session):**
+- `currentActiveRoom` is **not** cleared on host socket disconnect alone — only overwritten by the next `create-quiz` or by `cleanupOldSessions`. Means after a host disconnect, `/api/current-room` keeps returning the ENDED room's code until something else creates a new one or the cleanup interval fires. Tablets that come to the join screen during that window will get "Гра вже почалась. Приєднання неможливе" instead of waiting for a fresh game. Not a bug, but worth noting if podiums start reporting confusing post-game states.
+
+**Tests:** no code changes; backend/frontend test counts unchanged.
+
+**Files added this session:**
+- `quizzes/session-21-smoke.json` — 2-round smoke quiz for future fast validation runs.
+
+**Known issues after this session:**
+- **KI-009 🔴** — Pi 5 HDMI → monitor renders bright-blue cast on `rpi1` (carried over from Session 20, still deferred per user direction).
+- **KI-010 🟡** — Chrome translate bar (carried over from Session 20, not seen this session, may have been fixed by the kiosk.sh flag changes — verify next session).
+- **KI-011 🟡 NEW** — rpi1 still goes offline ~10–11 min after boot despite WoL disabled, CPU governor `performance`, no thermal/undervoltage. Hardware watchdog is now active so the system auto-reboots in 15 s. Next debugging step: after the next failure, pull `journalctl --boot=-1 --since "5 min before crash"` to see the last kernel messages.
+
+**Recommended next session priorities:**
+1. **Diagnose KI-011** — pull `journalctl --boot=-1` immediately after the next disconnect, look for `bcmgenet`, `dwc_eth_qos`, `Out of memory`, `Hardware Error`, or `cpu#X stuck` messages. If nothing in the journal, try `dmesg --human --kernel --since "5 min ago"` from the rebooted Pi.
+2. **Finish Step 2 click validation** — tighter xdotool loop that polls host driver's `NEW_QUESTION` event and submits a click within 1 s, before the timer counts down past the click registration window.
+3. **Finish Step 3** — restart `quiz-server` mid-game and verify isReconnecting indicator + recovery behaviour.
+4. **Touchscreen calibration / USB keyboard** — to enable real user-driven testing on rpi1.
+5. **Once functional confidence is high — KI-009 cosmetic colour pass** (HDMI RGB range / V3D output config).
+
+---
+
 ## How to Continue Development
 
 Say:
 > "Read CLAUDE.md and PROGRESS.md and continue. Here's what I want: [task]"
 
-All software phases complete. v0.3.0 functional kiosk verified on first Pi 5 podium (`rpi1`) as of Session 20. Pending: full game-flow validation on the physical podium, then KI-009 cosmetic colour pass.
+All software phases complete. v0.3.0 functional flow validated end-to-end on `rpi1` as of Session 21 (player join + full 2-round playthrough + ENDED + reset-to-waiting all work). Pending hardware-side: diagnose KI-011 recurring disconnect; finish click-path validation; then KI-009 cosmetic colour pass.

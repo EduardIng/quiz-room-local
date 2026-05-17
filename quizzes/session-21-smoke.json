@@ -1,0 +1,38 @@
+{
+  "title": "Session 21 Smoke Test",
+  "categoryMode": true,
+  "rounds": [
+    {
+      "options": [
+        {
+          "category": "Математика",
+          "question": "Скільки буде 2 + 2?",
+          "answers": ["3", "4", "5", "22"],
+          "correctAnswer": 1
+        },
+        {
+          "category": "Тварини",
+          "question": "Скільки ніг у павука?",
+          "answers": ["6", "8", "10", "12"],
+          "correctAnswer": 1
+        }
+      ]
+    },
+    {
+      "options": [
+        {
+          "category": "Музика",
+          "question": "Скільки струн у класичної гітари?",
+          "answers": ["4", "5", "6", "7"],
+          "correctAnswer": 2
+        },
+        {
+          "category": "Географія",
+          "question": "Столиця України?",
+          "answers": ["Львів", "Київ", "Одеса", "Харків"],
+          "correctAnswer": 1
+        }
+      ]
+    }
+  ]
+}
