@@ -1,0 +1,7 @@
+[Unit]
+Description=Network watchdog - bounce eth0 if default gateway unreachable
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/net-watchdog.sh

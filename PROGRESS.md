@@ -666,8 +666,14 @@ Image was saved in the new file, but users reloaded the old file (without the im
 - **KI-010 🟡** — Chrome translate bar (carried over from Session 20, not seen this session, may have been fixed by the kiosk.sh flag changes — verify next session).
 - **KI-011 🟡 NEW** — rpi1 still goes offline ~10–11 min after boot despite WoL disabled, CPU governor `performance`, no thermal/undervoltage. Hardware watchdog is now active so the system auto-reboots in 15 s. Next debugging step: after the next failure, pull `journalctl --boot=-1 --since "5 min before crash"` to see the last kernel messages.
 
+**Late-session addendum — KI-011 narrowed + self-healing installed:**
+- User confirmed by eye that during the disconnect the kiosk UI is still rendering on HDMI. CPU + kernel + Chromium all alive — only the network stack dies. Watchdog daemon can't catch this because the kernel is healthy. Diagnosis points at the Pi 5 `bcmgenet` driver wedging the NIC into a state it can't recover from.
+- Found that the earlier "persistent journal" change had silently fallen back to volatile storage — the drop-in directory `/etc/systemd/journald.conf.d/` didn't exist, so journald kept writing to `/run/log/journal/`. Fixed by creating the directory and writing an explicit `Storage=persistent` drop-in. **Confirmed working** — journal now at `/var/log/journal/<machine-id>/`.
+- Installed a network watchdog (`net-watchdog.timer` → `net-watchdog.service` → `/usr/local/sbin/net-watchdog.sh`): every 60 s pings the default gateway 3 ×; on three failures bounces `eth0` and renews DHCP. Logs each action via `logger`. Pi now self-heals from the NIC wedge in ≤ 90 s without manual intervention.
+- Files added to repo under `pi-setup/` so future Pi clones inherit the fix: `net-watchdog.sh`, `net-watchdog.service`, `net-watchdog.timer`, `journald-persistent.conf` (target = `/etc/systemd/journald.conf.d/persistent.conf`).
+
 **Recommended next session priorities:**
-1. **Diagnose KI-011** — pull `journalctl --boot=-1` immediately after the next disconnect, look for `bcmgenet`, `dwc_eth_qos`, `Out of memory`, `Hardware Error`, or `cpu#X stuck` messages. If nothing in the journal, try `dmesg --human --kernel --since "5 min ago"` from the rebooted Pi.
+1. **Diagnose KI-011** — pull `journalctl --boot=-1` immediately after the next disconnect (now that persistent journal actually works), look for `bcmgenet`, `dwc_eth_qos`, `Out of memory`, `Hardware Error`, or `cpu#X stuck` messages. Also check `journalctl -t net-watchdog` to confirm the auto-recovery fired.
 2. **Finish Step 2 click validation** — tighter xdotool loop that polls host driver's `NEW_QUESTION` event and submits a click within 1 s, before the timer counts down past the click registration window.
 3. **Finish Step 3** — restart `quiz-server` mid-game and verify isReconnecting indicator + recovery behaviour.
 4. **Touchscreen calibration / USB keyboard** — to enable real user-driven testing on rpi1.
