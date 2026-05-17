@@ -681,9 +681,70 @@ Image was saved in the new file, but users reloaded the old file (without the im
 
 ---
 
+### Session 22 — Step 2 + Step 3 Validation Finished + KI-011 Diagnosed (17 May 2026) ✅
+
+**Task:** Close the two validation gaps from Session 21 — submit-category/submit-answer click paths (Step 2) and reconnect + keydown blocking (Step 3) — on `rpi1`. Strict superpowers workflow per user instruction (no skipping skills).
+
+**KI-011 root cause finally identified:** WiFi association rejection, NOT the Ethernet driver wedge previously hypothesised. The persistent journal change from Session 21 had silently fallen back to volatile storage (missing `/etc/systemd/journald.conf.d/` drop-in directory), masking the actual logs. After fixing journald and pulling `journalctl --boot=-1`:
+- `eth0` has **never been connected on this Pi** (no Ethernet cable plugged in). The Pi runs entirely on WiFi (`wlan0`, SSID `blxknejx`, 5540 MHz).
+- The recurring ~10-minute disconnect is `wpa_supplicant: CTRL-EVENT-ASSOC-REJECT status_code=16` — AP rejecting auth (timeout). Common causes: AP congestion, marginal 5 GHz signal, AP firmware quirk.
+- The Session 21 `net-watchdog` was hardcoded to ping via `eth0` (DOWN) → always reported gateway unreachable → bounced an already-down interface → did nothing useful for the real (WiFi) problem.
+
+**Hardening shipped this session (committed to `pi-setup/net-watchdog.sh`):**
+- Interface auto-detection — pings the *actual* default-route interface (`wlan0` or `eth0`).
+- NetworkManager-aware reconnect via `nmcli connection down/up` (replaces dhcpcd, which isn't installed on Trixie).
+- Escalation ladder: 1–3 = `nmcli` reconnect, 4 = `nmcli radio wifi off/on` (or `modprobe -r/+ macb` for ethernet), 5+ = `sysrq` reboot.
+- Pi 5 NIC driver clarified: `macb` (Cadence GEM), not `bcmgenet`. PHY is Broadcom BCM54213PE.
+- **Recommended user action: plug in an Ethernet cable.** WiFi auth-rejects from the AP are largely outside the Pi's control; wired is the durable fix.
+
+**Validation testbed:**
+- New committed orchestrator: `pi-setup/session22-validate.sh` — 5-phase bash, idempotent, reusable. Reads sudo password from `RPI_SUDO_PW` env var (security checklist compliance — no hardcoded credential).
+- Pi-local Node clicker `/tmp/host-driver-clicker.js` (not committed, throwaway) — listens for `quiz-update` events and clicks via `xdotool`. Uses server-authoritative `choiceIndex` from `CATEGORY_CHOSEN` rather than guessing visual button order.
+- Smoke quiz reused from Session 21: `quizzes/session-21-smoke.json` (2 rounds × 2 categories, text-only).
+
+**Validation outcomes — all five phases PASSED:**
+
+| Phase | What it tests | Outcome |
+|---|---|---|
+| 2 | submit-category + submit-answer click paths, scoring formula | ✅ Final score 318 = 2 × 159 (100 + (30 − 0.5) × 2 per round). 2/2 categories chosen via click (`wasTimeout: false`), 0 timeouts. |
+| 3 | `systemctl restart quiz-server` mid-game | ✅ Kiosk handled the brief socket interruption gracefully; game continued to ENDED. 30 frames captured under `/tmp/recon1/`. |
+| 4 | `kill -STOP $serverMainPID` socket-blip (in-memory session preserved) | ✅ Kiosk held last UI through 35 s of paused server; game proceeded to completion after `kill -CONT`. 17 stop + 15 cont frames under `/tmp/recon2/`. Trap registered before STOP guaranteed CONT runs on any exit path. |
+| 5 | F5 / BackSpace / Alt+F4 keydown blocking | ✅ All three: Chromium PID unchanged + no new `GET /` in server log + active window unchanged. No bugs found → no TDD fix triggered. |
+
+**Real bugs surfaced and fixed during execution (orchestrator-internal, no impact on product):**
+1. `${BASH_SOURCE[0]}` raised set-u violation when sourced — needed `:-` default.
+2. `pkill -f host-driver` matched the SSH session's own bash cmdline → killed itself → exit 255. Fixed with `pkill -fx 'node /tmp/host-driver-clicker.js'` (exact match).
+3. Remote `timeout 60 "$@"` wrapper broke multi-statement commands (only wraps first statement; variable assignments parsed as command names). Dropped the wrapper; SSH ConnectTimeout/ServerAliveInterval handle hangs.
+4. Phase 2 order had to be reversed: kill old clicker → start new clicker → THEN reload kiosk. The kiosk only polls `/api/current-room` on the waiting-for-host screen, so reloading first made it pick up the previous (stale) `currentActiveRoom` instead of the fresh one.
+5. Sanity pixel and answer-button COORDS in the clicker were initially wrong (y=1180/1330 instead of y=755/879). Corrected by re-measuring from a live screenshot.
+6. The clicker was guessing `lastCategoryIndex = 0` based on which button it *clicked* visually, but PlayerView's button order isn't guaranteed to match the underlying option index. Switched to server-authoritative `msg.choiceIndex` from the `CATEGORY_CHOSEN` event.
+
+**Skills cycle used (strict, no skipping):**
+- `using-superpowers` → `brainstorming` (full Q-loop, 3 clarifying questions, 3 approach options, 5 design sections, design doc) → `spec-document-reviewer` (✅ approved with 6 advisory recs, all incorporated) → `writing-plans` (plan doc with chunked tasks) → `plan-document-reviewer` (✅ approved on 3rd pass after fixing 13 real issues including a critical `QUIZ_ENDED` payload mismatch that would have read score=0 always) → `using-git-worktrees` (`.worktrees/session22-validation`) → `subagent-driven-development` (Task 1 + Task 2 via implementer/spec-reviewer/code-quality-reviewer subagent chain; live-execution Tasks 3–6 driven directly because they need real Pi state).
+- Design/plan docs kept local-only under `docs/superpowers/` per user preference (gitignored).
+
+**Files touched in repo (in worktree, ready to merge):**
+- `pi-setup/net-watchdog.sh` — interface-aware + escalation
+- `pi-setup/session22-validate.sh` — new validation orchestrator
+- `PROGRESS.md` — this entry
+
+**Tests:** no product code changed; backend/frontend test counts unchanged from Session 21.
+
+**Known issues after this session:**
+- **KI-009 🔴** — Pi 5 HDMI colour cast (still deferred per user direction).
+- **KI-010 🟡** — Chrome translate bar (not observed this session).
+- **KI-011 🟡** — Recurring WiFi disconnect now diagnosed (status_code=16 auth timeout from AP). Net-watchdog escalation may improve recovery, but root cause is layer-2 outside the Pi's control. **Primary fix: switch to Ethernet.**
+
+**Recommended next session priorities:**
+1. **Plug in Ethernet cable on rpi1.** Validates net-watchdog's eth0 branch and ends KI-011.
+2. **KI-009 cosmetic pass** (HDMI RGB range / V3D output config) — Session 21's only remaining deferred item.
+3. **Second Pi podium setup** — use `pi-setup/install.sh` to image SD card, validate that net-watchdog + session22-validate.sh work on a fresh podium.
+
+---
+
 ## How to Continue Development
 
 Say:
 > "Read CLAUDE.md and PROGRESS.md and continue. Here's what I want: [task]"
 
-All software phases complete. v0.3.0 functional flow validated end-to-end on `rpi1` as of Session 21 (player join + full 2-round playthrough + ENDED + reset-to-waiting all work). Pending hardware-side: diagnose KI-011 recurring disconnect; finish click-path validation; then KI-009 cosmetic colour pass.
+All software phases complete. v0.3.0 functional flow validated end-to-end on `rpi1` as of Session 22 (Step 2 click paths verified with correct scoring, Step 3 reconnect for both server-restart and kill-STOP paths verified, keydown blocking verified — all five phases PASS). KI-011 root cause now known. Pending: switch to Ethernet, second podium, then KI-009 cosmetic colour pass.
