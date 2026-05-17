@@ -24,8 +24,12 @@ log() { echo "[$(date +%H:%M:%S)] $*"; }
 fail() { echo "FAIL: $*" >&2; exit "${2:-1}"; }
 pass() { echo "PASS: $*"; }
 
-ssh_run() { $SSH timeout 60 "$@"; }
-ssh_run_long() { $SSH timeout 180 "$@"; }
+# Note: dropped `timeout N` prefix — it only wraps the FIRST statement of a
+# multi-command remote string (everything after the first `;` runs unguarded
+# AND breaks parsing if the first statement is e.g. a variable assignment).
+# SSH's own ConnectTimeout + ServerAliveInterval handle dead connections.
+ssh_run() { $SSH "$@"; }
+ssh_run_long() { $SSH "$@"; }
 
 # Resolve the server's MainPID from systemd (not pgrep, which can return a child or worker).
 get_server_pid() {
@@ -40,16 +44,39 @@ precheck() {
 }
 
 reset_to_waiting() {
-  ssh_run "pkill -f host-driver 2>/dev/null; pkill -f node /tmp/host-driver 2>/dev/null; true" >/dev/null
+  # Use exact-match (-fx) to avoid self-killing: the SSH session's bash invocation
+  # has "host-driver" in its cmdline if we use loose -f match, which terminates
+  # the SSH session and triggers exit 255. Exact match against the node argv line
+  # only matches the real clicker process.
+  ssh_run "pkill -fx 'node /tmp/host-driver-clicker.js' 2>/dev/null; pkill -fx 'node /tmp/host-driver.js' 2>/dev/null; true" >/dev/null
   sleep 1
-  # The kiosk may still show stale UI; reload it
+
+  # Reload the kiosk page. Two steps: (1) Ctrl+R triggers beforeunload, (2) Enter
+  # dismisses the confirm dialog (Reload is the default action). We send both
+  # then sleep through the reload, then verify with a scrot pixel check.
   ssh_run "WID=\$(DISPLAY=:0 xdotool search --name 'Quiz Room' 2>/dev/null | head -1); \
-           [ -n \"\$WID\" ] && DISPLAY=:0 xdotool key --window \$WID ctrl+r" >/dev/null
-  sleep 2
-  # Dismiss any beforeunload confirm dialog at known coord
-  ssh_run "DISPLAY=:0 xdotool mousemove --sync 1440 110 click 1" >/dev/null 2>&1 || true
+           [ -n \"\$WID\" ] && DISPLAY=:0 xdotool key --window \$WID ctrl+r; \
+           sleep 1; \
+           DISPLAY=:0 xdotool key Return" >/dev/null
   sleep 3
-  # Verify
+
+  # Verify the reload took effect: kiosk should be back on waiting-for-host
+  # (no error message, no Player22 typed). Take scrot and check for absence
+  # of the error red banner by pixel-sampling its known location.
+  # If the error is still showing, fall back to a more aggressive reload.
+  ssh_run "DISPLAY=:0 scrot -z /tmp/reset-check.png" >/dev/null 2>&1 || true
+  local err_pixel
+  err_pixel=$(ssh_run "python3 -c 'from PIL import Image; p=Image.open(\"/tmp/reset-check.png\").getpixel((1280,700)); print(p[0])'" 2>/dev/null || echo "0")
+  log "post-reload pixel at error-banner location (1280,700) red channel = $err_pixel (expect <80 if no error)"
+  if [ "${err_pixel:-0}" -gt 80 ]; then
+    log "Error banner still visible — trying harder reload (Ctrl+Shift+R)"
+    ssh_run "WID=\$(DISPLAY=:0 xdotool search --name 'Quiz Room' 2>/dev/null | head -1); \
+             [ -n \"\$WID\" ] && DISPLAY=:0 xdotool key --window \$WID ctrl+shift+r; \
+             sleep 1; \
+             DISPLAY=:0 xdotool key Return" >/dev/null
+    sleep 3
+  fi
+
   local roomCode
   roomCode=$(ssh_run "curl -s http://localhost:8080/api/current-room | python3 -c 'import sys,json; print(json.load(sys.stdin).get(\"roomCode\"))'")
   log "post-reset /api/current-room = $roomCode"
@@ -73,9 +100,35 @@ scrot_loop_bg() {
 phase2() {
   log "=== Phase 2: Step 2 smoke game ==="
   precheck
-  reset_to_waiting
+
+  # Order matters here. PlayerView's kiosk polls /api/current-room only while on
+  # the waiting_for_host screen; once on join it locks the roomCode. If we reload
+  # BEFORE starting a fresh clicker, the kiosk picks up the previous (stale) room
+  # and the new clicker's room never reaches it.
+  # Sequence: kill old → start new clicker → wait for room creation → reload kiosk
+  # → kiosk's next poll sees the FRESH room → transitions to join screen.
+
+  ssh_run "pkill -fx 'node /tmp/host-driver-clicker.js' 2>/dev/null; pkill -fx 'node /tmp/host-driver.js' 2>/dev/null; true" >/dev/null
+  sleep 1
 
   ssh_run "rm -f /tmp/clicker-result.json /tmp/clicker.log; nohup node /tmp/host-driver-clicker.js > /tmp/clicker.out 2>&1 &"
+  # Wait for clicker to emit create_quiz_resp (max 8s)
+  local got_room=0
+  for i in $(seq 1 8); do
+    sleep 1
+    if ssh_run "grep -q 'create_quiz_resp' /tmp/clicker.log 2>/dev/null"; then got_room=1; break; fi
+  done
+  [ "$got_room" = "1" ] || fail "Phase 2: clicker never created room in 8s" 2
+  local roomCode
+  roomCode=$(ssh_run "curl -s http://localhost:8080/api/current-room | python3 -c 'import sys,json; print(json.load(sys.stdin).get(\"roomCode\"))'")
+  log "fresh room created: $roomCode"
+
+  # Now reload kiosk so it picks up the new room. Two-step: Ctrl+R fires
+  # beforeunload confirm, Enter accepts the default Reload action.
+  ssh_run "WID=\$(DISPLAY=:0 xdotool search --name 'Quiz Room' 2>/dev/null | head -1); \
+           [ -n \"\$WID\" ] && DISPLAY=:0 xdotool key --window \$WID ctrl+r; \
+           sleep 1; \
+           DISPLAY=:0 xdotool key Return" >/dev/null
   sleep 3
 
   # Type nickname into kiosk
@@ -91,10 +144,10 @@ phase2() {
     if ssh_run "grep -q 'NEW_QUESTION' /tmp/clicker.log 2>/dev/null"; then
       scrot_pull phase2-sanity phase2-sanity
       # Pixel sample at A button center (red) — assert R>=160 AND G<120 AND B<120.
-      # Run on Mac so failure exits the orchestrator (not just the ssh).
+      # Run on Pi (already has PIL; Mac may not). Capture stdout back.
       local r g b
-      read r g b < <(python3 -c 'from PIL import Image; p=Image.open("/tmp/phase2-sanity.png").getpixel((1160,1180)); print(p[0], p[1], p[2])')
-      log "sanity pixel at (1160,1180) = R=$r G=$g B=$b"
+      read r g b < <(ssh_run "python3 -c 'from PIL import Image; p=Image.open(\"/tmp/phase2-sanity.png\").getpixel((1160,755)); print(p[0], p[1], p[2])'")
+      log "sanity pixel at A-button center (1160,755) = R=$r G=$g B=$b"
       if [ "$r" -ge 160 ] && [ "$g" -lt 120 ] && [ "$b" -lt 120 ]; then
         sanity_ok=1
         break
@@ -245,7 +298,7 @@ phase5() {
   reset_to_waiting
 
   # Make sure no active room (kiosk should be on waiting-for-host, no input focused)
-  ssh_run "pkill -f host-driver 2>/dev/null; true"
+  ssh_run "pkill -fx 'node /tmp/host-driver-clicker.js' 2>/dev/null; pkill -fx 'node /tmp/host-driver.js' 2>/dev/null; true"
   sleep 2
   local room
   room=$(ssh_run "curl -s http://localhost:8080/api/current-room | python3 -c 'import sys,json; print(json.load(sys.stdin).get(\"roomCode\"))'")
@@ -294,6 +347,6 @@ main() {
 
 # Only auto-run when invoked directly. When sourced (e.g., to call one phase),
 # main is NOT auto-invoked.
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+if [[ "${BASH_SOURCE[0]:-}" == "${0:-}" ]]; then
   main "$@"
 fi
