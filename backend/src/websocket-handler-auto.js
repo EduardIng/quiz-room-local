@@ -15,6 +15,32 @@ const AutoQuizSession = require('./quiz-session-auto');
 const { log } = require('./utils');
 const db = require('./db');
 
+/**
+ * Маршрутизує натискання GPIO-кнопки в залежності від поточного стану гри.
+ * QUESTION         → submitAnswer (всі 4 кнопки A/B/C/D)
+ * CATEGORY_SELECT  → submitCategory (тільки кнопки A/B = індекси 0/1)
+ * інше             → ігнорується (логуватиметься на debug level)
+ *
+ * @returns {Object} { success, error?, ignored?, reason? }
+ *   - success=true з результатом submitAnswer/submitCategory
+ *   - success=false з error для реальної помилки (логувати)
+ *   - ignored=true для очікуваного ігнорування (не логувати як помилку)
+ */
+function routePodiumButton(session, playerSocketId, buttonIndex) {
+  const state = session.gameState;
+  if (state === 'QUESTION') {
+    return session.submitAnswer(playerSocketId, buttonIndex, Date.now());
+  }
+  if (state === 'CATEGORY_SELECT') {
+    if (buttonIndex > 1) {
+      return { success: false, ignored: true, reason: 'Категорія: лише кнопки A/B' };
+    }
+    return session.submitCategory(playerSocketId, buttonIndex);
+  }
+  // STARTING, CATEGORY_CHOSEN, ANSWER_REVEAL, LEADERBOARD, ENDED, WAITING — silently ignored
+  return { success: false, ignored: true, reason: `Стан ${state}: натискання ігнорується` };
+}
+
 class QuizRoomManager {
   /**
    * Створює менеджер кімнат
@@ -114,10 +140,10 @@ class QuizRoomManager {
         const session = this.sessions.get(roomCode);
         if (!session) return;
 
-        const result = session.submitAnswer(playerSocketId, buttonIndex, Date.now());
-        if (!result.success) {
-          log('Podium', `GPIO відповідь відхилена: ${result.error}`);
-        } else {
+        const result = routePodiumButton(session, playerSocketId, buttonIndex);
+        if (!result.success && !result.ignored) {
+          log('Podium', `Submit failed (state=${session.gameState}): ${result.error || 'unknown'}`);
+        } else if (!result.ignored) {
           log('Podium', `GPIO кнопка ${buttonIndex} від IP=${senderIP} → гравець ${playerSocketId}`);
         }
       });
@@ -754,3 +780,4 @@ class QuizRoomManager {
 }
 
 module.exports = QuizRoomManager;
+module.exports.routePodiumButton = routePodiumButton;
