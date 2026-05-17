@@ -1,1 +1,73 @@
-/* OnScreenKeyboard kiosk overrides — populated in Task 5 (CSS polish) */
+/* OnScreenKeyboard kiosk overrides
+   ----------------------------------
+   Tuned for finger taps on any kiosk display from 1024×600 to 2560×1440.
+   Uses flex-basis (proportional) not fixed px so keys auto-fit narrow screens.
+*/
+
+.osk-container {
+  width: 100%;
+  max-width: min(95vw, 1100px);
+  margin: 24px auto 0;
+}
+
+/* The hg-theme-default class is the library's base theme */
+.kiosk-keyboard.hg-theme-default {
+  background: var(--color-bg-card, #16213e);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.kiosk-keyboard .hg-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.kiosk-keyboard .hg-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.kiosk-keyboard .hg-button {
+  flex: 1 1 0;
+  min-height: 80px;
+  background: var(--color-bg-input, #1f2940);
+  color: var(--color-text, #f1f1f1);
+  border-radius: 10px;
+  font-size: clamp(20px, 3.5vw, 36px);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.05s ease;
+}
+
+.kiosk-keyboard .hg-button:active,
+.kiosk-keyboard .hg-button.hg-activeButton {
+  background: var(--color-primary, #6c3fc5);
+  color: #fff;
+  transform: scale(0.96);
+}
+
+/* Special-key tweaks */
+.kiosk-keyboard .hg-button[data-skbtn="{bksp}"] {
+  flex: 1.5 1 0;
+  background: var(--color-wrong, #2a1f3a);
+}
+
+.kiosk-keyboard .hg-button[data-skbtn="{space}"] {
+  flex: 6 1 0;
+}
+
+.kiosk-keyboard .hg-button[data-skbtn="{enter}"] {
+  flex: 4 1 0;
+  background: var(--color-primary, #6c3fc5);
+  color: #fff;
+}
+
+.kiosk-keyboard .hg-button[data-skbtn="{enter}"]:active {
+  background: var(--color-primary-dark, #7d4ed9);
+}
