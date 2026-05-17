@@ -14,6 +14,7 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-simple-keyboard": "^3.8.206",
     "socket.io-client": "^4.6.1"
   },
   "devDependencies": {
