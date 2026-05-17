@@ -1124,3 +1124,65 @@ describe('QuizRoomManager — submit-answer while paused', () => {
     clearTimeout(session.transitionTimer);
   });
 });
+
+describe('routePodiumButton (state-aware podium-button-press router)', () => {
+  const { routePodiumButton } = require('../src/websocket-handler-auto');
+
+  let mockSession;
+
+  beforeEach(() => {
+    mockSession = {
+      gameState: 'QUESTION',
+      submitAnswer: jest.fn(() => ({ success: true })),
+      submitCategory: jest.fn(() => ({ success: true }))
+    };
+  });
+
+  test('QUESTION state with buttonIndex=2 calls submitAnswer(socketId, 2, timestamp)', () => {
+    mockSession.gameState = 'QUESTION';
+    const before = Date.now();
+    const result = routePodiumButton(mockSession, 'sock1', 2);
+
+    expect(mockSession.submitAnswer).toHaveBeenCalledTimes(1);
+    const [sid, idx, ts] = mockSession.submitAnswer.mock.calls[0];
+    expect(sid).toBe('sock1');
+    expect(idx).toBe(2);
+    expect(ts).toBeGreaterThanOrEqual(before);
+    expect(mockSession.submitCategory).not.toHaveBeenCalled();
+    expect(result.success).toBe(true);
+  });
+
+  test('CATEGORY_SELECT state with buttonIndex=0 calls submitCategory(socketId, 0)', () => {
+    mockSession.gameState = 'CATEGORY_SELECT';
+    const result = routePodiumButton(mockSession, 'sock1', 0);
+
+    expect(mockSession.submitCategory).toHaveBeenCalledWith('sock1', 0);
+    expect(mockSession.submitAnswer).not.toHaveBeenCalled();
+    expect(result.success).toBe(true);
+  });
+
+  test('CATEGORY_SELECT state with buttonIndex=1 calls submitCategory(socketId, 1)', () => {
+    mockSession.gameState = 'CATEGORY_SELECT';
+    routePodiumButton(mockSession, 'sock1', 1);
+    expect(mockSession.submitCategory).toHaveBeenCalledWith('sock1', 1);
+  });
+
+  test('CATEGORY_SELECT state with buttonIndex=3 is ignored, no submit called', () => {
+    mockSession.gameState = 'CATEGORY_SELECT';
+    const result = routePodiumButton(mockSession, 'sock1', 3);
+
+    expect(mockSession.submitCategory).not.toHaveBeenCalled();
+    expect(mockSession.submitAnswer).not.toHaveBeenCalled();
+    expect(result.ignored).toBe(true);
+    expect(result.reason).toMatch(/A\/B|кнопк/i);
+  });
+
+  test('LEADERBOARD state is ignored, neither submit called', () => {
+    mockSession.gameState = 'LEADERBOARD';
+    const result = routePodiumButton(mockSession, 'sock1', 0);
+
+    expect(mockSession.submitCategory).not.toHaveBeenCalled();
+    expect(mockSession.submitAnswer).not.toHaveBeenCalled();
+    expect(result.ignored).toBe(true);
+  });
+});

@@ -1,0 +1,27 @@
+# pi-setup/gpio-service.service
+# systemd unit for the GPIO-button-press bridge on the Pi.
+# Deploy: sudo cp pi-setup/gpio-service.service /etc/systemd/system/
+#         sudo systemctl daemon-reload
+#         sudo systemctl enable --now gpio-service
+
+[Unit]
+Description=Quiz podium GPIO button bridge
+Documentation=https://github.com/EduardIng/quiz-room-local
+After=network-online.target quiz-server.service
+Wants=quiz-server.service
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=admin
+WorkingDirectory=/home/admin/quiz-room-local/pi-setup
+ExecStart=/usr/bin/python3 /home/admin/quiz-room-local/pi-setup/gpio-service.py
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
