@@ -177,18 +177,24 @@ function saveQuiz(quizData) {
     fs.mkdirSync(QUIZZES_DIR, { recursive: true });
   }
 
-  // Генеруємо базову назву файлу з title
-  const baseName = titleToFilename(quizData.title);
-
-  // Знаходимо вільну назву (якщо файл вже є — додаємо -2, -3...)
-  let filename = `${baseName}.json`;
-  let counter = 2;
-  while (fs.existsSync(path.join(QUIZZES_DIR, filename))) {
-    filename = `${baseName}-${counter}.json`;
-    counter++;
+  // Якщо id вже є і відповідний файл існує — оновлюємо на місці
+  let filename;
+  let id;
+  const existingFilename = quizData.id ? `${path.basename(quizData.id)}.json` : null;
+  if (existingFilename && fs.existsSync(path.join(QUIZZES_DIR, existingFilename))) {
+    filename = existingFilename;
+    id = quizData.id;
+  } else {
+    // Новий квіз — генеруємо назву файлу з title
+    const baseName = titleToFilename(quizData.title);
+    filename = `${baseName}.json`;
+    let counter = 2;
+    while (fs.existsSync(path.join(QUIZZES_DIR, filename))) {
+      filename = `${baseName}-${counter}.json`;
+      counter++;
+    }
+    id = filename.replace('.json', '');
   }
-
-  const id = filename.replace('.json', '');
 
   // Зберігаємо з id всередині файлу
   const dataToSave = { ...quizData, id };

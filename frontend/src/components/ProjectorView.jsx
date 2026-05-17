@@ -19,7 +19,7 @@
  * Не є гравцем — не впливає на ігровий процес.
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import './ProjectorView.css';
 import Timebar from './Timebar.jsx';
@@ -32,9 +32,6 @@ const ROOM_POLL_INTERVAL = 3000;
 
 // Літери відповідей A-D
 const ANSWER_LETTERS = ['A', 'B', 'C', 'D'];
-
-// Кольори кнопок відповідей
-const ANSWER_COLORS = ['#e74c3c', '#3498db', '#f39c12', '#27ae60'];
 
 export default function ProjectorView() {
   // ── Стан підключення ──
@@ -104,6 +101,13 @@ export default function ProjectorView() {
     if (cleanCode.length !== 6) {
       // Мовчки ігноруємо невалідний код (форми вводу більше немає)
       return;
+    }
+
+    // Очищаємо попередній сокет перед створенням нового
+    if (socketRef.current) {
+      socketRef.current.removeAllListeners();
+      socketRef.current.disconnect();
+      socketRef.current = null;
     }
 
     setPhase('connecting');
@@ -291,7 +295,7 @@ export default function ProjectorView() {
         setTimeLimit(data.timeLimit);
         setTimeLeft(data.timeLimit);
         setAnsweredCount(0);
-        setTotalPlayers(data.total || totalPlayers);
+        setTotalPlayers(prev => data.total ?? prev);
         startTimer(data.timeLimit);
         break;
 
@@ -330,7 +334,11 @@ export default function ProjectorView() {
         setLeaderboard(data.finalLeaderboard || []);
         // Через 12 секунд автоматично повертаємось до очікування нової гри
         quizEndedTimerRef.current = setTimeout(() => {
-          socketRef.current?.disconnect();
+          // Видаляємо disconnect listener щоб уникнути подвійного polling
+          if (socketRef.current) {
+            socketRef.current.removeAllListeners('disconnect');
+            socketRef.current.disconnect();
+          }
           setPhase('waiting_for_room');
           setGameState('WAITING');
           setLeaderboard([]);

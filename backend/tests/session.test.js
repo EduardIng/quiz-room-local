@@ -74,9 +74,11 @@ function createMockIO() {
 /**
  * Створює сесію з мок IO та повертає корисні об'єкти для тестів
  */
-function createSession(quizData = QUIZ_DATA, settings = SETTINGS) {
+function createSession(quizData = QUIZ_DATA, settings = SETTINGS, db = null) {
   const { mockIo, broadcasts } = createMockIO();
-  const session = new AutoQuizSession(quizData, settings);
+  // Deep clone щоб тести не мутували спільний QUIZ_DATA
+  const clonedQuiz = JSON.parse(JSON.stringify(quizData));
+  const session = new AutoQuizSession(clonedQuiz, settings, db);
   session.init(mockIo, 'TEST01');
   return { session, mockIo, broadcasts };
 }
@@ -89,10 +91,12 @@ function clearSessionTimers(session) {
   clearTimeout(session.transitionTimer);
   clearTimeout(session.categorySelectTimer);
   clearTimeout(session.autoStartTimer);
+  clearTimeout(session.categoryResolveTimer);
   session.questionTimer = null;
   session.transitionTimer = null;
   session.categorySelectTimer = null;
   session.autoStartTimer = null;
+  session.categoryResolveTimer = null;
 }
 
 // ─────────────────────────────────────────────
@@ -1061,7 +1065,7 @@ function createCategorySession() {
 }
 
 describe('AutoQuizSession — Category Mode: startCategorySelect', () => {
-  afterEach(() => jest.useRealTimers());
+  afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
 
   test('стан переходить у CATEGORY_SELECT', () => {
     const { session } = createCategorySession();
@@ -1134,7 +1138,7 @@ describe('AutoQuizSession — Category Mode: startCategorySelect', () => {
 });
 
 describe('AutoQuizSession — Category Mode: submitCategory', () => {
-  afterEach(() => jest.useRealTimers());
+  afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
 
   test('chooser може обрати категорію', () => {
     jest.useFakeTimers();
@@ -1214,6 +1218,8 @@ describe('AutoQuizSession — Category Mode: submitCategory', () => {
 });
 
 describe('AutoQuizSession — Category Mode: chooser disconnects during CATEGORY_SELECT', () => {
+  afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
+
   test('chooser відключається → авто-вибір випадкової категорії', () => {
     jest.useFakeTimers();
     const { session, broadcasts } = createCategorySession();
@@ -1235,6 +1241,8 @@ describe('AutoQuizSession — Category Mode: chooser disconnects during CATEGORY
 });
 
 describe('AutoQuizSession — Category Mode: getState() in CATEGORY_SELECT', () => {
+  afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
+
   test('getState() в CATEGORY_SELECT містить isCategoryMode та gameState', () => {
     const { session } = createCategorySession();
     session.addPlayer('s1', 'Аліса');
@@ -1256,7 +1264,7 @@ describe('AutoQuizSession — Category Mode: getState() in CATEGORY_SELECT', () 
 // ─────────────────────────────────────────────
 
 describe('AutoQuizSession — autoStart trigger via addPlayer', () => {
-  afterEach(() => jest.useRealTimers());
+  afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
 
   test('autoStart запускає квіз коли players.size >= playerCount', () => {
     jest.useFakeTimers();
@@ -1311,7 +1319,7 @@ describe('AutoQuizSession — autoStart trigger via addPlayer', () => {
 // ─────────────────────────────────────────────
 
 describe('AutoQuizSession — Full category game flow (1 round)', () => {
-  afterEach(() => jest.useRealTimers());
+  afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
 
   test('повний цикл: WAITING → CATEGORY_SELECT → QUESTION → ANSWER_REVEAL → LEADERBOARD → ENDED', () => {
     jest.useFakeTimers();
@@ -1423,6 +1431,586 @@ describe('AutoQuizSession — Full category game flow (1 round)', () => {
     catEvts = broadcasts.filter(b => b.data.type === 'CATEGORY_SELECT');
     expect(catEvts.at(-1).data.chooserNickname).toBe('Богдан');
 
+    jest.clearAllTimers();
+  });
+});
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: додаткові edge cases
+// ─────────────────────────────────────────────
+
+describe('AutoQuizSession — edge cases', () => {
+  afterEach(() => { jest.clearAllTimers(); });
+
+  test('removePlayer не крашить для неіснуючого socketId', () => {
+    const { session } = createSession();
+    session.addPlayer('s1', 'Player');
+    // Не повинен крашити
+    session.removePlayer('nonexistent');
+    expect(session.players.size).toBe(1);
+    clearSessionTimers(session);
+  });
+
+  test('submitAnswer повертає помилку якщо гравець не в кімнаті', () => {
+    const { session } = createSession();
+    session.addPlayer('s1', 'Player');
+    session.gameState = 'QUESTION';
+    session.currentQuestionIndex = 0;
+    session.questionStartTime = Date.now();
+
+    const result = session.submitAnswer('unknown', 0, Date.now());
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/не знайдений/i);
+    clearSessionTimers(session);
+  });
+
+  test('submitAnswer повертає помилку при повторній відповіді', () => {
+    // Потрібно 2+ гравці щоб waitForAllPlayers не завершив питання після першої відповіді
+    const { session } = createSession();
+    session.addPlayer('s1', 'Player1');
+    session.addPlayer('s2', 'Player2');
+    session.gameState = 'QUESTION';
+    session.currentQuestionIndex = 0;
+    session.questionStartTime = Date.now();
+
+    session.submitAnswer('s1', 0, Date.now());
+    // Стан все ще QUESTION бо s2 ще не відповів
+    expect(session.gameState).toBe('QUESTION');
+    const result = session.submitAnswer('s1', 1, Date.now());
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/вже відповіли/i);
+    clearSessionTimers(session);
+  });
+
+  test('pauseGame не працює в стані WAITING', () => {
+    const { session } = createSession();
+    const result = session.pauseGame();
+    expect(result.success).toBe(false);
+    clearSessionTimers(session);
+  });
+
+  test('resumeGame не працює без попереднього pause', () => {
+    const { session } = createSession();
+    const result = session.resumeGame();
+    expect(result.success).toBe(false);
+    clearSessionTimers(session);
+  });
+
+  test('forceStart не працює якщо гра вже почалась', () => {
+    const { session } = createSession();
+    session.addPlayer('s1', 'P');
+    session.gameState = 'QUESTION';
+
+    const result = session.forceStart();
+    expect(result.success).toBe(false);
+    clearSessionTimers(session);
+  });
+
+  test('endQuestion ігнорується якщо стан не QUESTION', () => {
+    const { session, broadcasts } = createSession();
+    session.gameState = 'WAITING';
+    const beforeLen = broadcasts.length;
+
+    session.endQuestion();
+    // Жодних broadcast — метод повернувся одразу
+    expect(broadcasts.length).toBe(beforeLen);
+    clearSessionTimers(session);
+  });
+
+  test('showLeaderboard ігнорується якщо стан ENDED', () => {
+    const { session, broadcasts } = createSession();
+    session.gameState = 'ENDED';
+    const beforeLen = broadcasts.length;
+
+    session.showLeaderboard();
+    expect(broadcasts.length).toBe(beforeLen);
+    clearSessionTimers(session);
+  });
+
+  test('allPlayersAnswered повертає false з 0 гравців', () => {
+    const { session } = createSession();
+    expect(session.allPlayersAnswered()).toBe(false);
+    clearSessionTimers(session);
+  });
+
+  test('getState повертає CATEGORY_SELECT інфо', () => {
+    const { session } = createSession(CATEGORY_QUIZ);
+    session.addPlayer('s1', 'Player');
+    session.gameState = 'CATEGORY_SELECT';
+
+    const state = session.getState();
+    expect(state.gameState).toBe('CATEGORY_SELECT');
+    expect(state.isCategoryMode).toBe(true);
+    clearSessionTimers(session);
+  });
+
+  test('calculateLeaderboard сортує за балами, потім за avgAnswerTime', () => {
+    const { session } = createSession();
+    session.addPlayer('s1', 'Fast');
+    session.addPlayer('s2', 'Slow');
+
+    const fast = session.players.get('s1');
+    fast.score = 200;
+    fast.correctAnswers = 2;
+    fast.totalAnswerTime = 4; // avg = 2
+
+    const slow = session.players.get('s2');
+    slow.score = 200;
+    slow.correctAnswers = 2;
+    slow.totalAnswerTime = 10; // avg = 5
+
+    const lb = session.calculateLeaderboard();
+    expect(lb[0].nickname).toBe('Fast');
+    expect(lb[1].nickname).toBe('Slow');
+    clearSessionTimers(session);
+  });
+
+  test('endQuiz зберігає сесію в БД', () => {
+    const mockDb = { saveSession: jest.fn() };
+    const { session } = createSession(undefined, undefined, mockDb);
+    session.addPlayer('s1', 'Player');
+    session.startedAt = Date.now();
+    session.gameState = 'LEADERBOARD'; // мінуючи startQuiz
+    session.currentQuestionIndex = 0;
+    session.quizData.questions = [{ question: 'Q?', answers: ['A','B','C','D'], correctAnswer: 0 }];
+
+    session.endQuiz();
+    expect(mockDb.saveSession).toHaveBeenCalledTimes(1);
+    expect(session.gameState).toBe('ENDED');
+    clearSessionTimers(session);
+  });
+
+  test('broadcast не крашить без init()', () => {
+    const AutoQuizSession = require('../src/quiz-session-auto');
+    const session = new AutoQuizSession(
+      { title: 'T', categoryMode: true, rounds: CATEGORY_QUIZ.rounds },
+      CATEGORY_SETTINGS
+    );
+    // io та roomCode не встановлені — broadcast має логувати помилку, не крашити
+    expect(() => session.broadcast({ type: 'TEST' })).not.toThrow();
+  });
+
+  test('skipQuestion пропускає ANSWER_REVEAL → LEADERBOARD', () => {
+    jest.useFakeTimers();
+    const { session } = createSession(CATEGORY_QUIZ);
+    session.addPlayer('s1', 'P');
+    session.gameState = 'ANSWER_REVEAL';
+    session.currentQuestionIndex = 0;
+    session.quizData.questions = [{ question: 'Q?', answers: ['A','B','C','D'], correctAnswer: 0 }];
+
+    const result = session.skipQuestion();
+    expect(result.success).toBe(true);
+    expect(session.gameState).toBe('LEADERBOARD');
+    jest.clearAllTimers();
+  });
+});
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: _calculateAnswerStatistics
+// ─────────────────────────────────────────────
+
+describe('AutoQuizSession — _calculateAnswerStatistics', () => {
+  test('рахує розподіл відповідей та відсотки', () => {
+    const { session } = createSession();
+    session.addPlayer('s1', 'P1');
+    session.addPlayer('s2', 'P2');
+    session.addPlayer('s3', 'P3');
+    session.addPlayer('s4', 'P4');
+
+    // P1 та P2 обрали відповідь 0, P3 — відповідь 2, P4 не відповів
+    session.currentAnswers.set('s1', { answerId: 0, timestamp: Date.now(), timeSpent: 5 });
+    session.currentAnswers.set('s2', { answerId: 0, timestamp: Date.now(), timeSpent: 8 });
+    session.currentAnswers.set('s3', { answerId: 2, timestamp: Date.now(), timeSpent: 3 });
+
+    const stats = session._calculateAnswerStatistics(0);
+
+    expect(stats.total).toBe(3);          // 3 відповіли
+    expect(stats.notAnswered).toBe(1);    // 1 не відповів
+    expect(stats.correctAnswer).toBe(0);  // правильна відповідь 0
+    expect(stats.answers[0].count).toBe(2);
+    expect(stats.answers[1].count).toBe(0);
+    expect(stats.answers[2].count).toBe(1);
+    expect(stats.answers[3].count).toBe(0);
+    // Відсотки від загальної кількості гравців (4), не тільки хто відповів
+    expect(stats.answers[0].percentage).toBe(50); // 2/4 = 50%
+    expect(stats.answers[2].percentage).toBe(25); // 1/4 = 25%
+    clearSessionTimers(session);
+  });
+
+  test('повертає нулі коли ніхто не відповів', () => {
+    const { session } = createSession();
+    session.addPlayer('s1', 'P1');
+
+    const stats = session._calculateAnswerStatistics(1);
+    expect(stats.total).toBe(0);
+    expect(stats.notAnswered).toBe(1);
+    for (let i = 0; i < 4; i++) {
+      expect(stats.answers[i].count).toBe(0);
+      expect(stats.answers[i].percentage).toBe(0);
+    }
+    clearSessionTimers(session);
+  });
+});
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: _shuffleArray
+// ─────────────────────────────────────────────
+
+describe('AutoQuizSession — _shuffleArray', () => {
+  test('зберігає всі елементи', () => {
+    const { session } = createSession();
+    const original = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    const shuffled = session._shuffleArray([...original]);
+
+    expect(shuffled).toHaveLength(original.length);
+    expect(shuffled.sort()).toEqual(original.sort());
+    clearSessionTimers(session);
+  });
+
+  test('повертає той самий масив (in-place)', () => {
+    const { session } = createSession();
+    const arr = [1, 2, 3];
+    const result = session._shuffleArray(arr);
+    expect(result).toBe(arr);
+    clearSessionTimers(session);
+  });
+});
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: Баг-фікси — _resolveCategory встановлює CATEGORY_CHOSEN
+// ─────────────────────────────────────────────
+
+describe('AutoQuizSession — _resolveCategory gameState transition', () => {
+  afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
+
+  test('_resolveCategory переводить gameState у CATEGORY_CHOSEN', () => {
+    jest.useFakeTimers();
+    const { session } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
+    session.startCategorySelect();
+
+    // Вибираємо категорію — _resolveCategory має встановити gameState = 'CATEGORY_CHOSEN'
+    session.submitCategory('s1', 0);
+
+    expect(session.gameState).toBe('CATEGORY_CHOSEN');
+    jest.clearAllTimers();
+  });
+
+  test('submitCategory відхиляється під час CATEGORY_CHOSEN (вже не CATEGORY_SELECT)', () => {
+    jest.useFakeTimers();
+    const { session } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+    session.addPlayer('s2', 'Богдан');
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
+    session.startCategorySelect();
+
+    // Chooser обирає категорію — стан переходить у CATEGORY_CHOSEN
+    const chooserId = session.currentChooserSocketId;
+    session.submitCategory(chooserId, 0);
+    expect(session.gameState).toBe('CATEGORY_CHOSEN');
+
+    // Спроба іншого гравця надіслати submitCategory під час CATEGORY_CHOSEN має бути відхилена
+    const nonChooserId = chooserId === 's1' ? 's2' : 's1';
+    const result = session.submitCategory(nonChooserId, 1);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/не час/i);
+    jest.clearAllTimers();
+  });
+});
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: Баг-фікс — autoStartTimer очищається перед новим
+// ─────────────────────────────────────────────
+
+describe('AutoQuizSession — autoStartTimer clears before new one', () => {
+  afterEach(() => { jest.clearAllTimers(); jest.useRealTimers(); });
+
+  test('при одночасному приєднанні гравців autoStartTimer скидається, startQuiz викликається тільки раз', () => {
+    jest.useFakeTimers();
+    const { session, broadcasts } = createCategorySession();
+    session.settings.autoStart = true;
+    session.playerCount = 2;
+
+    // Перший гравець — ще не досягнуто playerCount
+    session.addPlayer('s1', 'Аліса');
+    expect(session.autoStartTimer).toBeNull();
+
+    // Другий гравець — досягнуто playerCount, autoStartTimer створюється
+    session.addPlayer('s2', 'Богдан');
+    const firstTimer = session.autoStartTimer;
+    expect(firstTimer).not.toBeNull();
+
+    // Третій гравець — перевищує playerCount, таймер має бути замінений
+    session.addPlayer('s3', 'Василь');
+    const secondTimer = session.autoStartTimer;
+    expect(secondTimer).not.toBeNull();
+
+    // Просуваємо час — startQuiz має спрацювати тільки раз
+    jest.advanceTimersByTime(600);
+
+    // Тільки один QUIZ_STARTING broadcast
+    const startEvents = broadcasts.filter(b => b.data.type === 'QUIZ_STARTING');
+    expect(startEvents).toHaveLength(1);
+    expect(session.gameState).toBe('STARTING');
+    jest.clearAllTimers();
+  });
+});
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: Баг-фікс — _calculateAnswerStatistics з 0 гравцями
+// ─────────────────────────────────────────────
+
+describe('AutoQuizSession — _calculateAnswerStatistics з 0 гравцями', () => {
+  test('percentage = 0 якщо players.size === 0, але є відповіді', () => {
+    const { session } = createSession();
+    // Додаємо гравця, він відповідає, потім відключається
+    session.addPlayer('s1', 'Аліса');
+    session.currentAnswers.set('s1', { answerId: 0, timestamp: Date.now(), timeSpent: 5 });
+    // Гравець відключився — видаляємо з players, але відповідь залишилась
+    session.players.delete('s1');
+
+    expect(session.players.size).toBe(0);
+
+    const stats = session._calculateAnswerStatistics(0);
+
+    // Відповіді записані, але players.size = 0 — відсотки мають бути від totalAnswered
+    expect(stats.total).toBe(1);
+    // Перевіряємо що percentage не Infinity і не NaN
+    expect(Number.isFinite(stats.answers[0].percentage)).toBe(true);
+    expect(stats.answers[0].percentage).toBe(100); // 1/1 = 100% (fallback to totalAnswered)
+    clearSessionTimers(session);
+  });
+
+  test('percentage = 0 якщо 0 гравців і 0 відповідей', () => {
+    const { session } = createSession();
+    // Жодних гравців і відповідей
+
+    const stats = session._calculateAnswerStatistics(1);
+
+    for (let i = 0; i < 4; i++) {
+      expect(stats.answers[i].percentage).toBe(0);
+      expect(Number.isFinite(stats.answers[i].percentage)).toBe(true);
+    }
+    clearSessionTimers(session);
+  });
+});
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: Баг-фікс — endQuiz totalQuestions = rounds.length
+// ─────────────────────────────────────────────
+
+describe('AutoQuizSession — endQuiz totalQuestions в category mode', () => {
+  test('QUIZ_ENDED.totalQuestions === rounds.length, а не quizData.questions.length', () => {
+    jest.useFakeTimers();
+    const { session, broadcasts } = createCategorySession();
+    session.addPlayer('s1', 'Аліса');
+
+    // Граємо тільки 1 раунд з 3 (quizData.questions матиме 1 елемент)
+    session.gameState = 'STARTING';
+    session.currentQuestionIndex = -1;
+    session.startCategorySelect();
+    session.submitCategory('s1', 0);
+    jest.advanceTimersByTime(4100); // → QUESTION
+
+    session.submitAnswer('s1', 2, Date.now()); // → ANSWER_REVEAL
+    jest.advanceTimersByTime(1100); // → LEADERBOARD
+    jest.advanceTimersByTime(1100); // → CATEGORY_SELECT round 2
+
+    // Примусово завершуємо квіз
+    session.endQuiz();
+
+    const endEvt = broadcasts.find(b => b.data.type === 'QUIZ_ENDED');
+    expect(endEvt).toBeDefined();
+
+    // totalQuestions має дорівнювати кількості раундів (3), не quizData.questions.length (1)
+    expect(endEvt.data.totalQuestions).toBe(3);
+    jest.clearAllTimers();
+  });
+});
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: Баг-фікс — createdAt timestamp
+// ─────────────────────────────────────────────
+
+describe('AutoQuizSession — createdAt timestamp', () => {
+  test('нова сесія має createdAt встановлений на поточний час', () => {
+    const before = Date.now();
+    const { session } = createSession();
+    const after = Date.now();
+
+    expect(session.createdAt).toBeDefined();
+    expect(session.createdAt).toBeGreaterThanOrEqual(before);
+    expect(session.createdAt).toBeLessThanOrEqual(after);
+    clearSessionTimers(session);
+  });
+
+  test('createdAt не змінюється при додаванні гравців', () => {
+    const { session } = createSession();
+    const originalCreatedAt = session.createdAt;
+
+    session.addPlayer('s1', 'Аліса');
+    session.addPlayer('s2', 'Богдан');
+
+    expect(session.createdAt).toBe(originalCreatedAt);
+    clearSessionTimers(session);
+  });
+});
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: getState в різних фазах
+// ─────────────────────────────────────────────
+
+describe('AutoQuizSession — getState phases', () => {
+  afterEach(() => { jest.clearAllTimers(); });
+
+  test('getState в QUESTION включає timeRemaining та timeLimit', () => {
+    jest.useFakeTimers();
+    const { session } = createSession();
+    session.addPlayer('s1', 'P');
+    session.gameState = 'QUESTION';
+    session.currentQuestionIndex = 0;
+    session.questionStartTime = Date.now() - 10000; // 10с тому
+    session.currentTimerLimit = 30;
+    session.isPaused = false;
+
+    const state = session.getState();
+    expect(state.timeRemaining).toBeDefined();
+    expect(state.timeLimit).toBe(30);
+    expect(state.timeRemaining).toBeLessThanOrEqual(20);
+    jest.clearAllTimers();
+  });
+
+  test('getState в QUESTION на паузі — timeRemaining з questionTimeRemaining', () => {
+    const { session } = createSession();
+    session.addPlayer('s1', 'P');
+    session.gameState = 'QUESTION';
+    session.currentQuestionIndex = 0;
+    session.currentTimerLimit = 30;
+    session.isPaused = true;
+    session.questionTimeRemaining = 15.5;
+
+    const state = session.getState();
+    expect(state.isPaused).toBe(true);
+    expect(state.timeRemaining).toBe(16); // Math.ceil(15.5)
+    clearSessionTimers(session);
+  });
+
+  test('getState в ANSWER_REVEAL включає correctAnswer', () => {
+    const { session } = createSession();
+    session.addPlayer('s1', 'P');
+    session.gameState = 'ANSWER_REVEAL';
+    session.currentQuestionIndex = 0;
+
+    const state = session.getState();
+    expect(state.correctAnswer).toBe(1); // QUIZ_DATA.questions[0].correctAnswer
+    expect(state.currentQuestion).toBeDefined();
+    expect(state.currentQuestion.text).toBe('Скільки буде 2+2?');
+    clearSessionTimers(session);
+  });
+
+  test('getState в LEADERBOARD включає leaderboard', () => {
+    const { session } = createSession();
+    session.addPlayer('s1', 'P1');
+    session.addPlayer('s2', 'P2');
+    session.players.get('s1').score = 300;
+    session.gameState = 'LEADERBOARD';
+
+    const state = session.getState();
+    expect(state.leaderboard).toBeDefined();
+    expect(state.leaderboard).toHaveLength(2);
+    expect(state.leaderboard[0].nickname).toBe('P1');
+    clearSessionTimers(session);
+  });
+
+  test('getState в ENDED включає leaderboard', () => {
+    const { session } = createSession();
+    session.addPlayer('s1', 'P');
+    session.gameState = 'ENDED';
+
+    const state = session.getState();
+    expect(state.leaderboard).toBeDefined();
+    clearSessionTimers(session);
+  });
+
+  test('getState включає targetPlayerCount', () => {
+    const settings = { ...SETTINGS, playerCount: 4 };
+    const { session } = createSession(undefined, settings);
+    const state = session.getState();
+    expect(state.targetPlayerCount).toBe(4);
+    clearSessionTimers(session);
+  });
+});
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: питання з image/audio
+// ─────────────────────────────────────────────
+
+describe('AutoQuizSession — media fields in broadcasts', () => {
+  afterEach(() => { jest.clearAllTimers(); });
+
+  test('NEW_QUESTION broadcast включає image якщо є', () => {
+    jest.useFakeTimers();
+    const quizWithImage = {
+      title: 'Image Quiz',
+      categoryMode: true,
+      rounds: [{
+        options: [
+          { category: 'A', question: 'Q?', answers: ['1','2','3','4'], correctAnswer: 0, image: 'test.jpg' },
+          { category: 'B', question: 'Q?', answers: ['1','2','3','4'], correctAnswer: 1 }
+        ]
+      }]
+    };
+
+    const { session, broadcasts } = createSession(quizWithImage, CATEGORY_SETTINGS);
+    session.addPlayer('s1', 'P');
+
+    session.startQuiz();
+    jest.advanceTimersByTime(3100); // STARTING → CATEGORY_SELECT
+    session.submitCategory('s1', 0); // вибираємо option з image
+    jest.advanceTimersByTime(4100); // CATEGORY_CHOSEN → QUESTION
+
+    const newQ = broadcasts.find(b => b.data.type === 'NEW_QUESTION');
+    expect(newQ).toBeDefined();
+    expect(newQ.data.question.image).toBe('test.jpg');
+    jest.clearAllTimers();
+  });
+});
+
+// ─────────────────────────────────────────────
+// ТЕСТИ: питання з custom timeLimit
+// ─────────────────────────────────────────────
+
+describe('AutoQuizSession — custom question timeLimit', () => {
+  afterEach(() => { jest.clearAllTimers(); });
+
+  test('питання з timeLimit override використовує його замість settings', () => {
+    jest.useFakeTimers();
+    const quizWithTimeLimit = {
+      title: 'TimeLimited Quiz',
+      categoryMode: true,
+      rounds: [{
+        options: [
+          { category: 'A', question: 'Q?', answers: ['1','2','3','4'], correctAnswer: 0, timeLimit: 10 },
+          { category: 'B', question: 'Q?', answers: ['1','2','3','4'], correctAnswer: 1 }
+        ]
+      }]
+    };
+
+    const { session, broadcasts } = createSession(quizWithTimeLimit, CATEGORY_SETTINGS);
+    session.addPlayer('s1', 'P');
+
+    session.startQuiz();
+    jest.advanceTimersByTime(3100);
+    session.submitCategory('s1', 0);
+    jest.advanceTimersByTime(4100);
+
+    const newQ = broadcasts.find(b => b.data.type === 'NEW_QUESTION');
+    expect(newQ).toBeDefined();
+    expect(newQ.data.timeLimit).toBe(10); // custom, не 30 з settings
+    expect(session.currentTimerLimit).toBe(10);
     jest.clearAllTimers();
   });
 });

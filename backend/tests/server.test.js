@@ -462,3 +462,55 @@ describe('GET /api/qr/:roomCode', () => {
     expect(res.headers['content-type']).toContain('image/png');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Валідація session ID — нечислові значення повертають 400
+// ---------------------------------------------------------------------------
+
+describe('Session ID validation', () => {
+  test('GET /api/stats/session/abc повертає 400', async () => {
+    const res = await request(app).get('/api/stats/session/abc');
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+
+  test('GET /api/stats/session/-1 повертає 400', async () => {
+    const res = await request(app).get('/api/stats/session/-1');
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+
+  test('GET /api/stats/session/0 повертає 400', async () => {
+    const res = await request(app).get('/api/stats/session/0');
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+
+  test('GET /api/stats/session/abc/questions повертає 400', async () => {
+    const res = await request(app).get('/api/stats/session/abc/questions');
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+
+  test('GET /api/stats/session/1.5/questions повертає 400', async () => {
+    const res = await request(app).get('/api/stats/session/1.5/questions');
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// JSON body size limit
+// ---------------------------------------------------------------------------
+
+describe('JSON body size limit', () => {
+  test('POST /api/quizzes/save з великим payload повертає 413', async () => {
+    // Генеруємо payload більший за 1MB
+    const bigTitle = 'X'.repeat(2 * 1024 * 1024);
+    const res = await request(app)
+      .post('/api/quizzes/save')
+      .send({ title: bigTitle, questions: [] })
+      .set('Content-Type', 'application/json');
+    expect(res.status).toBe(413);
+  });
+});

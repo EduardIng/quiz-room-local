@@ -10,9 +10,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import useLang from '../utils/useLang.js';
 import './StatsPanel.css';
 
-function formatDate(ts) {
+// URL бекенду — абсолютний в dev (різні порти), відносний в production
+const SERVER_URL = import.meta.env.DEV ? 'http://localhost:8080' : window.location.origin;
+
+function formatDate(ts, lang = 'uk') {
   if (!ts) return '—';
-  return new Date(ts).toLocaleString('uk-UA', {
+  return new Date(ts).toLocaleString(lang === 'uk' ? 'uk-UA' : 'en-US', {
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   });
@@ -29,7 +32,7 @@ export default function StatsPanel() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch('/api/stats');
+      const res = await fetch(`${SERVER_URL}/api/stats`);
       const data = await res.json();
       if (data.success) setStats(data);
     } catch {
@@ -53,7 +56,7 @@ export default function StatsPanel() {
     // Завантажуємо таблицю лідерів, якщо ще не кешовано
     if (!sessionResults[sessionId]) {
       try {
-        const res = await fetch(`/api/stats/session/${sessionId}`);
+        const res = await fetch(`${SERVER_URL}/api/stats/session/${sessionId}`);
         const data = await res.json();
         if (data.success) {
           setSessionResults(prev => ({ ...prev, [sessionId]: data.results }));
@@ -64,7 +67,7 @@ export default function StatsPanel() {
     // Завантажуємо статистику питань, якщо ще не кешовано
     if (!questionStatsCache[sessionId]) {
       try {
-        const res = await fetch(`/api/stats/session/${sessionId}/questions`);
+        const res = await fetch(`${SERVER_URL}/api/stats/session/${sessionId}/questions`);
         const data = await res.json();
         if (data.success) {
           setQuestionStatsCache(prev => ({ ...prev, [sessionId]: data.questionStats }));
@@ -91,7 +94,7 @@ export default function StatsPanel() {
           >
             {lang === 'uk' ? '🇬🇧 EN' : '🇺🇦 UK'}
           </button>
-          <a href="#/admin" className="stats-nav-link">{t('back')}</a>
+          <a href="#/host" className="stats-nav-link">{t('back')}</a>
         </div>
       </header>
 
@@ -139,7 +142,7 @@ export default function StatsPanel() {
                 {sessions.map(session => (
                   <React.Fragment key={session.id}>
                     <tr className={expandedId === session.id ? 'row-expanded' : ''}>
-                      <td className="col-date">{formatDate(session.ended_at)}</td>
+                      <td className="col-date">{formatDate(session.ended_at, lang)}</td>
                       <td className="col-title">{session.title}</td>
                       <td className="col-players">{session.player_count}</td>
                       <td className="col-top">
@@ -168,13 +171,13 @@ export default function StatsPanel() {
                                 className={`detail-tab ${(activeTab[session.id] || 'leaderboard') === 'leaderboard' ? 'active' : ''}`}
                                 onClick={() => setActiveTab(prev => ({ ...prev, [session.id]: 'leaderboard' }))}
                               >
-                                {lang === 'uk' ? 'Рейтинг' : 'Leaderboard'}
+                                {t('detailTabLeaderboard')}
                               </button>
                               <button
                                 className={`detail-tab ${activeTab[session.id] === 'questions' ? 'active' : ''}`}
                                 onClick={() => setActiveTab(prev => ({ ...prev, [session.id]: 'questions' }))}
                               >
-                                {lang === 'uk' ? 'Питання' : 'Questions'}
+                                {t('detailTabQuestions')}
                               </button>
                             </div>
 
@@ -205,7 +208,7 @@ export default function StatsPanel() {
                                 {!questionStatsCache[session.id]
                                   ? <span className="lb-loading">...</span>
                                   : questionStatsCache[session.id].length === 0
-                                    ? <span className="lb-loading">{lang === 'uk' ? 'Немає даних' : 'No data'}</span>
+                                    ? <span className="lb-loading">{t('noData')}</span>
                                     : (() => {
                                         const qs = questionStatsCache[session.id];
                                         // Знаходимо питання з найнижчою точністю для бейджу "Найважче"
@@ -232,12 +235,12 @@ export default function StatsPanel() {
                                                 <span className="q-num">Q{q.question_index + 1}</span>
                                                 {isHardest && (
                                                   <span className="q-hardest-badge">
-                                                    {lang === 'uk' ? '⚠️ Найважче' : '⚠️ Hardest'}
+                                                    {t('hardestBadge')}
                                                   </span>
                                                 )}
                                                 <span className="q-accuracy-label">
                                                   {accuracyPct !== null
-                                                    ? `${accuracyPct}% ${lang === 'uk' ? 'правильно' : 'correct'}`
+                                                    ? `${accuracyPct}% ${t('correctLabel')}`
                                                     : '—'}
                                                 </span>
                                               </div>

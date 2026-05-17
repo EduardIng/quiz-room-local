@@ -87,6 +87,15 @@
     .card.screen { border-color: #9b59b6; }
     .card.screen:hover { border-color: #cc88ff; background: #201530; }
 
+    .card.stats  { border-color: #e8c94a; }
+    .card.stats:hover { border-color: #ffe066; background: #25200a; }
+
+    .card.podium { border-color: #e05c5c; }
+    .card.podium:hover { border-color: #ff8888; background: #2a1010; }
+
+    .card.pisetup { border-color: #2eaadc; }
+    .card.pisetup:hover { border-color: #4ac8ee; background: #0f2530; }
+
     footer {
       font-size: 0.75rem;
       color: #5a4f7a;
@@ -99,33 +108,51 @@
 
   <div class="cards">
 
-    <a class="card host" href="http://localhost:8080/#/host" target="_blank">
+    <a class="card host" href="#/host">
       <span class="icon">🎤</span>
       <span class="label">Ведучий</span>
       <span class="sublabel">Host view — запуск гри, контроль</span>
     </a>
 
-    <a class="card player" href="http://localhost:8080/#/" target="_blank">
+    <a class="card player" href="#/">
       <span class="icon">👤</span>
       <span class="label">Гравець</span>
       <span class="sublabel">Player view — кіоск-режим</span>
     </a>
 
-    <a class="card create" href="http://localhost:8080/#/create" target="_blank">
+    <a class="card create" href="#/create">
       <span class="icon">✏️</span>
       <span class="label">Редактор квізів</span>
       <span class="sublabel">Quiz Creator — створення та редагування</span>
     </a>
 
-    <a class="card screen" href="http://localhost:8080/#/screen" target="_blank">
+    <a class="card screen" href="#/screen">
       <span class="icon">📺</span>
       <span class="label">Проектор</span>
       <span class="sublabel">Projector view — центральний екран</span>
     </a>
 
+    <a class="card stats" href="#/stats">
+      <span class="icon">📊</span>
+      <span class="label">Статистика</span>
+      <span class="sublabel">Dashboard — історія сесій</span>
+    </a>
+
+    <a class="card podium" href="pi-setup/PODIUM_MANUAL.md" target="_blank">
+      <span class="icon">🔧</span>
+      <span class="label">Збірка подіуму</span>
+      <span class="sublabel">Podium Assembly Manual</span>
+    </a>
+
+    <a class="card pisetup" href="PI_SETUP_GUIDE.html" target="_blank">
+      <span class="icon">🍓</span>
+      <span class="label">Налаштування Pi</span>
+      <span class="sublabel">Pi Setup Guide — від нуля до квізу</span>
+    </a>
+
   </div>
 
-  <footer>Сервер: localhost:8080 &nbsp;·&nbsp; змініть адресу якщо потрібен інший хост</footer>
+  <footer>Quiz Room Local &nbsp;·&nbsp; v0.3.0</footer>
 
 </body>
 </html>

@@ -24,14 +24,20 @@ const DEFAULT_CONFIG = {
   },
   quiz: {
     autoMode: true,
-    questionTime: 30,      // секунд на відповідь
-    answerRevealTime: 5,   // секунд показувати правильну відповідь
-    leaderboardTime: 5,    // секунд показувати рейтинг
+    questionTime: 30,       // секунд на відповідь
+    answerRevealTime: 5,    // секунд показувати правильну відповідь
+    leaderboardTime: 5,     // секунд показувати рейтинг
+    categoryChosenTime: 4,  // секунд показувати обрану категорію
     autoStart: true,
     waitForAllPlayers: true,
     minPlayers: 1,
     maxPlayers: 8,
-    shuffle: false         // перемішувати порядок питань перед початком
+    shuffle: false          // перемішувати порядок питань перед початком
+  },
+  kiosk: {
+    reconnectBaseDelay: 2000,
+    reconnectMaxDelay: 30000,
+    roomPollInterval: 3000
   },
   display: {
     fullscreen: true,

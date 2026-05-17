@@ -742,9 +742,71 @@ Image was saved in the new file, but users reloaded the old file (without the im
 
 ---
 
+### Session 23 — On-Screen Keyboard + GPIO State-Aware Routing (17 May 2026) ✅
+
+**Task:** Two independent kiosk improvements shipped on two sequential branches.
+
+**Strict superpowers cycle followed (no skipping):**
+- `using-superpowers` → `brainstorming` (4 clarifying questions Q&A, 3 approach options, 4 design sections, spec doc, `spec-document-reviewer` ✅ on 2nd pass after fixing 6 issues + 4 advisories)
+- `writing-plans` (chunked plan, `plan-document-reviewer` ✅ on 2nd pass after fixing 5 issues including correct `fireEvent.pointerDown`, real CSS variable names, 80 px tap-target floor)
+- `using-git-worktrees` per branch
+- `subagent-driven-development` per task with fresh implementer + spec reviewer + code quality reviewer subagents; `test-driven-development` inside each implementer
+- `finishing-a-development-branch` to merge each branch
+- Design + plan docs kept local-only under `docs/superpowers/` per user preference (gitignored).
+
+**Settled in brainstorming:**
+- Keyboard layout: Latin-only, 39 keys (10 digits + 26 letters + `⌫`/`␣`/`✓ Приєднатись`), MAX_LEN 20
+- GPIO scope: extend `podium-button-press` to state-aware routing (categories AND answers); server-side, Python stays dumb
+- Keyboard visibility: always on join screen only, native USB-keyboard input works in parallel
+- Library: `react-simple-keyboard ^3.4.0` (chosen for future Cyrillic toggle without code rewrite)
+- Shipping: two branches, two PRs, two reviews — sequential keyboard → GPIO
+
+**Feature A — On-screen keyboard (Branch `session23-keyboard`, merged at `ccebdde`):**
+- `frontend/src/components/OnScreenKeyboard.jsx` — controlled component wrapping `react-simple-keyboard`, 20-char cap, special-key handlers
+- `frontend/src/components/OnScreenKeyboard.css` — responsive `flex-basis` keys (no fixed px — works on any kiosk display from 1024×600 to 2560×1440), 80 px min tap target, project-purple primary, soft-red backspace
+- `frontend/src/__tests__/OnScreenKeyboard.test.jsx` — 5 Vitest tests via `fireEvent.pointerDown` (not `mouseDown` — library uses `onpointerdown` in jsdom)
+- `frontend/src/components/PlayerView.jsx` — mounts keyboard inside join card with `onEnter={() => !isJoining && handleJoin()}` guard against double-tap race
+- `frontend/package.json` — added `"react-simple-keyboard": "^3.4.0"` (installed `3.8.206`)
+- Live validation: phone-screen-equivalent scrot showed all 39 keys rendered correctly, special-key colors right, layout fits screen.
+
+**Feature B — GPIO state-aware routing (Branch `session23-gpio`, merged at `0d80249`):**
+- `backend/src/websocket-handler-auto.js` — added `routePodiumButton(session, socketId, buttonIndex)` helper that branches on `session.gameState`:
+  - `QUESTION` → `submitAnswer(socketId, buttonIndex, Date.now())`
+  - `CATEGORY_SELECT` with buttonIndex ∈ {0,1} → `submitCategory(socketId, buttonIndex)`
+  - `CATEGORY_SELECT` with buttonIndex > 1 → `{ignored: true, reason: 'Категорія: лише кнопки A/B'}`
+  - other states → `{ignored: true, reason: 'Стан X: натискання ігнорується'}`
+  - `handlePodiumButtonPress` now delegates to it; logs only on `!result.success && !result.ignored` (genuine failures, not expected ignores)
+  - Module export ordering: class export first, then `module.exports.routePodiumButton = routePodiumButton;` AFTER (otherwise class export overwrites named export)
+- `backend/tests/websocket.test.js` — 5 new Jest tests covering all routing branches
+- `pi-setup/gpio-service.service` — systemd unit: `After=quiz-server`, `Restart=on-failure`, `User=admin`, `PYTHONUNBUFFERED=1` (real-time journal flush). Deployed to `/etc/systemd/system/` on rpi1 and enabled.
+- `pi-setup/PODIUM_MANUAL.md` — new section: wiring table (BCM 17/27/22/23 ↔ GND, header pins 11/13/15/16), state-aware behaviour table, activation steps.
+- Live validation: `gpio-service` shows `Active: active (running)` on rpi1, journal logs all 4 buttons initialised + connected to quiz-server. **Physical buttons not yet wired on rpi1** (separate hardware task); the full software pipeline is in place.
+
+**Tests:** 315 backend (310 + 5 GPIO, 1 skipped) + 23 frontend committed (18 baseline + 5 keyboard). Frontend tests in worktrees ran 23 — main shows 30 due to pre-existing uncommitted frontend test files which have unrelated import issues.
+
+**Real bugs surfaced and fixed during execution (orchestrator-internal):**
+1. Plan reviewer caught that `fireEvent.mouseDown` wouldn't trigger `react-simple-keyboard` in jsdom (library binds `onpointerdown`) — switched to `fireEvent.pointerDown` before any code was written.
+2. Plan reviewer caught CSS variables (`--color-card`, `--color-bg-secondary`, `--color-danger-soft`, `--color-primary-strong`) that don't exist in `theme.css`; replaced with the real names (`--color-bg-card`, `--color-bg-input`, `--color-wrong`, `--color-primary-dark`).
+3. Plan reviewer caught `min-height: 60px` below spec floor; corrected to `80px`.
+4. Plan reviewer caught ambiguous `module.exports.routePodiumButton` placement that could silently break the named export; clarified must come AFTER `module.exports = QuizRoomManager;`.
+5. Plan reviewer caught test-count drift between worktree (223) and main working tree (310, with uncommitted `utils.test.js`).
+
+**Known issues after this session:**
+- **KI-009** 🔴 — Pi 5 HDMI colour cast (still deferred per user)
+- **KI-010** 🟡 — Chrome translate bar visible top-right (came back on this session; not addressed)
+- **KI-011** 🟡 — WiFi auth-rejects: net-watchdog escalation in place from Session 22, durable fix is Ethernet (user action)
+
+**Recommended next session priorities:**
+1. Wire 4 physical buttons (BCM 17/27/22/23 ↔ GND) on rpi1 → live-validate state-aware routing end-to-end.
+2. Plug in Ethernet on rpi1 → ends KI-011.
+3. Optional follow-up: add Cyrillic layout toggle to the on-screen keyboard (one new layout object + toggle button, infrastructure already in place from `react-simple-keyboard`).
+4. KI-009 cosmetic colour pass.
+
+---
+
 ## How to Continue Development
 
 Say:
 > "Read CLAUDE.md and PROGRESS.md and continue. Here's what I want: [task]"
 
-All software phases complete. v0.3.0 functional flow validated end-to-end on `rpi1` as of Session 22 (Step 2 click paths verified with correct scoring, Step 3 reconnect for both server-restart and kill-STOP paths verified, keydown blocking verified — all five phases PASS). KI-011 root cause now known. Pending: switch to Ethernet, second podium, then KI-009 cosmetic colour pass.
+All software phases complete. v0.3.0 + on-screen keyboard + state-aware GPIO routing. Functional flow validated end-to-end on `rpi1` through Session 22. Session 23 adds two kiosk-UX features ready for use — keyboard live on the join screen, GPIO bridge running on the Pi awaiting physical button wiring.

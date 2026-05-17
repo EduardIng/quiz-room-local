@@ -4,8 +4,8 @@
  * Цей файл реалізує машину станів (state machine) для одного квіз-сеансу.
  * Управляє всім ігровим процесом: від очікування гравців до фінального результату.
  *
- * Машина станів:
- * WAITING → STARTING → QUESTION → ANSWER_REVEAL → LEADERBOARD → (повтор) → ENDED
+ * Машина станів (category mode):
+ * WAITING → STARTING → CATEGORY_SELECT → CATEGORY_CHOSEN → QUESTION → ANSWER_REVEAL → LEADERBOARD → (повтор) → ENDED
  *
  * Використання:
  *   const session = new AutoQuizSession(quizData, settings);
@@ -47,7 +47,7 @@ class AutoQuizSession {
     this.sessionName = settings.sessionName || ''; // назва сесії від ведучого (опційно)
 
     // Поточний стан гри (машина станів)
-    // Можливі значення: 'WAITING', 'STARTING', 'QUESTION', 'ANSWER_REVEAL', 'LEADERBOARD', 'ENDED'
+    // Можливі значення: 'WAITING', 'STARTING', 'CATEGORY_SELECT', 'CATEGORY_CHOSEN', 'QUESTION', 'ANSWER_REVEAL', 'LEADERBOARD', 'ENDED'
     this.gameState = 'WAITING';
 
     // Індекс поточного питання (0-based)
@@ -89,6 +89,9 @@ class AutoQuizSession {
 
     // SQLite database (optional, for persistent storage)
     this.db = db;
+
+    // Час створення сесії (для очистки застарілих WAITING сесій)
+    this.createdAt = Date.now();
 
     // Час початку квізу (для збереження в БД)
     this.startedAt = null;
@@ -181,6 +184,8 @@ class AutoQuizSession {
     // Перевіряємо умову autoStart:
     // Якщо autoStart увімкнено І кількість гравців досягла playerCount (заданого ведучим) → стартуємо
     if (this.settings.autoStart && this.players.size >= this.playerCount) {
+      // Очищаємо попередній таймер якщо кілька гравців приєднались одночасно
+      clearTimeout(this.autoStartTimer);
       // Запускаємо з невеликою затримкою щоб гравець встиг отримати підтвердження
       this.autoStartTimer = setTimeout(() => this.startQuiz(), 500);
     }
@@ -222,6 +227,13 @@ class AutoQuizSession {
       if (joinIdx < this.chooserIndex) {
         this.chooserIndex = Math.max(0, this.chooserIndex - 1);
       }
+    }
+
+    // Очищаємо autoStartTimer якщо кількість гравців впала нижче цільової
+    if (this.autoStartTimer && this.players.size < this.playerCount) {
+      clearTimeout(this.autoStartTimer);
+      this.autoStartTimer = null;
+      log('Session', 'Автостарт скасовано — недостатньо гравців');
     }
 
     log('Session', `Гравець "${player.nickname}" відключився. Залишилось: ${this.players.size}`);
@@ -469,6 +481,9 @@ class AutoQuizSession {
    * - Запускає таймер для наступного кроку
    */
   showLeaderboard() {
+    // Захист від виклику після завершення квізу
+    if (this.gameState === 'ENDED') return;
+
     this.gameState = 'LEADERBOARD';
 
     const totalQuestions = this.isCategoryMode ? this.rounds.length : this.quizData.questions.length;
@@ -577,6 +592,9 @@ class AutoQuizSession {
    * @param {boolean} wasTimeout - чи вибір відбувся через таймаут
    */
   _resolveCategory(roundIndex, choiceIndex, wasTimeout) {
+    // Захист від подвійного виклику або виклику в невірному стані
+    if (this.gameState !== 'CATEGORY_SELECT' && this.gameState !== 'CATEGORY_CHOSEN') return;
+
     this.chooserIndex++;
 
     const round = this.rounds[roundIndex];
@@ -595,6 +613,9 @@ class AutoQuizSession {
 
     this.quizData.questions.push(questionObj);
 
+    // Оновлюємо стан машини — під час затримки ми в CATEGORY_CHOSEN, не CATEGORY_SELECT
+    this.gameState = 'CATEGORY_CHOSEN';
+
     log('Session', `CATEGORY_CHOSEN: "${option.category}" (choiceIndex=${choiceIndex}, wasTimeout=${wasTimeout})`);
 
     this.broadcast({
@@ -605,7 +626,8 @@ class AutoQuizSession {
     });
 
     // Затримка перед показом питання — дає час гравцям побачити обрану категорію
-    setTimeout(() => this.nextQuestion(), this.categoryChosenTime * 1000);
+    // Зберігаємо посилання щоб endQuiz() міг очистити цей таймер
+    this.categoryResolveTimer = setTimeout(() => this.nextQuestion(), this.categoryChosenTime * 1000);
   }
 
   // ─────────────────────────────────────────────
@@ -779,10 +801,12 @@ class AutoQuizSession {
     clearTimeout(this.transitionTimer);
     clearTimeout(this.categorySelectTimer);
     clearTimeout(this.autoStartTimer);
+    clearTimeout(this.categoryResolveTimer);
     this.questionTimer = null;
     this.transitionTimer = null;
     this.categorySelectTimer = null;
     this.autoStartTimer = null;
+    this.categoryResolveTimer = null;
 
     this.gameState = 'ENDED';
 
@@ -790,10 +814,12 @@ class AutoQuizSession {
 
     log('Session', `Квіз завершено! Переможець: "${finalLeaderboard[0]?.nickname}" (${finalLeaderboard[0]?.score} балів)`);
 
+    const totalQuestions = this.isCategoryMode ? this.rounds.length : this.quizData.questions.length;
+
     this.broadcast({
       type: 'QUIZ_ENDED',
       finalLeaderboard,
-      totalQuestions: this.quizData.questions.length
+      totalQuestions
     });
 
     // Persist session to SQLite if db is available
@@ -1055,7 +1081,11 @@ class AutoQuizSession {
    * @returns {Object} Об'єкт питання { question, answers, correctAnswer, timeLimit? }
    */
   getCurrentQuestion() {
-    return this.quizData.questions[this.currentQuestionIndex];
+    const q = this.quizData.questions[this.currentQuestionIndex];
+    if (!q) {
+      log('Session', `ПОМИЛКА: getCurrentQuestion() index=${this.currentQuestionIndex}, questions.length=${this.quizData.questions.length}`);
+    }
+    return q;
   }
 
   /**
@@ -1179,11 +1209,12 @@ class AutoQuizSession {
     }
 
     // Відсоток відносно всіх гравців (включно з тими, хто не відповів)
+    const totalForPercentage = this.players.size > 0 ? this.players.size : totalAnswered;
     const answers = {};
     for (let i = 0; i < 4; i++) {
       answers[i] = {
         count: counts[i],
-        percentage: totalAnswered > 0 ? Math.round((counts[i] / this.players.size) * 100) : 0
+        percentage: totalForPercentage > 0 ? Math.round((counts[i] / totalForPercentage) * 100) : 0
       };
     }
 

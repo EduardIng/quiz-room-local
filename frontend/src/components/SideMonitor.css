@@ -32,3 +32,18 @@ body {
   margin-bottom: 16px;
   min-height: 48px;
 }
+
+/* Індикатор втрати зв'язку з сервером */
+.side-monitor.disconnected {
+  border: 4px solid #e74c3c;
+}
+
+.side-monitor.disconnected::after {
+  content: '⚠ offline';
+  position: fixed;
+  bottom: 12px;
+  right: 16px;
+  font-size: 0.9rem;
+  color: #e74c3c;
+  opacity: 0.8;
+}

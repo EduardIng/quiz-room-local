@@ -70,8 +70,8 @@ class QuizServer {
    * Викликається один раз при старті сервера
    */
   setupMiddleware() {
-    // Body parser - дозволяє читати JSON з request body
-    this.app.use(express.json());
+    // Body parser - дозволяє читати JSON з request body (ліміт 1MB для захисту від великих payload)
+    this.app.use(express.json({ limit: '1mb' }));
 
     // CORS - дозволяє планшетам і телефонам підключатись з інших IP в мережі
     this.app.use(cors());
@@ -149,13 +149,21 @@ class QuizServer {
 
     // API: результати конкретної сесії
     this.app.get('/api/stats/session/:id', (req, res) => {
-      const results = db.getSessionResults(Number(req.params.id));
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ success: false, error: 'Invalid session ID' });
+      }
+      const results = db.getSessionResults(id);
       res.json({ success: true, results });
     });
 
     // API: статистика питань для конкретної сесії
     this.app.get('/api/stats/session/:id/questions', (req, res) => {
-      const questionStats = db.getQuestionStats(Number(req.params.id));
+      const id = Number(req.params.id);
+      if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ success: false, error: 'Invalid session ID' });
+      }
+      const questionStats = db.getQuestionStats(id);
       res.json({ success: true, questionStats });
     });
 

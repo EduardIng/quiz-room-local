@@ -85,10 +85,12 @@ http://server:8080/#/create
 
 Click **💾 Save to library** to save to the server's `quizzes/` folder. It will appear in the Host Panel immediately. After saving, a **→ Go to Host Panel** link appears for quick navigation.
 
+> **Note:** Every save creates a new library entry. If a quiz with the same title already exists, the save is blocked — you must rename the quiz first (edit the title in the top-left field). This prevents accidental duplicates.
+
 ### Or load an existing quiz
 
 - **⬆ Import JSON** — load a `.json` file from your computer
-- **📂 From library** — pick any quiz already saved on the server
+- **📂 From library** — pick any quiz already saved on the server. After loading, rename the quiz before saving to create a new version.
 
 ---
 

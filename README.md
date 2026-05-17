@@ -2,7 +2,7 @@
 
 > Local-kiosk quiz system for venues — tablets connect automatically, no room codes needed
 
-[![Tests](https://img.shields.io/badge/tests-230%20passed-brightgreen)](backend/tests/)
+[![Tests](https://img.shields.io/badge/tests-348%20passed-brightgreen)](backend/tests/)
 [![Version](https://img.shields.io/badge/version-0.3.0-blue)](package.json)
 [![Fork of](https://img.shields.io/badge/fork%20of-quiz--room--auto%20v1.3.0-purple)](https://github.com/EduardIng/quiz-room-auto)
 

@@ -10,23 +10,13 @@
  * - Експорт квізу як JSON файл
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import useLang from '../utils/useLang.js';
 import './QuizCreator.css';
 
 // URL бекенду
 const SERVER_URL = import.meta.env.DEV ? 'http://localhost:8080' : window.location.origin;
-
-// Порожнє питання — шаблон для нового питання
-const EMPTY_QUESTION = () => ({
-  question: '',
-  answers: ['', '', '', ''],
-  correctAnswer: 0,
-  timeLimit: '',  // порожнє = використовувати глобальний config.questionTime
-  image: '',
-  audio: ''
-});
 
 // Templates for category mode
 const EMPTY_OPTION = () => ({ category: '', question: '', answers: ['', '', '', ''], correctAnswer: 0, timeLimit: '', image: '', audio: '' });
@@ -53,7 +43,6 @@ export default function QuizCreator() {
 
   // ── Стан квізу ──
   const [title, setTitle] = useState('');
-  const [questions, setQuestions] = useState([EMPTY_QUESTION()]);
 
   // ── Category mode state (always on — only mode supported) ──
   const [rounds, setRounds] = useState([EMPTY_ROUND()]);
@@ -61,7 +50,6 @@ export default function QuizCreator() {
 
 
   // ── Стан UI ──
-  const [activeQuestion, setActiveQuestion] = useState(0); // Індекс активного питання
   const [isCreating, setIsCreating] = useState(false);     // Йде запит до сервера
   const [roomCode, setRoomCode] = useState(null);          // Отриманий код кімнати
   const [error, setError] = useState('');                  // Повідомлення про помилку
@@ -76,106 +64,15 @@ export default function QuizCreator() {
   // null = не завантажується; { roundIdx, optIdx } = завантаження для цього слоту
   const [uploadingImage, setUploadingImage] = useState(null);
 
-  // Drag-to-reorder refs and state
-  const dragIndexRef = useRef(null);
-  const [dragOverIndex, setDragOverIndex] = useState(null);
-
   // Import / library refs and state
   const fileInputRef = useRef(null);
   const [importError, setImportError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState('');
   const [showHostLink, setShowHostLink] = useState(false); // показуємо посилання на Host Panel після збереження
+  const saveTimerRef = useRef(null); // ref для таймера очистки save success повідомлення
   const [libraryQuizzes, setLibraryQuizzes] = useState(null); // null = not loaded
   const [showLibrary, setShowLibrary] = useState(false);
-
-  // ─────────────────────────────────────────────
-  // УПРАВЛІННЯ ПИТАННЯМИ
-  // ─────────────────────────────────────────────
-
-  /**
-   * Додає нове порожнє питання в кінець списку
-   */
-  const addQuestion = useCallback(() => {
-    setQuestions(prev => [...prev, EMPTY_QUESTION()]);
-    // Автоматично переходимо до нового питання
-    setActiveQuestion(prev => questions.length);
-  }, [questions.length]);
-
-  /**
-   * Видаляє питання за індексом
-   * Не дозволяє видалити якщо залишилось тільки одне
-   *
-   * @param {number} index - Індекс питання для видалення
-   */
-  const removeQuestion = useCallback((index) => {
-    if (questions.length <= 1) return; // Мінімум одне питання
-    setQuestions(prev => prev.filter((_, i) => i !== index));
-    setActiveQuestion(prev => Math.min(prev, questions.length - 2));
-  }, [questions.length]);
-
-  /**
-   * Оновлює поле питання
-   *
-   * @param {number} qIndex - Індекс питання
-   * @param {string} value - Нове значення тексту питання
-   */
-  const updateQuestionText = useCallback((qIndex, value) => {
-    setQuestions(prev => prev.map((q, i) =>
-      i === qIndex ? { ...q, question: value } : q
-    ));
-  }, []);
-
-  /**
-   * Оновлює один варіант відповіді
-   *
-   * @param {number} qIndex - Індекс питання
-   * @param {number} aIndex - Індекс відповіді (0-3)
-   * @param {string} value  - Новий текст відповіді
-   */
-  const updateAnswer = useCallback((qIndex, aIndex, value) => {
-    setQuestions(prev => prev.map((q, i) => {
-      if (i !== qIndex) return q;
-      const answers = [...q.answers];
-      answers[aIndex] = value;
-      return { ...q, answers };
-    }));
-  }, []);
-
-  /**
-   * Встановлює правильну відповідь для питання
-   *
-   * @param {number} qIndex   - Індекс питання
-   * @param {number} ansIndex - Індекс правильної відповіді (0-3)
-   */
-  const setCorrectAnswer = useCallback((qIndex, ansIndex) => {
-    setQuestions(prev => prev.map((q, i) =>
-      i === qIndex ? { ...q, correctAnswer: ansIndex } : q
-    ));
-  }, []);
-
-  /**
-   * Встановлює таймер для конкретного питання
-   *
-   * @param {number} qIndex - Індекс питання
-   * @param {string} value  - Значення таймера (порожнє = глобальний)
-   */
-  const updateTimeLimit = useCallback((qIndex, value) => {
-    setQuestions(prev => prev.map((q, i) =>
-      i === qIndex ? { ...q, timeLimit: value } : q
-    ));
-  }, []);
-
-  const updateImage = useCallback((qIndex, value) => {
-    setQuestions(prev => prev.map((q, i) =>
-      i === qIndex ? { ...q, image: value } : q
-    ));
-  }, []);
-
-  const updateAudio = useCallback((qIndex, value) => {
-    setQuestions(prev => prev.map((q, i) =>
-      i === qIndex ? { ...q, audio: value } : q
-    ));
-  }, []);
+  const [currentQuizId, setCurrentQuizId] = useState(null); // id завантаженого квізу або null для нового
 
   // ─────────────────────────────────────────────
   // CATEGORY MODE HELPERS
@@ -256,6 +153,14 @@ export default function QuizCreator() {
     return errors;
   }, [title, rounds]);
 
+  // Очистка при розмонтуванні — сокет та таймери
+  useEffect(() => {
+    return () => {
+      if (socketRef.current) socketRef.current.disconnect();
+      clearTimeout(saveTimerRef.current);
+    };
+  }, []);
+
   // ─────────────────────────────────────────────
   // ЗАПУСК ГРИ
   // ─────────────────────────────────────────────
@@ -273,6 +178,12 @@ export default function QuizCreator() {
 
     setError('');
     setIsCreating(true);
+
+    // Очищаємо попередній сокет
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
 
     // Підготовуємо дані квізу (прибираємо порожні timeLimit)
     const quizData = {
@@ -358,9 +269,6 @@ export default function QuizCreator() {
     }
     setRoomCode(null);
     setTitle('');
-    setQuestions([EMPTY_QUESTION()]);
-    setActiveQuestion(0);
-    setCategoryMode(false);
     setRounds([EMPTY_ROUND()]);
     setActiveRound(0);
     setError('');
@@ -402,43 +310,6 @@ export default function QuizCreator() {
     a.click();
     URL.revokeObjectURL(url);
   }, [title, rounds]);
-
-  // ─────────────────────────────────────────────
-  // DRAG-TO-REORDER
-  // ─────────────────────────────────────────────
-
-  const handleDragStart = useCallback((index) => {
-    dragIndexRef.current = index;
-  }, []);
-
-  const handleDragOver = useCallback((e, index) => {
-    e.preventDefault();
-    setDragOverIndex(index);
-  }, []);
-
-  const handleDrop = useCallback((e, toIndex) => {
-    e.preventDefault();
-    const fromIndex = dragIndexRef.current;
-    if (fromIndex === null || fromIndex === toIndex) {
-      dragIndexRef.current = null;
-      setDragOverIndex(null);
-      return;
-    }
-    setQuestions(prev => {
-      const updated = [...prev];
-      const [moved] = updated.splice(fromIndex, 1);
-      updated.splice(toIndex, 0, moved);
-      return updated;
-    });
-    setActiveQuestion(toIndex);
-    dragIndexRef.current = null;
-    setDragOverIndex(null);
-  }, []);
-
-  const handleDragEnd = useCallback(() => {
-    dragIndexRef.current = null;
-    setDragOverIndex(null);
-  }, []);
 
   // ─────────────────────────────────────────────
   // IMPORT / LIBRARY
@@ -493,7 +364,7 @@ export default function QuizCreator() {
   const handleLoadLibrary = useCallback(async () => {
     if (showLibrary) { setShowLibrary(false); return; }
     try {
-      const res = await fetch('/api/quizzes');
+      const res = await fetch(`${SERVER_URL}/api/quizzes`);
       const data = await res.json();
       setLibraryQuizzes(data.quizzes || []);
       setShowLibrary(true);
@@ -510,6 +381,22 @@ export default function QuizCreator() {
     setSaveSuccess('');
     const repeatError = getCategoryRepeatError(rounds);
     if (repeatError) { setImportError(repeatError); return; }
+    // Назва завжди має бути унікальною — збереження під існуючою назвою заборонено
+    try {
+      const libRes = await fetch(`${SERVER_URL}/api/quizzes`);
+      const libData = await libRes.json();
+      const normalizedTitle = (title.trim() || 'Мій квіз').toLowerCase();
+      const exists = (libData.quizzes || []).some(q => q.title.toLowerCase() === normalizedTitle);
+      if (exists) {
+        setImportError(lang === 'uk'
+          ? 'Квіз з такою назвою вже існує. Змініть назву перед збереженням.'
+          : 'A quiz with this name already exists. Change the title before saving.');
+        return;
+      }
+    } catch {
+      // Якщо не вдалося перевірити — дозволяємо зберегти
+    }
+
     const quizData = {
       title: title.trim() || 'Мій квіз',
       categoryMode: true,
@@ -526,7 +413,7 @@ export default function QuizCreator() {
       }))
     };
     try {
-      const res = await fetch('/api/quizzes/save', {
+      const res = await fetch(`${SERVER_URL}/api/quizzes/save`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(quizData)
@@ -537,18 +424,19 @@ export default function QuizCreator() {
         setShowHostLink(true); // показуємо посилання на Host Panel
         // Оновлюємо бібліотеку якщо вона відкрита
         if (showLibrary) {
-          const libRes = await fetch('/api/quizzes');
+          const libRes = await fetch(`${SERVER_URL}/api/quizzes`);
           const libData = await libRes.json();
           setLibraryQuizzes(libData.quizzes || []);
         }
-        setTimeout(() => { setSaveSuccess(''); setShowHostLink(false); }, 5000);
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = setTimeout(() => { setSaveSuccess(''); setShowHostLink(false); }, 5000);
       } else {
         setImportError(data.error || 'Could not save quiz');
       }
     } catch {
       setImportError('Could not save quiz to library');
     }
-  }, [title, rounds, showLibrary]);
+  }, [title, rounds, showLibrary, lang]);
 
   /**
    * Видаляє квіз з бібліотеки (з підтвердженням)
@@ -557,7 +445,7 @@ export default function QuizCreator() {
     e.stopPropagation();
     if (!window.confirm(`Видалити "${quizTitle}" з бібліотеки?`)) return;
     try {
-      const res = await fetch(`/api/quizzes/${encodeURIComponent(quizId)}`, { method: 'DELETE' });
+      const res = await fetch(`${SERVER_URL}/api/quizzes/${encodeURIComponent(quizId)}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         setLibraryQuizzes(prev => prev.filter(q => q.id !== quizId));
@@ -573,6 +461,7 @@ export default function QuizCreator() {
    * Populates editor from a library quiz
    */
   const handleSelectLibraryQuiz = useCallback((quiz) => {
+    setCurrentQuizId(quiz.id || null);
     setTitle(quiz.title);
     if (Array.isArray(quiz.rounds) && quiz.rounds.length > 0) {
       setRounds(quiz.rounds.map(r => ({
@@ -607,7 +496,7 @@ export default function QuizCreator() {
     try {
       const formData = new FormData();
       formData.append('image', file);
-      const res = await fetch('/api/media/upload', { method: 'POST', body: formData });
+      const res = await fetch(`${SERVER_URL}/api/media/upload`, { method: 'POST', body: formData });
       const data = await res.json();
       if (data.success) {
         updateRoundOption(roundIdx, optIdx, 'image', data.filename);
@@ -627,7 +516,6 @@ export default function QuizCreator() {
 
   const LETTERS = ['A', 'B', 'C', 'D'];
   const LETTER_COLORS = ['var(--color-answer-a)', 'var(--color-answer-b)', 'var(--color-answer-c)', 'var(--color-answer-d)'];
-  const currentQ = questions[activeQuestion];
   const currentRound = rounds[activeRound];
   const launchCount = rounds.length;
 
@@ -743,7 +631,6 @@ export default function QuizCreator() {
             {lang === 'uk' ? '🇬🇧 EN' : '🇺🇦 UK'}
           </button>
           <a href="#/host" className="admin-link">🎮 {lang === 'uk' ? 'Ведучий' : 'Host'}</a>
-          <a href="#/admin" className="admin-link">🖥️ Admin</a>
           <a href="/" className="admin-link">👤 {t('playerLink')}</a>
         </div>
       </header>
@@ -931,7 +818,7 @@ export default function QuizCreator() {
           {showLibrary && libraryQuizzes && (
             <div className="library-dropdown">
               {libraryQuizzes.length === 0
-                ? <div className="library-empty">No quizzes in library</div>
+                ? <div className="library-empty">{lang === 'uk' ? 'Бібліотека порожня' : 'No quizzes in library'}</div>
                 : libraryQuizzes.map(quiz => (
                   <div key={quiz.id} className="library-item-row">
                     <button

@@ -17,7 +17,7 @@
  * @created 2026-03-10
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import useLang from '../utils/useLang.js';
 import './HostView.css';
@@ -93,6 +93,12 @@ export default function HostView() {
 
     setIsLaunching(true);
     setLaunchError('');
+
+    // Очищаємо попередній сокет
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
 
     const quizData = quiz; // повний об'єкт квізу (quiz-storage повертає плоску структуру)
 

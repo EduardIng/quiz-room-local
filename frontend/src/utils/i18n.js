@@ -38,27 +38,8 @@ export const TRANSLATIONS = {
     playAgain: '🔄 Грати знову',
     me: '← ти',
 
-    // AdminPanel
-    adminTitle: '🎮 Quiz Room Admin',
-    adminSubtitle: 'Моніторинг активних квізів',
-    online: 'Онлайн',
-    error: 'Помилка',
-    connecting: "З'єднання...",
-    playerLink: '👤 Гравець',
-    newQuiz: '+ Новий квіз',
-    statsLink: '📊 Статистика',
-    activeRooms: 'Активних кімнат',
-    playersOnline: 'Гравців онлайн',
-    serverUptime: 'Сервер працює',
-    updated: 'Оновлено',
-    activeRoomsTitle: 'Активні кімнати',
-    serverError: '⚠️ Не вдається підключитись до сервера.',
-    noRooms: 'Активних квіз-кімнат немає',
-    createQuiz: 'Створити квіз',
-    copyCode: '📋 Копіювати',
-    copied: '✓ Скопійовано',
-
     // QuizCreator
+    playerLink: '👤 Гравець',
     createQuizTitle: '✏️ Створити квіз',
     quizTitle: 'Назва квізу',
     quizTitlePlaceholder: "Наприклад: П'ятниця — Quiz Night",
@@ -103,6 +84,11 @@ export const TRANSLATIONS = {
     back: '← Назад',
     leaderboardBtn: 'Рейтинг',
     hideBtn: 'Сховати',
+    detailTabLeaderboard: 'Рейтинг',
+    detailTabQuestions: 'Питання',
+    noData: 'Немає даних',
+    hardestBadge: '⚠️ Найважче',
+    correctLabel: 'правильно',
 
     // Category mode
     youChoose: 'Твій вибір категорії!',
@@ -181,27 +167,8 @@ export const TRANSLATIONS = {
     playAgain: '🔄 Play again',
     me: '← you',
 
-    // AdminPanel
-    adminTitle: '🎮 Quiz Room Admin',
-    adminSubtitle: 'Monitor active quizzes',
-    online: 'Online',
-    error: 'Error',
-    connecting: 'Connecting...',
-    playerLink: '👤 Player',
-    newQuiz: '+ New Quiz',
-    statsLink: '📊 Statistics',
-    activeRooms: 'Active rooms',
-    playersOnline: 'Players online',
-    serverUptime: 'Server uptime',
-    updated: 'Updated',
-    activeRoomsTitle: 'Active Rooms',
-    serverError: '⚠️ Cannot connect to server.',
-    noRooms: 'No active quiz rooms',
-    createQuiz: 'Create quiz',
-    copyCode: '📋 Copy',
-    copied: '✓ Copied',
-
     // QuizCreator
+    playerLink: '👤 Player',
     createQuizTitle: '✏️ Create Quiz',
     quizTitle: 'Quiz Title',
     quizTitlePlaceholder: 'E.g.: Friday Quiz Night',
@@ -246,6 +213,11 @@ export const TRANSLATIONS = {
     back: '← Back',
     leaderboardBtn: 'Leaderboard',
     hideBtn: 'Hide',
+    detailTabLeaderboard: 'Leaderboard',
+    detailTabQuestions: 'Questions',
+    noData: 'No data',
+    hardestBadge: '⚠️ Hardest',
+    correctLabel: 'correct',
 
     // Category mode
     youChoose: 'Your turn to pick a category!',

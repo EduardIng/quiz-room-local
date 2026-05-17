@@ -6,22 +6,27 @@
 import { useEffect, useState } from 'react';
 import './SideMonitor.css';
 
+// URL бекенду — абсолютний в dev (різні порти), відносний в production
+const SERVER_URL = import.meta.env.DEV ? 'http://localhost:8080' : window.location.origin;
 const POLL_INTERVAL = 2000;
 
 export default function SideMonitor() {
   const [nickname, setNickname] = useState('');
   const [phase, setPhase] = useState('WAITING');
+  const [connected, setConnected] = useState(true);
 
   useEffect(() => {
     const poll = async () => {
       try {
-        const res = await fetch('/api/podium/status');
+        const res = await fetch(`${SERVER_URL}/api/podium/status`);
         const data = await res.json();
         // Безумовно оновлюємо — щоб null з сервера очистив старий нікнейм
         setNickname(data.nickname ?? '');
         setPhase(data.phase || '');
+        setConnected(true);
       } catch {
-        // Сервер недоступний — продовжуємо показувати останній стан
+        // Сервер недоступний — показуємо індикатор втрати зв'язку
+        setConnected(false);
       }
     };
 
@@ -39,7 +44,7 @@ export default function SideMonitor() {
   }[phase] || '';
 
   return (
-    <div className="side-monitor">
+    <div className={`side-monitor${connected ? '' : ' disconnected'}`}>
       <div className="side-phase-icon">{phaseLabel}</div>
       <div className="side-nickname">{nickname || '...'}</div>
     </div>

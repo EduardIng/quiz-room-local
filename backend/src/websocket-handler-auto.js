@@ -82,6 +82,9 @@ class QuizRoomManager {
     // Планшети підключаються до неї без введення коду
     // null = жодна гра не запущена (показуємо "Очікуємо ведучого")
     this.currentActiveRoom = null;
+
+    // Інтервал очищення старих сесій (зберігаємо ref для зупинки)
+    this._cleanupInterval = null;
   }
 
   /**
@@ -150,7 +153,7 @@ class QuizRoomManager {
     });
 
     // Запускаємо очищення старих сесій кожні 30 хвилин
-    setInterval(() => this.cleanupOldSessions(), 30 * 60 * 1000);
+    this._cleanupInterval = setInterval(() => this.cleanupOldSessions(), 30 * 60 * 1000);
 
     log('WS', 'WebSocket менеджер ініціалізовано');
   }
@@ -189,7 +192,7 @@ class QuizRoomManager {
       const quizData = data.quizData;
 
       // Category mode validation
-      if (data.quizData.rounds.length === 0) {
+      if (!Array.isArray(data.quizData.rounds) || data.quizData.rounds.length === 0) {
         return respond({ success: false, error: 'Квіз у режимі категорій повинен мати масив раундів' });
       }
       for (let i = 0; i < data.quizData.rounds.length; i++) {
@@ -210,6 +213,8 @@ class QuizRoomManager {
           }
         }
       }
+      // Гарантуємо categoryMode прапорець — сесія перевіряє його для режиму категорій
+      data.quizData.categoryMode = true;
       // Встановлюємо порожній масив питань для режиму категорій
       data.quizData.questions = [];
 
@@ -221,6 +226,7 @@ class QuizRoomManager {
         questionTime: this.config.quiz.questionTime,
         answerRevealTime: this.config.quiz.answerRevealTime,
         leaderboardTime: this.config.quiz.leaderboardTime,
+        categoryChosenTime: this.config.quiz.categoryChosenTime,
         autoStart: this.config.quiz.autoStart,
         waitForAllPlayers: this.config.quiz.waitForAllPlayers,
         minPlayers: this.config.quiz.minPlayers,
@@ -228,7 +234,7 @@ class QuizRoomManager {
         // Налаштування від хоста перезаписують дефолти (якщо надані)
         ...(data.settings || {}),
         // Додаємо playerCount від ведучого до налаштувань сеансу
-        playerCount: data.playerCount || this.config.quiz.minPlayers,
+        playerCount: Math.max(1, Math.min(this.config.quiz.maxPlayers, parseInt(data.playerCount) || this.config.quiz.minPlayers)),
         autoStart: true,  // завжди true в кіоск-режимі
       };
 
@@ -250,7 +256,7 @@ class QuizRoomManager {
       // Запам'ятовуємо хоста кімнати (тільки він може надсилати host-control)
       this.roomHosts.set(roomCode, socket.id);
 
-      log('WS', `Квіз створено. Кімната: ${roomCode}, Питань: ${data.quizData.questions.length}`);
+      log('WS', `Квіз створено. Кімната: ${roomCode}, Раундів: ${data.quizData.rounds.length}`);
 
       // Відповідаємо хосту з кодом кімнати
       respond({ success: true, roomCode });
@@ -675,11 +681,17 @@ class QuizRoomManager {
         }
       }
 
-      // Якщо хост відключився — видаляємо запис хоста
-      // (нового хоста не призначаємо, але гра триває)
+      // Якщо хост відключився — повідомляємо гравців
       if (this.roomHosts.get(roomCode) === socket.id) {
         this.roomHosts.delete(roomCode);
         log('WS', `Хост кімнати ${roomCode} відключився`);
+        // Повідомляємо гравців про відключення ведучого
+        const session = this.sessions.get(roomCode);
+        if (session && session.gameState !== 'ENDED') {
+          this.io.to(roomCode).emit('quiz-update', {
+            type: 'HOST_DISCONNECTED'
+          });
+        }
       }
 
       // Видаляємо відображення сокет → кімната
@@ -735,15 +747,34 @@ class QuizRoomManager {
     const now = Date.now();
     let removedCount = 0;
 
+    const MAX_SESSION_AGE = 24 * 60 * 60 * 1000; // 24 години
+
+    const MAX_WAITING_AGE = 60 * 60 * 1000; // 1 година для WAITING сесій без гравців
+
     for (const [roomCode, session] of this.sessions.entries()) {
-      // Видаляємо завершені сесії без гравців
-      if (session.gameState === 'ENDED' && session.players.size === 0) {
+      const isEnded = session.gameState === 'ENDED' && session.players.size === 0;
+      // Зомбі-сесії: не ENDED, але без гравців і старіші 24 годин
+      const isZombie = session.players.size === 0 && session.startedAt &&
+        (now - session.startedAt) > MAX_SESSION_AGE;
+      // Застарілі WAITING сесії без гравців (ведучий створив і забув)
+      const isStaleWaiting = session.gameState === 'WAITING' && session.players.size === 0 &&
+        session.createdAt && (now - session.createdAt) > MAX_WAITING_AGE;
+
+      if (isEnded || isZombie || isStaleWaiting) {
         this.sessions.delete(roomCode);
+        this.roomHosts.delete(roomCode);
         // Очищаємо активний слот якщо це була поточна активна кімната
         if (this.currentActiveRoom === roomCode) {
           this.currentActiveRoom = null;
         }
         removedCount++;
+      }
+    }
+
+    // Очищаємо протерміновані записи rate limiting
+    for (const [socketId, rl] of this.answerRateLimit.entries()) {
+      if (now > rl.resetAt) {
+        this.answerRateLimit.delete(socketId);
       }
     }
 

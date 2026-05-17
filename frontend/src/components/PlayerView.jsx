@@ -16,7 +16,7 @@
  * (+ category_select, category_chosen для category mode)
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import './PlayerView.css';
 import Timebar from './Timebar.jsx';
@@ -206,14 +206,6 @@ export default function PlayerView() {
     // Слухаємо головну подію через ref — завжди актуальний обробник
     socket.on('quiz-update', (data) => handleServerUpdateRef.current?.(data));
 
-    // Оновлення списку гравців під час очікування
-    socket.on('quiz-update', (data) => {
-      if (data.type === 'PLAYER_JOINED' || data.type === 'PLAYER_LEFT') {
-        setWaitingPlayers(data.players || []);
-        setTotalPlayers(data.totalPlayers || 0);
-      }
-    });
-
     // Відключення: показуємо індикатор перепідключення
     socket.on('disconnect', () => {
       setIsReconnecting(true);
@@ -371,6 +363,13 @@ export default function PlayerView() {
         clearInterval(categoryTimerRef.current);
         setCategoryChosen({ category: data.category, wasTimeout: data.wasTimeout });
         setScreen('category_chosen');
+        break;
+
+      // ── Оновлення списку гравців ──
+      case 'PLAYER_JOINED':
+      case 'PLAYER_LEFT':
+        setWaitingPlayers(data.players || []);
+        setTotalPlayers(data.totalPlayers || 0);
         break;
 
       default:
