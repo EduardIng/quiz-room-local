@@ -323,4 +323,46 @@ Repeat for podium-3, podium-4, etc.
 
 ---
 
+## GPIO Buttons — Wiring & State-Aware Behaviour
+
+### Wiring
+
+| Button | BCM pin | 40-pin header | Wire to GND | UI colour |
+|---|---|---|---|---|
+| A | 17 | 11 | any GND pin (6/9/14/20/25/30/34/39) | red |
+| B | 27 | 13 | any GND pin | blue |
+| C | 22 | 15 | any GND pin | orange |
+| D | 23 | 16 | any GND pin | green |
+
+Each button is a momentary switch between its BCM pin and ground. Internal pull-up
+resistors are enabled in software (`gpio-service.py`), so wiring is just
+`pin ↔ switch ↔ GND` — no external resistors needed.
+
+### State-aware behaviour
+
+The server's `routePodiumButton` decides what a press means based on `session.gameState`:
+
+| Game state        | Button A (0) | Button B (1) | Buttons C/D (2/3) |
+|-------------------|--------------|--------------|---------------------|
+| `CATEGORY_SELECT` | submitCategory(0) — pick left option | submitCategory(1) — pick right option | silently ignored |
+| `QUESTION`        | submitAnswer(0) — answer A | submitAnswer(1) — answer B | submitAnswer(2)/submitAnswer(3) |
+| any other state   | silently ignored | silently ignored | silently ignored |
+
+### Activating the service
+
+```bash
+# One-time per Pi:
+sudo cp /home/admin/quiz-room-local/pi-setup/gpio-service.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now gpio-service
+
+# Verify
+systemctl status gpio-service
+journalctl -fu gpio-service
+```
+
+Expected on healthy startup: `[GPIO] Підключено до сервера квізу`.
+
+---
+
 *Quiz Room Local v0.3.0 — Podium Setup Manual*
